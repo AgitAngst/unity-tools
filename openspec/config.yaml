@@ -1,0 +1,44 @@
+schema: spec-driven
+
+context: |
+  Language: Russian
+  All artifacts must be written in Russian.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Project: unity-tools, the owner's repository of utilities for Unity (editor scripts and tools
+  that are plugged into different Unity projects). Parts: one folder per utility, each with its
+  own page in docs/. Docs of what exists now: docs/README.md; session rules: CLAUDE.md.
+  Owner rules every artifact must respect:
+  - any tool UI in Russian AND English, and readable in both the light and the dark editor skin;
+  - everything printed to the Unity console or a log is in English; code comments are in Russian;
+  - code must compile on the Unity version the owner targets - never guess it, ask or read
+    ProjectSettings/ProjectVersion.txt;
+  - no new packages, dependencies or downloads without the owner's explicit permission;
+  - releases, tags, CI runs only on the owner's command;
+  - the version grows with the plan: a stage - the second digit +1 from the CURRENT version
+    (after 0.9.x comes 1.0.0), a fix inside a stage - the third; the fourth number is the
+    build = commit count;
+  - tasks include the doc updates (docs/) the change needs; nothing is marked verified live in
+    the editor without the owner's words.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
