@@ -10,7 +10,8 @@ context: |
   own page in docs/. Docs of what exists now: docs/README.md; session rules: CLAUDE.md.
   Owner rules every artifact must respect:
   - any tool UI in Russian AND English;
-  - everything printed to the Unity console or a log is in English; code comments are in Russian;
+  - everything printed to the Unity console or a log is in English; code comments are in English
+    (owner's decision 21.10.2026);
   - the main target is Unity 2019.4 (C# 7.3): code must compile there, no newer language
     features or APIs;
   - no new packages, dependencies or downloads without the owner's explicit permission;
