@@ -9,10 +9,10 @@ context: |
   that are plugged into different Unity projects). Parts: one folder per utility, each with its
   own page in docs/. Docs of what exists now: docs/README.md; session rules: CLAUDE.md.
   Owner rules every artifact must respect:
-  - any tool UI in Russian AND English, and readable in both the light and the dark editor skin;
+  - any tool UI in Russian AND English;
   - everything printed to the Unity console or a log is in English; code comments are in Russian;
-  - code must compile on the Unity version the owner targets - never guess it, ask or read
-    ProjectSettings/ProjectVersion.txt;
+  - the main target is Unity 2019.4 (C# 7.3): code must compile there, no newer language
+    features or APIs;
   - no new packages, dependencies or downloads without the owner's explicit permission;
   - releases, tags, CI runs only on the owner's command;
   - the version grows with the plan: a stage - the second digit +1 from the CURRENT version
