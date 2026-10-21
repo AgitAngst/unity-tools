@@ -43,7 +43,8 @@ namespace UnityTools.SceneOptimization
         public const int SolverIterationsInfo = 6;
         public const float FixedStepTolerance = 0.0002f;
         public const float FarClipInfo = 1000f;
-        public const float NearClipWarning = 0.01f;
+        // Unity clamps the near plane to 0.01, so the check looks at values close to that minimum (owner, 22.10.2026).
+        public const float NearClipInfo = 0.05f;
         public const int OcclusionStaticRenderers = 100;
         public const int HierarchyDepthInfo = 10;
         public const int MinAntiAliasing = 4;

@@ -227,7 +227,7 @@ Critical / Warning / Info с подсказкой, как исправить.
 - VR-камеры — включённые Camera с `stereoTargetEye != None` и без `targetTexture`. Ни одной → Info
   (rig может создаваться в рантайме).
 - `allowHDR` → Warning: память и пропускная способность на два глаза (нужен ли PP с HDR);
-  `farClipPlane` > 1000 → Info (≤ 500, точность depth); `nearClipPlane` < 0.01 → Warning (z-fighting).
+  `farClipPlane` > 1000 → Info (≤ 500, точность depth); `nearClipPlane` < 0.05 → Info (Unity не даёт меньше 0.01; порог поднят владельцем 22.10.2026).
 - Canvas `ScreenSpaceOverlay` → Critical: не виден в шлеме; подсказка — World Space, масштаб ~0.001,
   `worldCamera`, VR-указатель. `ScreenSpaceCamera` → Warning: прилипает к голове.
 - Post Processing v2 через reflection (`PostProcessLayer`, `PostProcessVolume` и включённые эффекты

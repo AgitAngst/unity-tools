@@ -5,9 +5,8 @@
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 
 **Состояние:** код всех четырёх этапов написан. Автотесты в Unity 2019.4.41f2 зелёные (22.10.2026,
-`scripts
-un-audit-tests.ps1`, 21 шаг): проверки, бюджеты, экспорт, исправления и Undo. Вживую не
-проверены окно, снимок профайлера в Play Mode и ветка XR Plug-in Management — см.
+`scripts\run-audit-tests.ps1`, 25 шагов, из них 4 — XR Plug-in Management): проверки, бюджеты, экспорт, исправления и Undo. Вживую не
+проверены окно, снимок профайлера в Play Mode и настоящий OpenVR XR Plugin (в тестах — заглушки) — см.
 [TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
@@ -106,7 +105,7 @@ un-audit-tests.ps1`, 21 шаг): проверки, бюджеты, экспор�
 Неизменяемые пределы (`VRBudgets`, константы): больше 4 материалов на рендерере, больше 3 одинаковых
 объектов для instancing, больше 4 костей на вершину, Decompress On Load дольше 10 с, PCM больше 1 МБ,
 Preload дольше 30 с, priority 0 больше чем у 5 источников, shadow distance больше 50 м, solver
-iterations больше 6, far clip больше 1000, near clip меньше 0.01, MSAA меньше 4x, occlusion — от 100
+iterations больше 6, far clip больше 1000, near clip меньше 0.05, MSAA меньше 4x, occlusion — от 100
 статичных рендереров, глубина иерархии больше 10, FPS: зелёный от 89, жёлтый от 80.
 
 ## Проверки
@@ -190,7 +189,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `VR_CAMERA_NO_MSAA` | W | у VR-камеры выключен Allow MSAA | — |
 | `VR_CAMERA_HDR` | W | у VR-камеры включён HDR | — |
 | `VR_FAR_CLIP` | I | far больше 1000 | — |
-| `VR_NEAR_CLIP` | W | near меньше 0.01 — на деле не срабатывает: Unity не даёт поставить меньше 0.01 (решение за владельцем) | — |
+| `VR_NEAR_CLIP` | I | near меньше 0.05 (Unity не даёт меньше 0.01, порог поднят по решению владельца 22.10.2026) | — |
 | `VR_IMAGE_EFFECT` | W | скрипт с `OnRenderImage` на VR-камере | — |
 | `VR_CANVAS_OVERLAY` | C | корневой Canvas в Screen Space Overlay | — |
 | `VR_CANVAS_CAMERA` | W | корневой Canvas в Screen Space Camera | — |

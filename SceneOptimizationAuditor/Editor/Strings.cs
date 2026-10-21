@@ -520,7 +520,8 @@ namespace UnityTools.SceneOptimization
             Add("VR_FAR_CLIP", "Far clip plane is {0} (more than {1}).", "Дальняя плоскость отсечения {0} (больше {1}).");
             Add("VR_FAR_CLIP.fix", "Use 500 or less for better depth precision.", "Поставьте 500 и меньше для точности глубины.");
             Add("VR_NEAR_CLIP", "Near clip plane is {0} (less than {1}).", "Ближняя плоскость отсечения {0} (меньше {1}).");
-            Add("VR_NEAR_CLIP.fix", "Z-fighting is very visible in VR; use 0.01 or more.", "Z-fighting очень заметен в VR; поставьте 0.01 и больше.");
+            Add("VR_NEAR_CLIP.fix", "A very close near plane spends depth precision and z-fighting is very visible in VR; use 0.05 or more unless hands must render closer.",
+                "Слишком близкая плоскость тратит точность глубины, а z-fighting очень заметен в VR; поставьте 0.05 и больше, если руки не нужно рисовать ближе.");
             Add("VR_IMAGE_EFFECT", "Image effect script {0} on the VR camera (OnRenderImage).", "Скрипт эффекта {0} на VR-камере (OnRenderImage).");
             Add("VR_IMAGE_EFFECT.fix", "Full-screen effects run for both eyes at a high resolution; remove or simplify.",
                 "Полноэкранные эффекты идут на оба глаза в высоком разрешении; уберите или упростите.");

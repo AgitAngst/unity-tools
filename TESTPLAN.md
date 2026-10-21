@@ -2,7 +2,7 @@
 
 ## Итоги прогона 22.10.2026
 
-Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **21 шаг из 21 зелёный** (10 вариантов настроек,
+Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **25 шагов из 25 зелёные** (14 вариантов настроек, из них 4 — XR Plug-in Management;
 экспорт — модуль и 5 запусков из командной строки, исправления, SteamVR-заглушка в двух вариантах). Утилита
 импортируется без ошибок и предупреждений, утечек NativeArray нет. Тесты — `tests/AuditTests/`, отчёты —
 `unity-tools-scratch\reports\audit-tests\`.
@@ -12,13 +12,17 @@ Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **21 шаг из 21 
 - DSP Buffer Size читался из `m_DSPBufferSize` (итоговый размер) — настройка лежит в `m_RequestedDSPBufferSize`;
 - режим динамиков читался из `m_DefaultSpeakerMode` — в 2019.4 поле называется `Default Speaker Mode`.
 
-Решение владельца: Unity не даёт выставить near clip меньше 0.01, поэтому `VR_NEAR_CLIP` (< 0.01) не срабатывает
-никогда. Убрать проверку или поднять порог (например, < 0.05)?
+Unity не даёт выставить near clip меньше 0.01, поэтому `VR_NEAR_CLIP` (< 0.01) не срабатывал никогда. Владелец
+22.10.2026: поднять порог — теперь < 0.05, уровень «Сведения» (0.01–0.03 в VR встречается часто).
+
+22.10.2026, по слову владельца, в проверочный проект поставлен `com.unity.xr.management` 3.2.13 (из локального
+кэша Unity). OpenVR XR Plugin не ставился: загрузчик и его настройки заменены заглушками с теми же именами
+(`tests/AuditTests/XR/`). Добавлены варианты `xr-openvr-spi`, `xr-openvr-multipass`, `xr-mock`, `xr-both`.
 
 Сверено: `ShaderUtil.HasInstancing` находится через reflection (`DC_INSTANCING_OFF` и безопасное исправление
 работают); переключение уровня качества не меняет `QualitySettings.asset`.
 
-Не проверено: ветка XR Plug-in Management (пакет не ставился), снимок профайлера в Play Mode, окно вживую —
+Не проверено: настоящий OpenVR XR Plugin (только заглушки), снимок профайлера в Play Mode, окно вживую —
 пункты 0, 6, 7 и часть 8 ниже.
 
 Что проверить, когда дойдём до тестов. Код всех четырёх этапов написан и компилируется компилятором
@@ -27,7 +31,7 @@ Unity 2019.4.41f2 (`scripts\compile-check.ps1`: 0 ошибок, 0 предупр
 
 ## 0. Подготовка
 
-- [ ] Решение владельца: ставить ли `com.unity.xr.management` (и OpenVR XR Plugin) в проверочный
+- [x] Решение владельца: ставить ли `com.unity.xr.management` (и OpenVR XR Plugin) в проверочный
       проект — только в scratch, не в утилиту. Без них ветка XR Plug-in Management проверяется лишь как
       «не найден».
 - [x] Проверочный проект `E:\dev_personal\unity-tools-scratch\TestProject2019` на 2019.4.41f2
@@ -142,8 +146,10 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | `legacy-multipass` | legacy VR, OpenVR, Multi Pass | `VR_STEREO_MODE` W (MultiPass); шапка «Legacy VR (OpenVR)»; оценка draw calls ×2 к варианту `legacy-spi` |
 | `legacy-spi` | то же, Single Pass Instanced | нет `VR_STEREO_MODE`, `VR_NOT_ENABLED` |
 | `legacy-no-openvr` | legacy VR, SDK `None` / `Mock HMD` | `VR_NO_OPENVR` W |
-| `xr-management` | только если поставлен пакет (п. 0) | шапка «XR Plug-in Management (OpenVRLoader)», режим из `OpenVRSettings` |
-| `both` | legacy и XR Management вместе (если пакет есть) | `VR_BOTH_SYSTEMS` W |
+| `xr-openvr-spi` | XR Management, загрузчик OpenVR (заглушка), SPI | шапка «XR Plug-in Management (OpenVRLoader)», режим SPI из `OpenVRSettings`, нет `VR_NOT_ENABLED`, `VR_STEREO_MODE` |
+| `xr-openvr-multipass` | то же, Multi Pass | `VR_STEREO_MODE` W, `DC_BUDGET` W (оценка ×2) |
+| `xr-mock` | XR Management, загрузчик не OpenVR | `VR_NO_OPENVR` W, режим stereo «неизвестно» |
+| `xr-both` | legacy OpenVR и XR Management вместе | `VR_BOTH_SYSTEMS` W |
 | `quality` | Standalone по умолчанию — уровень, отличный от текущего; на нём: AA 2x, Pixel Lights 4, Shadow Resolution Very High, Shadow Distance 150, Anisotropic Disable, Skin Weights Unlimited | `VR_MSAA`, `LIGHT_PIXEL_LIGHTS`, `LIGHT_SHADOW_RESOLUTION` W, `LIGHT_SHADOW_DISTANCE`, `TEX_ANISO_DISABLED`, `MESH_QUALITY_SKIN_WEIGHTS`; текущий уровень после прогона прежний |
 | `project` | GPU Skinning off, Solver Iterations 10, Fixed Timestep 0.005, Realtime GI on, Deferred в Tier 3, Speaker Mode 5.1, DSP Best Latency | `MESH_GPU_SKINNING_OFF`, `ANIM_HEAVY_SKIN_CPU`, `PHYS_SOLVER_ITERATIONS`, `PHYS_FIXED_STEP_FAST`, `LIGHT_REALTIME_GI`, `VR_DEFERRED_TIER`, `AUDIO_SPEAKER_MODE`, `AUDIO_DSP_BUFFER` |
 | `fixed-step-90` | Fixed Timestep 0.0111 | нет `PHYS_FIXED_STEP_*` |
@@ -210,6 +216,6 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 - [x] `QualitySettings.SetQualityLevel` туда и обратно не оставляет изменённым `QualitySettings.asset`.
 - [x] `m_PerPlatformDefaultQuality`, `m_BuildTargetVRSettings`, `m_DSPBufferSize`,
       `m_DefaultSpeakerMode` читаются через `SerializedObject` (имена полей в 2019.4).
-- [ ] XR Management (если пакет поставлен): `XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget`,
+- [x] XR Management (если пакет поставлен): `XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget`,
       `Manager.activeLoaders` / `loaders`, поле `OpenVRSettings.StereoRenderingMode`.
 - [ ] `Application.onBeforeRender` и `EditorApplication.update` в Play Mode дают по одному замеру на кадр.

@@ -1,0 +1,27 @@
+{
+    "name": "AuditTests.XRSetup",
+    "references": [
+        "Unity.XR.Management",
+        "Unity.XR.Management.Editor",
+        "AuditTests.XRStubs"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "AUDIT_XR_MANAGEMENT"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.xr.management",
+            "expression": "",
+            "define": "AUDIT_XR_MANAGEMENT"
+        }
+    ],
+    "noEngineReferences": false
+}

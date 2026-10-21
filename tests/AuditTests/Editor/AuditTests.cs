@@ -124,9 +124,35 @@ namespace AuditTestsEditor
                 case "legacy-no-openvr": AuditTestSettings.SetLegacyVr(new[] { "None" }, StereoRenderingPath.Instancing); break;
                 case "project": AuditTestSettings.ApplyProjectVariant(); break;
                 case "fixed-step-90": Time.fixedDeltaTime = 1f / 90f; break;
+                case "xr-both": AuditTestSettings.SetLegacyVr(new[] { "OpenVR" }, StereoRenderingPath.Instancing); break;
+            }
+            switch (variant)
+            {
+                case "xr-openvr-spi":
+                case "xr-both": XrConfigure("openvr", "SinglePassInstanced"); break;
+                case "xr-openvr-multipass": XrConfigure("openvr", "MultiPass"); break;
+                case "xr-mock": XrConfigure("mock", "SinglePassInstanced"); break;
+                default: XrConfigure(null, "SinglePassInstanced"); break;
             }
             AuditTestScene.Build(variant);
             AssetDatabase.SaveAssets();
+        }
+
+        // XR Plug-in Management setup lives in an assembly that exists only with the package.
+        static Type XrSetupType()
+        {
+            return Type.GetType("AuditTestsXR.XrSetup, AuditTests.XRSetup");
+        }
+
+        static void XrConfigure(string loader, string stereo)
+        {
+            var type = XrSetupType();
+            if (type == null)
+            {
+                if (loader != null) throw new InvalidOperationException("XR Management is not installed in the test project");
+                return;
+            }
+            type.GetMethod("Configure").Invoke(null, new object[] { loader, stereo });
         }
 
         static int RunVariant(string variant)
@@ -171,7 +197,8 @@ namespace AuditTestsEditor
             if (variant == "base")
             {
                 Check(!result.xr.AnyEnabled && result.xr.SystemName == "None", "XR: none detected");
-                Check(!result.xr.managementInstalled, "XR Management not installed in the test project");
+                Check(result.xr.managementInstalled == (XrSetupType() != null) && !result.xr.ManagementEnabled,
+                    "XR Management detected as installed=" + (XrSetupType() != null) + " without loaders");
                 log.AppendLine("info: estimates tris=" + result.sceneTris + " drawCalls=" + result.drawCallEstimate +
                                " textureMB=" + result.textureMemoryMB.ToString("F1"));
                 var instancing = result.issues.FirstOrDefault(i => i.assetPath.EndsWith("M_NoInst.mat"));
@@ -180,6 +207,14 @@ namespace AuditTestsEditor
                 log.AppendLine("info: instancing check for M_NoInst = " + (instancing != null ? instancing.checkId : "none"));
             }
             if (variant == "budgets-low") BudgetsLow(result);
+            if (variant == "xr-openvr-spi" || variant == "xr-openvr-multipass")
+            {
+                Check(result.xr.SystemName == "XRManagement" && result.xr.HasOpenVR, "XR: XR Management with OpenVR (" + result.xr.SystemName + ", " + string.Join(",", result.xr.loaders) + ")");
+                var mode = variant == "xr-openvr-spi" ? StereoMode.SinglePassInstanced : StereoMode.MultiPass;
+                Check(result.xr.stereoMode == mode, "XR: stereo " + mode + " read from OpenVRSettings (got " + result.xr.stereoMode + ")");
+            }
+            if (variant == "xr-mock") Check(result.xr.ManagementEnabled && !result.xr.HasOpenVR && result.xr.stereoMode == StereoMode.Unknown, "XR: non-OpenVR loader, stereo unknown");
+            if (variant == "xr-both") Check(result.xr.BothEnabled && result.xr.SystemName == "Legacy+XRManagement", "XR: both systems detected");
 
             return Finish(variant, result);
         }
@@ -322,8 +357,9 @@ namespace AuditTestsEditor
             Has("VR_CAMERA_HDR", Severity.Warning, "Main Camera");
             Not("VR_CAMERA_HDR", "Cam/Far");
             Has("VR_FAR_CLIP", Severity.Info, "Cam/Far");
-            // Unity clamps nearClipPlane to 0.01, so "< 0.01" can never fire (finding for the owner).
-            Not("VR_NEAR_CLIP", "Cam/Near");
+            // Unity clamps nearClipPlane to 0.01; the check fires below 0.05.
+            Has("VR_NEAR_CLIP", Severity.Info, "Cam/Near");
+            Not("VR_NEAR_CLIP", "Cam/Far");
             Has("VR_DEFERRED_CAMERA", Severity.Warning, "Cam/Deferred");
             Has("VR_CAMERA_NO_MSAA", Severity.Warning, "Cam/NoMsaa");
             Not("VR_CAMERA_HDR|VR_FAR_CLIP|VR_NEAR_CLIP|VR_CAMERA_NO_MSAA", "Cam/ToTexture");
@@ -365,15 +401,16 @@ namespace AuditTestsEditor
 
         static void ExpectSettings(string variant, AuditResult result)
         {
-            bool vrOn = variant.StartsWith("legacy-");
+            bool vrOn = variant.StartsWith("legacy-") || variant.StartsWith("xr-");
             if (vrOn) Not("VR_NOT_ENABLED");
             else Has("VR_NOT_ENABLED", Severity.Critical);
 
-            if (variant == "legacy-multipass") Has("VR_STEREO_MODE", Severity.Warning, contains: "MultiPass");
+            if (variant == "legacy-multipass" || variant == "xr-openvr-multipass") Has("VR_STEREO_MODE", Severity.Warning, contains: "MultiPass");
             else Not("VR_STEREO_MODE");
-            if (variant == "legacy-no-openvr") Has("VR_NO_OPENVR", Severity.Warning);
+            if (variant == "legacy-no-openvr" || variant == "xr-mock") Has("VR_NO_OPENVR", Severity.Warning);
             else Not("VR_NO_OPENVR");
-            Not("VR_BOTH_SYSTEMS");
+            if (variant == "xr-both") Has("VR_BOTH_SYSTEMS", Severity.Warning);
+            else Not("VR_BOTH_SYSTEMS");
 
             if (variant == "quality")
             {
@@ -422,7 +459,7 @@ namespace AuditTestsEditor
                 Has("VR_NO_OCCLUSION", Severity.Info);
             }
             // Base scene estimates about 940 draw calls: doubled by multi-pass or with the extra objects of "counts" it passes 1000.
-            if (variant == "legacy-multipass" || variant == "counts")
+            if (variant == "legacy-multipass" || variant == "xr-openvr-multipass" || variant == "counts")
             {
                 Has("DC_BUDGET", Severity.Warning);
                 Not("MESH_SCENE_TRIS|TEX_MEMORY");

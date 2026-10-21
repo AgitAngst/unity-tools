@@ -70,8 +70,8 @@ namespace UnityTools.SceneOptimization
                     ctx.Report("VR_CAMERA_HDR", Category.VRSpecific, Severity.Warning, camera);
                 if (camera.farClipPlane > VRBudgets.FarClipInfo)
                     ctx.Report("VR_FAR_CLIP", Category.VRSpecific, Severity.Info, camera, camera.farClipPlane, VRBudgets.FarClipInfo);
-                if (camera.nearClipPlane < VRBudgets.NearClipWarning)
-                    ctx.Report("VR_NEAR_CLIP", Category.VRSpecific, Severity.Warning, camera, camera.nearClipPlane, VRBudgets.NearClipWarning);
+                if (camera.nearClipPlane < VRBudgets.NearClipInfo)
+                    ctx.Report("VR_NEAR_CLIP", Category.VRSpecific, Severity.Info, camera, camera.nearClipPlane, VRBudgets.NearClipInfo);
                 foreach (var behaviour in camera.GetComponents<MonoBehaviour>())
                     if (behaviour != null && ReflectionUtil.DeclaresMethod(behaviour.GetType(), "OnRenderImage"))
                         ctx.Report("VR_IMAGE_EFFECT", Category.VRSpecific, Severity.Warning, camera, behaviour.GetType().Name);
