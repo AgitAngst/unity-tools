@@ -107,7 +107,7 @@
 Preload дольше 30 с, priority 0 больше чем у 5 источников, shadow distance больше 50 м, solver
 iterations больше 6, far clip больше 1000, near clip меньше 0.05, MSAA меньше 4x, occlusion — больше 100
 статичных рендереров, глубина иерархии больше 10, FPS: зелёный от 89, жёлтый от 80; допуск Fixed Timestep
-0.0002 с; исправление Load Type — Streaming для клипов от 60 с.
+0.0002 с; развёртка под свет — допуск 0–1 0.001, наложения от 1 % на сетке 256 × 256; исправление Load Type — Streaming для клипов от 60 с.
 
 ## Проверки
 
@@ -145,7 +145,9 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | **Lighting** | | | |
 | `LIGHT_REALTIME` | W | Point/Spot в Realtime | — |
 | `LIGHT_SHADOWED` | W / C | Realtime/Mixed источников с тенями больше порога | — |
-| `LIGHT_NO_UV1` | W | Contribute GI + Receive GI Lightmaps, у меша нет UV1 | — |
+| `LIGHT_NO_UV1` | W | меш объекта под lightmap (Contribute GI + Receive GI Lightmaps) без UV1; одна запись на меш. Исправление — только у модели с выключенной галочкой Generate Lightmap UVs: включить её | R |
+| `LIGHT_UV1_OUT_OF_RANGE` | W | UV1 меша под lightmap выходит за 0–1 (допуск 0.001), доля вершин | — |
+| `LIGHT_UV1_OVERLAP` | W | треугольники UV1 накладываются: больше 1 % занятых текселей на сетке 256 × 256 (общие рёбра не в счёт) | — |
 | `LIGHT_SHADOW_RESOLUTION` | W / I | VeryHigh / High | — |
 | `LIGHT_SHADOW_DISTANCE` | I | дальше 50 м | — |
 | `LIGHT_PIXEL_LIGHTS` | W | Pixel Light Count больше 1 | — |

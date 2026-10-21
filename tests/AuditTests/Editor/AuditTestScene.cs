@@ -148,6 +148,12 @@ namespace AuditTestsEditor
             var giProbes = MeshObj("GI/Probes", A.Grid12k, A.Plain);
             GameObjectUtility.SetStaticEditorFlags(giProbes, StaticEditorFlags.ContributeGI);
             giProbes.GetComponent<MeshRenderer>().receiveGI = ReceiveGI.LightProbes;
+            Lightmapped("GI/Uv1Good", A.Uv1Good);
+            Lightmapped("GI/Uv1Outside", A.Uv1Outside);
+            Lightmapped("GI/Uv1Overlap", A.Uv1Overlap);
+            Lightmapped("GI/ModelNoUv", A.ObjLmNoUv);
+            Lightmapped("GI/ModelNoUv2", A.ObjLmNoUv);
+            Lightmapped("GI/ModelGen", A.ObjLmGen);
 
             // Physics.
             Concave("Phys/ConcaveDynamic").AddComponent<Rigidbody>().isKinematic = false;
@@ -253,6 +259,13 @@ namespace AuditTestsEditor
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>().sharedMaterial = material;
             return go;
+        }
+
+        static void Lightmapped(string path, Mesh mesh)
+        {
+            var go = MeshObj(path, mesh, A.Plain);
+            GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.ContributeGI | StaticEditorFlags.BatchingStatic);
+            go.GetComponent<MeshRenderer>().receiveGI = ReceiveGI.Lightmaps;
         }
 
         static GameObject Concave(string path)

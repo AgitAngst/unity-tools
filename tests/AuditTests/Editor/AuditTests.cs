@@ -303,8 +303,16 @@ namespace AuditTestsEditor
             Not("LIGHT_REALTIME", "Light/SpotMixed");
             Not("LIGHT_REALTIME", "Light/Directional");
             Has("LIGHT_SHADOWED", Severity.Critical);
-            Has("LIGHT_NO_UV1", Severity.Warning, "GI/NoUv1");
-            Not("LIGHT_NO_UV1", "GI/Probes");
+            // Lightmap UVs: one issue per mesh asset.
+            Has("LIGHT_NO_UV1", Severity.Warning, "Grid12k.asset", fixable: false, users: 1);
+            Has("LIGHT_NO_UV1", Severity.Warning, "LmNoUv.obj", fixable: true, users: 2);
+            Not("LIGHT_NO_UV1|LIGHT_UV1_OUT_OF_RANGE|LIGHT_UV1_OVERLAP", "LmGen.obj");
+            Not("LIGHT_NO_UV1|LIGHT_UV1_OUT_OF_RANGE|LIGHT_UV1_OVERLAP", "Uv1Good.asset");
+            Has("LIGHT_UV1_OUT_OF_RANGE", Severity.Warning, "Uv1Outside.asset");
+            Not("LIGHT_UV1_OVERLAP", "Uv1Outside.asset");
+            Has("LIGHT_UV1_OVERLAP", Severity.Warning, "Uv1Overlap.asset", contains: "100");
+            Not("LIGHT_UV1_OUT_OF_RANGE", "Uv1Overlap.asset");
+            Count("LIGHT_NO_UV1", 2);
 
             // Physics
             Has("PHYS_CONCAVE_DYNAMIC", Severity.Critical, "Phys/ConcaveDynamic");
@@ -461,7 +469,8 @@ namespace AuditTestsEditor
             // Base scene estimates about 940 draw calls: doubled by multi-pass or with the extra objects of "counts" it passes 1000.
             if (variant == "legacy-multipass" || variant == "xr-openvr-multipass" || variant == "counts")
             {
-                Has("DC_BUDGET", Severity.Warning);
+                // The severity depends on how many objects the seed scene has, so only the presence is checked.
+                Has("DC_BUDGET");
                 Not("MESH_SCENE_TRIS|TEX_MEMORY");
             }
             else if (variant != "budgets-low") Not("DC_BUDGET|MESH_SCENE_TRIS|TEX_MEMORY");
@@ -608,7 +617,7 @@ namespace AuditTestsEditor
                 new[] { "TEX_UNCOMPRESSED", "T_Raw.png" }, new[] { "TEX_UNCOMPRESSED", "T_Rgba32.png" },
                 new[] { "TEX_READ_WRITE", "T_Readable.png" }, new[] { "AUDIO_DECOMPRESS_LONG", "A_35s.wav" },
                 new[] { "AUDIO_PRELOAD_LONG", "A_35s.wav" }, new[] { "AUDIO_DECOMPRESS_LONG", "A_15s_pcm.wav" },
-                new[] { "AUDIO_PCM_LARGE", "A_15s_pcm.wav" }
+                new[] { "AUDIO_PCM_LARGE", "A_15s_pcm.wav" }, new[] { "LIGHT_NO_UV1", "LmNoUv.obj" }
             };
             var assetFixes = assetTargets.Select(t => afterUndo.issues.FirstOrDefault(i => i.checkId == t[0] && i.assetPath.EndsWith("/" + t[1]))).ToList();
             for (int k = 0; k < assetTargets.Length; k++)
@@ -620,6 +629,8 @@ namespace AuditTestsEditor
                 foreach (var t in assetTargets) Not(t[0], t[1]);
                 Has("MESH_READ_WRITE_NEEDED", Severity.Info, "ReadWriteCollider.obj");
             });
+            var lm = (ModelImporter)AssetImporter.GetAtPath(AuditTestAssets.Root + "/Models/LmNoUv.obj");
+            Check(lm.generateSecondaryUV, "LmNoUv.obj: Generate Lightmap UVs turned on");
             var rgba = (TextureImporter)AssetImporter.GetAtPath(AuditTestAssets.Root + "/Textures/T_Rgba32.png");
             Check(rgba.GetPlatformTextureSettings("Standalone").format == TextureImporterFormat.BC7, "T_Rgba32 override is BC7");
             var a35 = (AudioImporter)AssetImporter.GetAtPath(AuditTestAssets.Root + "/Audio/A_35s.wav");

@@ -18,6 +18,7 @@ namespace AuditTestsEditor
         public static Material Sky, Plain, NoInst, NoInst3, Big4096, Big8192, Small1024, FakeNormal, Normal, NoMips, Raw, Rgba32, Readable;
         public static Texture2D TOverlayOnly;
         public static Cubemap TCube;
+        public static Mesh Uv1Good, Uv1Outside, Uv1Overlap, ObjLmNoUv, ObjLmGen;
         public static Mesh Grid12k, Grid30k, Grid16kSkin, TwoSub, Skin8, ObjReadWrite, ObjReadWriteCollider, ObjNotOptimized, ObjClean;
         public static AudioClip A35, A15Pcm, A5;
         public static PostProcessProfile ProfileOn, ProfileOff;
@@ -95,6 +96,17 @@ namespace AuditTestsEditor
             ObjReadWriteCollider = Model("ReadWriteCollider", true, MeshOptimizationFlags.Everything);
             ObjNotOptimized = Model("NotOptimized", false, MeshOptimizationFlags.PolygonOrder);
             ObjClean = Model("Clean", false, MeshOptimizationFlags.Everything);
+            ObjLmNoUv = Model("LmNoUv", false, MeshOptimizationFlags.Everything);
+            ObjLmGen = Model("LmGen", false, MeshOptimizationFlags.Everything, true);
+
+            Uv1Good = MeshAsset("Uv1Good", () => { var m = Grid(10, 10); m.uv2 = m.uv; return m; });
+            Uv1Outside = MeshAsset("Uv1Outside", () =>
+            {
+                var m = Grid(10, 10);
+                m.uv2 = m.uv.Select(p => p * 2f).ToArray();
+                return m;
+            });
+            Uv1Overlap = MeshAsset("Uv1Overlap", BuildOverlap);
 
             A35 = Clip("A_35s", 35f, AudioClipLoadType.DecompressOnLoad, AudioCompressionFormat.Vorbis, true);
             A15Pcm = Clip("A_15s_pcm", 15f, AudioClipLoadType.DecompressOnLoad, AudioCompressionFormat.PCM, false);
@@ -254,7 +266,30 @@ namespace AuditTestsEditor
             "v -0.5 -0.5 0.5\nv 0.5 -0.5 0.5\nv 0.5 0.5 0.5\nv -0.5 0.5 0.5\n" +
             "f 1 2 3\nf 1 3 4\nf 5 7 6\nf 5 8 7\nf 1 5 6\nf 1 6 2\nf 2 6 7\nf 2 7 3\nf 3 7 8\nf 3 8 4\nf 4 8 5\nf 4 5 1\n";
 
-        static Mesh Model(string name, bool readable, MeshOptimizationFlags optimization)
+        // Two quads with the same lightmap UVs: they overlap completely.
+        static Mesh BuildOverlap()
+        {
+            var mesh = new Mesh
+            {
+                vertices = new[]
+                {
+                    new Vector3(0, 0, 0), new Vector3(1, 0, 0), new Vector3(0, 0, 1), new Vector3(1, 0, 1),
+                    new Vector3(2, 0, 0), new Vector3(3, 0, 0), new Vector3(2, 0, 1), new Vector3(3, 0, 1)
+                },
+                triangles = new[] { 0, 2, 1, 1, 2, 3, 4, 6, 5, 5, 6, 7 }
+            };
+            var uv = new[]
+            {
+                new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.05f), new Vector2(0.05f, 0.95f), new Vector2(0.95f, 0.95f),
+                new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.05f), new Vector2(0.05f, 0.95f), new Vector2(0.95f, 0.95f)
+            };
+            mesh.uv = uv;
+            mesh.uv2 = uv;
+            mesh.RecalculateNormals();
+            return mesh;
+        }
+
+        static Mesh Model(string name, bool readable, MeshOptimizationFlags optimization, bool lightmapUv = false)
         {
             var path = Root + "/Models/" + name + ".obj";
             if (!File.Exists(path))
@@ -264,8 +299,9 @@ namespace AuditTestsEditor
             }
             var importer = (ModelImporter)AssetImporter.GetAtPath(path);
             if (importer.isReadable != readable || importer.meshOptimizationFlags != optimization ||
-                importer.materialImportMode != ModelImporterMaterialImportMode.None)
+                importer.materialImportMode != ModelImporterMaterialImportMode.None || importer.generateSecondaryUV != lightmapUv)
             {
+                importer.generateSecondaryUV = lightmapUv;
                 importer.isReadable = readable;
                 importer.meshOptimizationFlags = optimization;
                 importer.materialImportMode = ModelImporterMaterialImportMode.None;

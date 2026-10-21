@@ -2,7 +2,7 @@
 
 ## Итоги прогона 22.10.2026
 
-Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **25 шагов из 25 зелёные** (14 вариантов настроек, из них 4 — XR Plug-in Management;
+Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **25 шагов из 25 зелёные** (с 0.6.0 — и проверки развёртки под свет) (14 вариантов настроек, из них 4 — XR Plug-in Management;
 экспорт — модуль и 5 запусков из командной строки, исправления, SteamVR-заглушка в двух вариантах). Утилита
 импортируется без ошибок и предупреждений, утечек NativeArray нет. Тесты — `tests/AuditTests/`, отчёты —
 `unity-tools-scratch\reports\audit-tests\`.

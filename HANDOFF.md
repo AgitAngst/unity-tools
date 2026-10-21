@@ -1,6 +1,6 @@
 # HANDOFF — unity-tools
 
-Версия 0.5.0 (22.10.2026). Начинать с [docs/README.md](docs/README.md); план — [SPEC.md](SPEC.md), тесты —
+Версия 0.6.0 (22.10.2026). Начинать с [docs/README.md](docs/README.md); план — [SPEC.md](SPEC.md), тесты —
 [TESTPLAN.md](TESTPLAN.md).
 
 ## Сделано
@@ -11,6 +11,8 @@
 - Автотесты в Unity 2019.4.41f2: `scripts\run-audit-tests.ps1`, 25 шагов из 25 зелёные (в т. ч. XR Plug-in
   Management на заглушках OpenVR). Снимки окна — `scripts\shoot-audit-window.ps1`.
 - Живую проверку (окно, снимок профайлера, настоящая сцена) владелец подтвердил 22.10.2026.
+- 0.6.0: проверки развёртки под свет — нет UV1 (и исправление «включить Generate Lightmap UVs»), UV1 за 0–1,
+  наложения UV1. Изменение OpenSpec `add-lightmap-uv-checks`; вживую владелец ещё не смотрел.
 
 ## Осталось
 

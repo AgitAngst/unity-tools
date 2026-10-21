@@ -46,6 +46,9 @@ namespace UnityTools.SceneOptimization
         // Unity clamps the near plane to 0.01, so the check looks at values close to that minimum (owner, 22.10.2026).
         public const float NearClipInfo = 0.05f;
         public const int OcclusionStaticRenderers = 100;
+        public const float LightmapUvTolerance = 0.001f;
+        public const int LightmapUvOverlapGrid = 256;
+        public const float LightmapUvOverlapMinShare = 0.01f;
         public const int HierarchyDepthInfo = 10;
         public const int MinAntiAliasing = 4;
         public const float FpsWarning = 89f;

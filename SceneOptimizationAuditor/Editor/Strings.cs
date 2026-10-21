@@ -114,7 +114,9 @@ namespace UnityTools.SceneOptimization
                 "TEX_NOT_TRILINEAR", "Textures without trilinear filtering", "Текстуры без трилинейной фильтрации",
                 "LIGHT_REALTIME", "Realtime point or spot light", "Realtime point или spot",
                 "LIGHT_SHADOWED", "Too many shadowed lights", "Слишком много источников с тенями",
-                "LIGHT_NO_UV1", "Lightmapped mesh without UV1", "Меш под lightmap без UV1",
+                "LIGHT_NO_UV1", "No lightmap UVs", "Нет развёртки под свет (UV1)",
+                "LIGHT_UV1_OUT_OF_RANGE", "Lightmap UVs outside 0–1", "Развёртка под свет за пределами 0–1",
+                "LIGHT_UV1_OVERLAP", "Overlapping lightmap UVs", "Наложения в развёртке под свет",
                 "LIGHT_SHADOW_RESOLUTION", "High shadow resolution", "Высокое разрешение теней",
                 "LIGHT_SHADOW_DISTANCE", "Long shadow distance", "Большая дальность теней",
                 "LIGHT_PIXEL_LIGHTS", "More than one pixel light", "Больше одного pixel light",
@@ -402,8 +404,16 @@ namespace UnityTools.SceneOptimization
             Add("LIGHT_SHADOWED", "{0} realtime or mixed lights cast shadows (limit {1}): {2}.", "{0} realtime/mixed источников с тенями (порог {1}): {2}.");
             Add("LIGHT_SHADOWED.fix", "Shadow maps are expensive at the Vive Pro resolution; keep one shadowed light.",
                 "Карты теней дороги при разрешении Vive Pro; оставьте один источник с тенями.");
-            Add("LIGHT_NO_UV1", "Contributes to GI with lightmaps, but mesh {0} has no UV1.", "Участвует в GI с lightmap, но у меша {0} нет UV1.");
-            Add("LIGHT_NO_UV1.fix", "Enable Generate Lightmap UVs in the model import settings.", "Включите Generate Lightmap UVs в импорте модели.");
+            Add("LIGHT_NO_UV1", "Mesh {0} is baked into lightmaps but has no lightmap UVs (UV1).", "Меш {0} запекается в lightmap, но у него нет развёртки под свет (UV1).");
+            Add("LIGHT_NO_UV1.fix", "Turn on Generate Lightmap UVs in the model import settings, or add a second UV set in the 3D editor.",
+                "Включите галочку Generate Lightmap UVs в импорте модели или сделайте второй UV-канал в 3D-редакторе.");
+            Add("LIGHT_NO_UV1.do", "Turn on Generate Lightmap UVs in the model import settings", "Включить Generate Lightmap UVs в импорте модели");
+            Add("LIGHT_UV1_OUT_OF_RANGE", "Lightmap UVs (UV1) of mesh {0} go outside 0–1: {1}% of vertices.", "Развёртка под свет (UV1) меша {0} выходит за 0–1: {1}% вершин.");
+            Add("LIGHT_UV1_OUT_OF_RANGE.fix", "Lightmap UVs must fit into 0–1: repack them in the 3D editor or use Generate Lightmap UVs.",
+                "Развёртка под свет должна умещаться в 0–1: перепакуйте её в 3D-редакторе или включите Generate Lightmap UVs.");
+            Add("LIGHT_UV1_OVERLAP", "Lightmap UVs (UV1) of mesh {0} overlap: {1}% of lightmap texels are shared.", "Развёртка под свет (UV1) меша {0} накладывается: {1}% текселей lightmap общие.");
+            Add("LIGHT_UV1_OVERLAP.fix", "Overlapping islands get each other's light and shadows: unwrap UV1 without overlaps or use Generate Lightmap UVs.",
+                "Наложенные острова получают чужой свет и тени: разверните UV1 без наложений или включите Generate Lightmap UVs.");
             Add("LIGHT_SHADOW_RESOLUTION", "Shadow resolution is {0}.", "Разрешение теней — {0}.");
             Add("LIGHT_SHADOW_RESOLUTION.fix", "Lower it to save GPU time and memory.", "Понизьте, чтобы сберечь время GPU и память.");
             Add("LIGHT_SHADOW_DISTANCE", "Shadow distance is {0} m (more than {1} m).", "Дальность теней {0} м (больше {1} м).");

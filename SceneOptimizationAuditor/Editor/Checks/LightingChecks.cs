@@ -27,15 +27,7 @@ namespace UnityTools.SceneOptimization
             else if (shadowed.Count > b.shadowLightsWarning)
                 ctx.Report("LIGHT_SHADOWED", Category.Lighting, Severity.Warning, null, shadowed.Count, b.shadowLightsWarning, string.Join(", ", shadowed.ToArray()));
 
-            foreach (var renderer in ctx.All<MeshRenderer>())
-            {
-                if (!AuditContext.IsActive(renderer)) continue;
-                var flags = GameObjectUtility.GetStaticEditorFlags(renderer.gameObject);
-                if ((flags & StaticEditorFlags.ContributeGI) == 0 || renderer.receiveGI != ReceiveGI.Lightmaps) continue;
-                var mesh = AuditContext.MeshOf(renderer);
-                if (mesh != null && !mesh.HasVertexAttribute(VertexAttribute.TexCoord1))
-                    ctx.Report("LIGHT_NO_UV1", Category.Lighting, Severity.Warning, renderer, mesh.name);
-            }
+            AuditLightmapUv(ctx);
 
             if (q.shadows != ShadowQuality.Disable)
             {
