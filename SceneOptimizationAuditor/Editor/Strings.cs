@@ -80,14 +80,137 @@ namespace UnityTools.SceneOptimization
             AddAudio();
             AddVr();
             AddGeneral();
+            AddTitles();
+        }
+
+        // Plain names of the checks: titles of the grouped list.
+        static void AddTitles()
+        {
+            var titles = new[]
+            {
+                "DC_BUDGET", "Draw call budget exceeded", "Превышен бюджет draw calls",
+                "DC_SHADOW_CASTERS", "Shadow casters", "Объекты с тенями",
+                "DC_MANY_MATERIALS", "Too many materials on a renderer", "Слишком много материалов на рендерере",
+                "DC_MULTI_MATERIAL", "Several materials on a renderer", "Несколько материалов на рендерере",
+                "DC_EXTRA_MATERIALS", "More materials than submeshes", "Материалов больше, чем submesh",
+                "DC_STATIC_CANDIDATE", "Could be Batching Static", "Можно сделать Batching Static",
+                "DC_INSTANCING_OFF", "GPU Instancing is off", "Выключен GPU Instancing",
+                "DC_INSTANCING_UNKNOWN", "GPU Instancing is off (shader not checked)", "Выключен GPU Instancing (шейдер не проверен)",
+                "MESH_SCENE_TRIS", "Triangle budget exceeded", "Превышен бюджет треугольников",
+                "MESH_NO_LOD", "Heavy mesh without LOD", "Тяжёлый меш без LOD",
+                "MESH_READ_WRITE", "Model with Read/Write", "Модель с Read/Write",
+                "MESH_READ_WRITE_NEEDED", "Model with Read/Write (used by colliders or particles)", "Модель с Read/Write (нужен коллайдерам или частицам)",
+                "MESH_NOT_OPTIMIZED", "Mesh not fully optimized", "Меш оптимизирован не полностью",
+                "MESH_BONES_PER_VERTEX", "More than 4 bones per vertex", "Больше 4 костей на вершину",
+                "MESH_QUALITY_SKIN_WEIGHTS", "Skin Weights above 4 bones", "Skin Weights больше 4 костей",
+                "MESH_GPU_SKINNING_OFF", "GPU Skinning is off", "Выключен GPU Skinning",
+                "TEX_SIZE", "Texture too large", "Слишком большая текстура",
+                "TEX_NOT_NORMAL_MAP", "Normal map of the wrong type", "Карта нормалей не того типа",
+                "TEX_NO_MIPMAPS", "Texture without mipmaps", "Текстура без mipmaps",
+                "TEX_UNCOMPRESSED", "Uncompressed texture", "Несжатая текстура",
+                "TEX_READ_WRITE", "Texture with Read/Write", "Текстура с Read/Write",
+                "TEX_MEMORY", "Texture memory budget exceeded", "Превышен бюджет памяти текстур",
+                "TEX_ANISO_DISABLED", "Anisotropic filtering off", "Анизотропная фильтрация выключена",
+                "TEX_NOT_TRILINEAR", "Textures without trilinear filtering", "Текстуры без трилинейной фильтрации",
+                "LIGHT_REALTIME", "Realtime point or spot light", "Realtime point или spot",
+                "LIGHT_SHADOWED", "Too many shadowed lights", "Слишком много источников с тенями",
+                "LIGHT_NO_UV1", "Lightmapped mesh without UV1", "Меш под lightmap без UV1",
+                "LIGHT_SHADOW_RESOLUTION", "High shadow resolution", "Высокое разрешение теней",
+                "LIGHT_SHADOW_DISTANCE", "Long shadow distance", "Большая дальность теней",
+                "LIGHT_PIXEL_LIGHTS", "More than one pixel light", "Больше одного pixel light",
+                "LIGHT_REALTIME_GI", "Realtime GI is on", "Включён Realtime GI",
+                "PHYS_CONCAVE_DYNAMIC", "Non-convex collider on a dynamic body", "Невыпуклый коллайдер на динамическом теле",
+                "PHYS_CONCAVE_KINEMATIC", "Non-convex collider on a kinematic body", "Невыпуклый коллайдер на kinematic теле",
+                "PHYS_RENDER_MESH_COLLIDER", "Collider on a heavy render mesh", "Коллайдер на тяжёлом рендер-меше",
+                "PHYS_SOLVER_ITERATIONS", "Many solver iterations", "Много итераций решателя",
+                "PHYS_FIXED_STEP_SLOW", "Physics slower than 90 Hz", "Физика реже 90 Гц",
+                "PHYS_FIXED_STEP_FAST", "Physics faster than 90 Hz", "Физика чаще 90 Гц",
+                "ANIM_ALWAYS_ANIMATE", "Animator always animates", "Animator анимирует всегда",
+                "ANIM_NO_CONTROLLER", "Animator without controller", "Animator без контроллера",
+                "ANIM_ROOT_MOTION", "Root motion without a handler", "Root motion без обработчика",
+                "ANIM_COUNT", "Too many active Animators", "Слишком много активных Animator",
+                "ANIM_UPDATE_OFFSCREEN", "Skinned mesh updates off-screen", "SkinnedMesh обновляется за кадром",
+                "ANIM_HEAVY_SKIN", "Heavy skinned mesh", "Тяжёлый SkinnedMesh",
+                "ANIM_HEAVY_SKIN_CPU", "Heavy skinned mesh on the CPU", "Тяжёлый SkinnedMesh на CPU",
+                "AUDIO_DECOMPRESS_LONG", "Long clip unpacked on load", "Длинный клип распаковывается при загрузке",
+                "AUDIO_PCM_LARGE", "Large PCM clip", "Большой PCM-клип",
+                "AUDIO_PRELOAD_LONG", "Long clip preloaded", "Длинный клип с предзагрузкой",
+                "AUDIO_NO_CLIP", "AudioSource without a clip", "AudioSource без клипа",
+                "AUDIO_2D_SOURCE", "2D sound", "2D-звук",
+                "AUDIO_SOURCE_COUNT", "Too many AudioSources", "Слишком много AudioSource",
+                "AUDIO_PRIORITY_ZERO", "Many sources with top priority", "Много источников с высшим приоритетом",
+                "AUDIO_LISTENERS_MANY", "Several AudioListeners", "Несколько AudioListener",
+                "AUDIO_NO_LISTENER", "No AudioListener", "Нет AudioListener",
+                "AUDIO_LISTENER_NO_CAMERA", "AudioListener not on a camera", "AudioListener не на камере",
+                "AUDIO_DSP_BUFFER", "DSP buffer not tuned for VR", "DSP-буфер не настроен под VR",
+                "AUDIO_SPEAKER_MODE", "Surround speaker mode", "Объёмный режим динамиков",
+                "AUDIO_NO_SPATIALIZER", "No spatializer", "Нет spatializer",
+                "VR_NOT_ENABLED", "VR is not enabled", "VR не включён",
+                "VR_NO_OPENVR", "VR without OpenVR", "VR без OpenVR",
+                "VR_BOTH_SYSTEMS", "Two VR systems enabled", "Включены две VR-системы",
+                "VR_STEREO_MODE", "Stereo mode is not Single Pass Instanced", "Режим stereo не Single Pass Instanced",
+                "VR_DEFERRED_TIER", "Deferred rendering for Standalone", "Deferred для Standalone",
+                "VR_DEFERRED_CAMERA", "VR camera in Deferred", "VR-камера в Deferred",
+                "VR_MSAA", "MSAA below 4x", "MSAA ниже 4x",
+                "VR_NO_CAMERA", "No VR camera", "Нет VR-камеры",
+                "VR_CAMERA_NO_MSAA", "VR camera without MSAA", "VR-камера без MSAA",
+                "VR_CAMERA_HDR", "HDR on a VR camera", "HDR на VR-камере",
+                "VR_FAR_CLIP", "Far clip plane too far", "Дальняя плоскость слишком далеко",
+                "VR_NEAR_CLIP", "Near clip plane too close", "Ближняя плоскость слишком близко",
+                "VR_IMAGE_EFFECT", "Full-screen effect on a VR camera", "Полноэкранный эффект на VR-камере",
+                "VR_CANVAS_OVERLAY", "Canvas not visible in the headset", "Canvas не виден в шлеме",
+                "VR_CANVAS_CAMERA", "Canvas stuck to the head", "Canvas прилипает к голове",
+                "VR_PP_LAYER", "Post-processing on a camera", "Постобработка на камере",
+                "VR_PP_EFFECTS", "Post-processing effects on", "Включены эффекты постобработки",
+                "VR_STEAMVR_MISSING", "SteamVR Plugin not found", "SteamVR Plugin не найден",
+                "VR_STEAMVR_NOT_IN_SCENE", "No SteamVR rig in the scenes", "В сценах нет SteamVR-rig",
+                "VR_PROBE_EVERY_FRAME", "Reflection probe updated every frame", "Reflection Probe каждый кадр",
+                "VR_PROBE_REALTIME", "Realtime reflection probe", "Realtime Reflection Probe",
+                "VR_NO_OCCLUSION", "Occlusion culling not baked", "Occlusion culling не запечён",
+                "GEN_EMPTY_LEAF", "Empty object", "Пустой объект",
+                "GEN_NEGATIVE_SCALE", "Negative scale", "Отрицательный масштаб",
+                "GEN_DEEP_HIERARCHY", "Deep hierarchy", "Глубокая иерархия",
+                "GEN_MISSING_SCRIPTS", "Missing scripts", "Пропавшие скрипты",
+                "GEN_INACTIVE_HEAVY_MESH", "Inactive object with a heavy mesh", "Неактивный объект с тяжёлым мешем",
+                "GEN_INACTIVE_HEAVY_TEXTURE", "Inactive object with a large texture", "Неактивный объект с большой текстурой",
+            };
+            for (int i = 0; i + 2 < titles.Length; i += 3) Add(titles[i] + ".title", titles[i + 1], titles[i + 2]);
         }
 
         static void AddUi()
         {
             Add("ui.title", "VR Scene Audit", "VR-аудит сцены");
-            Add("ui.target", "Target: HTC Vive Pro (PC VR, 90 FPS)", "Цель: HTC Vive Pro (PC VR, 90 FPS)");
             Add("ui.run", "Run Audit", "Запустить аудит");
-            Add("ui.notRun", "Run the audit to see the issues of the loaded scenes.", "Запустите аудит, чтобы увидеть проблемы загруженных сцен.");
+            Add("ui.rerun", "Run Again", "Запустить снова");
+            Add("ui.run.tip", "Checks every loaded scene. Nothing is changed.", "Проверяет все загруженные сцены. Ничего не меняет.");
+            Add("ui.tab.problems", "Problems", "Проблемы");
+            Add("ui.tab.problems.n", "Problems ({0})", "Проблемы ({0})");
+            Add("ui.tab.budgets", "Budgets", "Бюджеты");
+            Add("ui.tab.profiler", "Profiler", "Профайлер");
+            Add("ui.empty.title", "VR scene audit", "Аудит VR-сцены");
+            Add("ui.empty.text", "Checks the open scenes for HTC Vive Pro at 90 FPS: draw calls, meshes, textures, lighting, physics, animation, audio and VR settings. Nothing is changed: fixes are applied only when you press Fix and confirm.",
+                "Проверит открытые сцены под HTC Vive Pro и 90 FPS: draw calls, меши, текстуры, свет, физику, анимацию, звук и настройки VR. Ничего не меняет: исправления — только по кнопке «Исправить» и после подтверждения.");
+            Add("ui.verdict.critical", "{0} critical problems: fix them first.", "Критичных проблем: {0} — исправьте их в первую очередь.");
+            Add("ui.verdict.warning", "No critical problems. {0} warnings are worth a look.", "Критичных проблем нет. Предупреждений: {0} — стоит просмотреть.");
+            Add("ui.verdict.clean", "No critical problems and no warnings.", "Нет ни критичных проблем, ни предупреждений.");
+            Add("ui.card.hidden", "hidden", "скрыто");
+            Add("ui.card.hide.tip", "Click to hide these problems.", "Нажмите, чтобы скрыть эти проблемы.");
+            Add("ui.card.show.tip", "Click to show these problems.", "Нажмите, чтобы показать эти проблемы.");
+            Add("ui.search.tip", "Filters by problem name, object, asset path or text.", "Фильтр по названию проблемы, объекту, пути ассета или тексту.");
+            Add("ui.byCategory", "By category", "По категориям");
+            Add("ui.byCategory.tip", "Group the list by category instead of by importance.", "Сгруппировать список по категориям, а не по важности.");
+            Add("ui.expandAll", "Expand all", "Развернуть все");
+            Add("ui.collapseAll", "Collapse all", "Свернуть все");
+            Add("ui.nothingMatches", "Nothing matches the filters.", "Под фильтры ничего не подходит.");
+            Add("ui.hiddenByFilter", "{0} problems are hidden by the importance filter above.", "Ещё {0} проблем скрыто фильтром важности выше.");
+            Add("ui.fixAll", "Fix all ({0})", "Исправить все ({0})");
+            Add("ui.fix.tip", "Shows the list of changes first; nothing changes without confirmation.", "Сначала покажет список изменений; без подтверждения ничего не меняется.");
+            Add("ui.howToFix", "How to fix: {0}", "Как исправить: {0}");
+            Add("ui.select.tip", "Select and highlight it.", "Выделить и подсветить.");
+            Add("ui.settings.tip", "Open the Project Settings page.", "Открыть страницу Project Settings.");
+            Add("ui.autoFix.tip", "Enables mipmaps and GPU Instancing where it is safe; shows the list first.", "Включит mipmaps и GPU Instancing там, где это безопасно; сначала покажет список.");
+            Add("ui.budgets.rerun", "Thresholds apply on the next run.", "Пороги применяются при следующем запуске аудита.");
+            Add("ui.prof.intro", "Plays the scene for a few seconds and measures frame time, draw calls and memory.", "Запускает сцену на несколько секунд и меряет время кадра, draw calls и память.");
             Add("ui.xr", "XR: {0}", "XR: {0}");
             Add("ui.xr.legacy", "Legacy VR ({0})", "Legacy VR ({0})");
             Add("ui.xr.management", "XR Plug-in Management ({0})", "XR Plug-in Management ({0})");
@@ -102,11 +225,14 @@ namespace UnityTools.SceneOptimization
             Add("ui.budget.tris", "Triangles (LOD0)", "Треугольники (LOD0)");
             Add("ui.budget.drawCalls", "Draw calls", "Draw calls");
             Add("ui.budget.texMem", "Texture memory", "Память текстур");
-            Add("ui.budget.value", "{0} / {1} (estimate)", "{0} / {1} (оценка)");
+            Add("ui.budget.value", "{0} of {1}", "{0} из {1}");
+            Add("ui.budget.tip", "Estimate against the Warning threshold; the bar ends at the Critical threshold.",
+                "Оценка против порога предупреждения; полоса заканчивается на критичном пороге.");
+            Add("ui.budget.note", "Estimates, not measurements: triangles count LOD0 without culling; draw calls count material slots and shadow passes without batching, doubled unless Single Pass Instanced; texture memory comes from format, size and mip levels.",
+                "Это оценки, а не замеры: треугольники — LOD0 без отсечения; draw calls — слоты материалов и проходы теней без батчинга, ×2, если не Single Pass Instanced; память текстур — по формату, размеру и mip-уровням.");
             Add("ui.search", "Search", "Поиск");
             Add("ui.showMore", "Show {0} more", "Показать ещё {0}");
             Add("ui.noIssues", "No issues.", "Проблем нет.");
-            Add("ui.summary", "Total: {0} critical, {1} warnings, {2} info", "Итого: критичных {0}, предупреждений {1}, сведений {2}");
             Add("ui.autoFix", "Auto-Fix Safe Issues ({0})", "Исправить безопасное ({0})");
             Add("ui.export", "Export Report", "Сохранить отчёт");
             Add("ui.fix", "Fix", "Исправить");
@@ -131,7 +257,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.b.animators", "Active Animators", "Активные Animator");
             Add("ui.b.skinnedTris", "Skinned mesh triangles", "Треугольники SkinnedMesh");
             Add("ui.b.audioSources", "Active AudioSources", "Активные AudioSource");
-            Add("ui.b.colliderTris", "MeshCollider triangles (Info)", "Треугольники MeshCollider (сведения)");
+            Add("ui.b.colliderTris", "MeshCollider triangles (Info)", "MeshCollider: треугольники");
+            Add("ui.mb", " MB", " МБ");
             Add("ui.b.frameTime", "Frame time, ms", "Время кадра, мс");
 
             Add("ui.export.title", "Export Report", "Сохранить отчёт");

@@ -33,3 +33,9 @@
   проверочном проекте `unity-tools-scratch\TestProject2019` (2019.4.41f2): по запуску Unity на шаг, итог —
   таблица кодов выхода, отчёты — `unity-tools-scratch\reports\audit-tests\<шаг>.txt`; код выхода 0 — все шаги
   прошли.
+- `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark]` — снимки окна SceneOptimizationAuditor в проверочном
+  проекте: пустое состояние, «Проблемы» RU/EN, «Бюджеты», «Профайлер» в тёмном скине (светлый в 2019.4 из кода
+  не переключить). Unity открывается с окном на время снимка.
+  Снимки — `unity-tools-scratch\reports\shots\`.
+- `scripts\window-shot.ps1 -Title <часть заголовка> -Out <файл.png>` — снимок одного окна Windows через
+  `PrintWindow`: работает, даже если окно перекрыто, и не захватывает ничего другого с экрана.

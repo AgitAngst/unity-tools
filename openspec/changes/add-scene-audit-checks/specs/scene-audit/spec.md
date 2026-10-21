@@ -71,11 +71,29 @@ SHALL be written only when the user saves budgets.
 - **THEN** the budget bar turns yellow and a Meshes Warning names the estimate and the threshold
 
 ### Requirement: Report window
-The window SHALL open from `Tools/VR Scene Optimization Audit`, SHALL show the target, XR state and
-checked quality level, a budget overview, severity filters, a search field, one foldout per category
-with counters, and a summary. Clicking an issue SHALL select and ping its object or asset, or open the
-related Project Settings page. All window texts SHALL be available in Russian and English; console
-output SHALL be in English.
+The window SHALL open from `Tools/VR Scene Optimization Audit` and SHALL have three tabs: Problems,
+Budgets and Profiler. Before the first run the Problems tab SHALL explain what the audit checks and
+offer one large Run button. After a run it SHALL show a one-line verdict (critical first, then warnings),
+three severity cards that toggle the severity filters, the XR state, quality level and scenes, compact
+budget bars, a search field and the list. The list SHALL group issues of the same check and severity
+into one row with a plain title, the number of objects, a "fix all" action when fixes exist and, when
+expanded, how to fix it and the affected objects. Groups SHALL be ordered by severity; the list SHALL
+be switchable to grouping by category. Info issues SHALL be hidden by default and the filter state
+SHALL persist. Clicking an object SHALL select and ping it or its asset, or open the related Project
+Settings page. All window texts SHALL be available in Russian and English; console output SHALL be in
+English.
+
+#### Scenario: Verdict
+- **WHEN** the run finds critical issues
+- **THEN** the verdict names their number and says to fix them first, and critical groups come first
+
+#### Scenario: Grouped list
+- **WHEN** fifty objects use one texture without mipmaps and three meshes have no LOD
+- **THEN** the list shows one group for the texture and one group of three meshes, each with its count
+
+#### Scenario: Info hidden by default
+- **WHEN** the window opens for the first time
+- **THEN** the Info card is off, its count is still shown, and clicking it shows Info groups
 
 #### Scenario: Language switch
 - **WHEN** the user switches the window language from EN to RU after a run
