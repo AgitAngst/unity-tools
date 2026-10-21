@@ -1,0 +1,356 @@
+using System;
+using System.IO;
+using System.Linq;
+using Unity.Collections;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
+using Object = UnityEngine.Object;
+
+namespace AuditTestsEditor
+{
+    // Creates the test assets once and resets their import settings on every run,
+    // so fixes applied by an earlier run do not leak into the next one.
+    public static class AuditTestAssets
+    {
+        public const string Root = "Assets/AuditGenerated";
+
+        public static Material Sky, Plain, NoInst, NoInst3, Big4096, Big8192, Small1024, FakeNormal, Normal, NoMips, Raw, Rgba32, Readable;
+        public static Texture2D TOverlayOnly;
+        public static Cubemap TCube;
+        public static Mesh Grid12k, Grid30k, Grid16kSkin, TwoSub, Skin8, ObjReadWrite, ObjReadWriteCollider, ObjNotOptimized, ObjClean;
+        public static AudioClip A35, A15Pcm, A5;
+        public static PostProcessProfile ProfileOn, ProfileOff;
+        public static RenderTexture TargetTexture;
+
+        public static void Prepare()
+        {
+            foreach (var dir in new[] { "", "/Materials", "/Textures", "/Meshes", "/Models", "/Audio", "/Misc", "/Scenes", "/Prefabs" })
+                Directory.CreateDirectory(Root + dir);
+            AssetDatabase.Refresh();
+
+            var t4096 = Tex("T_4096", 4096, 4096, false, i => i.maxTextureSize = 4096);
+            var t8192 = Tex("T_8192", 8192, 8192, false, i => i.maxTextureSize = 8192);
+            var t1024 = Tex("T_1024", 1024, 1024, false, i => { });
+            var tFakeNormal = Tex("T_FakeNormal", 256, 256, false, i => { });
+            var tNormal = Tex("T_Normal", 256, 256, false, i => i.textureType = TextureImporterType.NormalMap);
+            var tNoMips = Tex("T_NoMips", 256, 256, false, i => i.mipmapEnabled = false);
+            TOverlayOnly = Tex("T_OverlayOnly", 256, 256, false, i => i.mipmapEnabled = false);
+            var tRaw = Tex("T_Raw", 256, 256, false, i => i.textureCompression = TextureImporterCompression.Uncompressed);
+            var tRgba = Tex("T_Rgba32", 256, 256, true, i =>
+            {
+                var s = i.GetPlatformTextureSettings("Standalone");
+                s.overridden = true;
+                s.format = TextureImporterFormat.RGBA32;
+                s.maxTextureSize = 2048;
+                i.SetPlatformTextureSettings(s);
+            });
+            var tReadable = Tex("T_Readable", 256, 256, false, i => i.isReadable = true);
+            var tSmall = Tex("T_Small", 128, 128, false, i => { });
+            Tex("T_Cube", 6144, 1024, false, i =>
+            {
+                i.textureShape = TextureImporterShape.TextureCube;
+                i.generateCubemap = TextureImporterGenerateCubemap.AutoCubemap;
+            });
+            TCube = AssetDatabase.LoadAssetAtPath<Cubemap>(Root + "/Textures/T_Cube.png");
+
+            var skyPath = Root + "/Materials/M_Sky.mat";
+            Sky = AssetDatabase.LoadAssetAtPath<Material>(skyPath);
+            if (Sky == null)
+            {
+                Sky = new Material(Shader.Find("Skybox/Cubemap"));
+                AssetDatabase.CreateAsset(Sky, skyPath);
+            }
+            Sky.SetTexture("_Tex", TCube);
+            EditorUtility.SetDirty(Sky);
+
+            Plain = Mat("M_Plain", m => { m.mainTexture = tSmall; m.enableInstancing = true; });
+            NoInst = Mat("M_NoInst", m => { m.mainTexture = tSmall; m.enableInstancing = false; });
+            NoInst3 = Mat("M_NoInst3", m => { m.mainTexture = tSmall; m.enableInstancing = false; });
+            Big4096 = Mat("M_Big4096", m => m.mainTexture = t4096);
+            Big8192 = Mat("M_Big8192", m => m.mainTexture = t8192);
+            Small1024 = Mat("M_1024", m => m.mainTexture = t1024);
+            FakeNormal = Mat("M_FakeNormal", m => { m.mainTexture = tSmall; m.SetTexture("_BumpMap", tFakeNormal); });
+            Normal = Mat("M_Normal", m => { m.mainTexture = tSmall; m.SetTexture("_BumpMap", tNormal); });
+            NoMips = Mat("M_NoMips", m => m.mainTexture = tNoMips);
+            Raw = Mat("M_Raw", m => m.mainTexture = tRaw);
+            Rgba32 = Mat("M_Rgba32", m => m.mainTexture = tRgba);
+            Readable = Mat("M_Readable", m => m.mainTexture = tReadable);
+
+            Grid12k = MeshAsset("Grid12k", () => Grid(60, 100));
+            Grid30k = MeshAsset("Grid30k", () => Grid(100, 150));
+            Grid16kSkin = MeshAsset("Grid16kSkin", () =>
+            {
+                var m = Grid(80, 100);
+                var weights = new BoneWeight[m.vertexCount];
+                for (int i = 0; i < weights.Length; i++) weights[i] = new BoneWeight { boneIndex0 = 0, weight0 = 1f };
+                m.boneWeights = weights;
+                m.bindposes = new[] { Matrix4x4.identity };
+                return m;
+            });
+            TwoSub = MeshAsset("TwoSub", BuildTwoSubmeshes);
+            Skin8 = MeshAsset("Skin8", BuildSkin8);
+
+            ObjReadWrite = Model("ReadWrite", true, MeshOptimizationFlags.Everything);
+            ObjReadWriteCollider = Model("ReadWriteCollider", true, MeshOptimizationFlags.Everything);
+            ObjNotOptimized = Model("NotOptimized", false, MeshOptimizationFlags.PolygonOrder);
+            ObjClean = Model("Clean", false, MeshOptimizationFlags.Everything);
+
+            A35 = Clip("A_35s", 35f, AudioClipLoadType.DecompressOnLoad, AudioCompressionFormat.Vorbis, true);
+            A15Pcm = Clip("A_15s_pcm", 15f, AudioClipLoadType.DecompressOnLoad, AudioCompressionFormat.PCM, false);
+            A5 = Clip("A_5s", 5f, AudioClipLoadType.DecompressOnLoad, AudioCompressionFormat.Vorbis, true);
+
+            ProfileOn = Profile("PP_On", true);
+            ProfileOff = Profile("PP_Off", false);
+
+            var rtPath = Root + "/Misc/RT_Target.renderTexture";
+            TargetTexture = AssetDatabase.LoadAssetAtPath<RenderTexture>(rtPath);
+            if (TargetTexture == null)
+            {
+                TargetTexture = new RenderTexture(256, 256, 16);
+                AssetDatabase.CreateAsset(TargetTexture, rtPath);
+            }
+            AssetDatabase.SaveAssets();
+        }
+
+        // ---- textures ----
+
+        static Texture2D Tex(string name, int width, int height, bool alpha, Action<TextureImporter> setup)
+        {
+            var path = Root + "/Textures/" + name + ".png";
+            if (!File.Exists(path))
+            {
+                var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                var pixels = new Color32[width * height];
+                for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
+                        pixels[y * width + x] = new Color32((byte)(x * 255 / width), (byte)(y * 255 / height), 128, (byte)(alpha ? 128 : 255));
+                texture.SetPixels32(pixels);
+                File.WriteAllBytes(path, texture.EncodeToPNG());
+                Object.DestroyImmediate(texture);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            }
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            var before = Signature(importer);
+            importer.textureType = TextureImporterType.Default;
+            importer.textureShape = TextureImporterShape.Texture2D;
+            importer.mipmapEnabled = true;
+            importer.isReadable = false;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.maxTextureSize = 2048;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.ClearPlatformTextureSettings("Standalone");
+            setup(importer);
+            if (Signature(importer) != before) importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        static string Signature(TextureImporter i)
+        {
+            var s = i.GetPlatformTextureSettings("Standalone");
+            return string.Join("|", new object[]
+            {
+                i.textureType, i.textureShape, i.mipmapEnabled, i.isReadable, i.textureCompression, i.maxTextureSize,
+                i.filterMode, i.alphaSource, i.generateCubemap, s.overridden, s.format, s.maxTextureSize
+            }.Select(o => o.ToString()).ToArray());
+        }
+
+        // ---- materials ----
+
+        static Material Mat(string name, Action<Material> setup)
+        {
+            var path = Root + "/Materials/" + name + ".mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Standard"));
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.mainTexture = null;
+            material.SetTexture("_BumpMap", null);
+            material.enableInstancing = true;
+            setup(material);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        // ---- meshes ----
+
+        static Mesh MeshAsset(string name, Func<Mesh> build)
+        {
+            var path = Root + "/Meshes/" + name + ".asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh != null) return mesh;
+            mesh = build();
+            mesh.name = name;
+            AssetDatabase.CreateAsset(mesh, path);
+            return mesh;
+        }
+
+        // w x h quads = 2*w*h triangles, only UV0 (no UV1 on purpose).
+        public static Mesh Grid(int w, int h)
+        {
+            var vertices = new Vector3[(w + 1) * (h + 1)];
+            var uv = new Vector2[vertices.Length];
+            for (int y = 0; y <= h; y++)
+                for (int x = 0; x <= w; x++)
+                {
+                    vertices[y * (w + 1) + x] = new Vector3(x * 0.01f, 0f, y * 0.01f);
+                    uv[y * (w + 1) + x] = new Vector2((float)x / w, (float)y / h);
+                }
+            var triangles = new int[w * h * 6];
+            int t = 0;
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    int i = y * (w + 1) + x;
+                    triangles[t++] = i;
+                    triangles[t++] = i + w + 1;
+                    triangles[t++] = i + 1;
+                    triangles[t++] = i + 1;
+                    triangles[t++] = i + w + 1;
+                    triangles[t++] = i + w + 2;
+                }
+            var mesh = new Mesh { vertices = vertices, uv = uv, triangles = triangles };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        static Mesh BuildTwoSubmeshes()
+        {
+            var mesh = Grid(2, 2);
+            var all = mesh.triangles;
+            int half = all.Length / 2;
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(all.Take(half).ToArray(), 0);
+            mesh.SetTriangles(all.Skip(half).ToArray(), 1);
+            return mesh;
+        }
+
+        static Mesh BuildSkin8()
+        {
+            var mesh = Grid(2, 2);
+            const int bones = 8;
+            var perVertex = new NativeArray<byte>(mesh.vertexCount, Allocator.Temp);
+            var weights = new NativeArray<BoneWeight1>(mesh.vertexCount * bones, Allocator.Temp);
+            for (int v = 0; v < mesh.vertexCount; v++)
+            {
+                perVertex[v] = bones;
+                for (int b = 0; b < bones; b++) weights[v * bones + b] = new BoneWeight1 { boneIndex = b, weight = 1f / bones };
+            }
+            mesh.SetBoneWeights(perVertex, weights);
+            perVertex.Dispose();
+            weights.Dispose();
+            var poses = new Matrix4x4[bones];
+            for (int b = 0; b < bones; b++) poses[b] = Matrix4x4.identity;
+            mesh.bindposes = poses;
+            return mesh;
+        }
+
+        const string CubeObj =
+            "o Cube\nv -0.5 -0.5 -0.5\nv 0.5 -0.5 -0.5\nv 0.5 0.5 -0.5\nv -0.5 0.5 -0.5\n" +
+            "v -0.5 -0.5 0.5\nv 0.5 -0.5 0.5\nv 0.5 0.5 0.5\nv -0.5 0.5 0.5\n" +
+            "f 1 2 3\nf 1 3 4\nf 5 7 6\nf 5 8 7\nf 1 5 6\nf 1 6 2\nf 2 6 7\nf 2 7 3\nf 3 7 8\nf 3 8 4\nf 4 8 5\nf 4 5 1\n";
+
+        static Mesh Model(string name, bool readable, MeshOptimizationFlags optimization)
+        {
+            var path = Root + "/Models/" + name + ".obj";
+            if (!File.Exists(path))
+            {
+                File.WriteAllText(path, CubeObj);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            }
+            var importer = (ModelImporter)AssetImporter.GetAtPath(path);
+            if (importer.isReadable != readable || importer.meshOptimizationFlags != optimization ||
+                importer.materialImportMode != ModelImporterMaterialImportMode.None)
+            {
+                importer.isReadable = readable;
+                importer.meshOptimizationFlags = optimization;
+                importer.materialImportMode = ModelImporterMaterialImportMode.None;
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAllAssetsAtPath(path).OfType<Mesh>().First();
+        }
+
+        // ---- audio ----
+
+        static AudioClip Clip(string name, float seconds, AudioClipLoadType loadType, AudioCompressionFormat format, bool preload)
+        {
+            var path = Root + "/Audio/" + name + ".wav";
+            if (!File.Exists(path))
+            {
+                WriteWav(path, seconds, 44100);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            }
+            var importer = (AudioImporter)AssetImporter.GetAtPath(path);
+            var s = importer.defaultSampleSettings;
+            bool changed = s.loadType != loadType || s.compressionFormat != format || importer.preloadAudioData != preload ||
+                           importer.ContainsSampleSettingsOverride("Standalone") || Math.Abs(s.quality - 0.5f) > 0.001f;
+            if (changed)
+            {
+                importer.ClearSampleSettingOverride("Standalone");
+                s.loadType = loadType;
+                s.compressionFormat = format;
+                s.quality = 0.5f;
+                importer.defaultSampleSettings = s;
+                importer.preloadAudioData = preload;
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        }
+
+        static void WriteWav(string path, float seconds, int rate)
+        {
+            int samples = (int)(seconds * rate);
+            using (var writer = new BinaryWriter(File.Create(path)))
+            {
+                writer.Write(new[] { 'R', 'I', 'F', 'F' });
+                writer.Write(36 + samples * 2);
+                writer.Write(new[] { 'W', 'A', 'V', 'E', 'f', 'm', 't', ' ' });
+                writer.Write(16);
+                writer.Write((short)1);
+                writer.Write((short)1);
+                writer.Write(rate);
+                writer.Write(rate * 2);
+                writer.Write((short)2);
+                writer.Write((short)16);
+                writer.Write(new[] { 'd', 'a', 't', 'a' });
+                writer.Write(samples * 2);
+                for (int i = 0; i < samples; i++)
+                    writer.Write((short)(Math.Sin(2 * Math.PI * 440 * i / rate) * 6000));
+            }
+        }
+
+        // ---- post processing stub profiles ----
+
+        static PostProcessProfile Profile(string name, bool enabled)
+        {
+            var path = Root + "/Misc/" + name + ".asset";
+            var profile = AssetDatabase.LoadAssetAtPath<PostProcessProfile>(path);
+            if (profile != null) return profile;
+            profile = ScriptableObject.CreateInstance<PostProcessProfile>();
+            AssetDatabase.CreateAsset(profile, path);
+            var bloom = ScriptableObject.CreateInstance<Bloom>();
+            bloom.enabled.value = true;
+            bloom.name = "Bloom";
+            AssetDatabase.AddObjectToAsset(bloom, profile);
+            profile.settings.Add(bloom);
+            if (enabled)
+            {
+                var blur = ScriptableObject.CreateInstance<MotionBlur>();
+                blur.enabled.value = true;
+                blur.name = "MotionBlur";
+                AssetDatabase.AddObjectToAsset(blur, profile);
+                profile.settings.Add(blur);
+            }
+            else
+            {
+                bloom.enabled.value = false;
+            }
+            EditorUtility.SetDirty(profile);
+            return profile;
+        }
+    }
+}

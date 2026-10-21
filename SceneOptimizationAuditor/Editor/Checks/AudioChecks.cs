@@ -100,13 +100,14 @@ namespace UnityTools.SceneOptimization
                 if (listener.GetComponent<Camera>() == null)
                     ctx.Report("AUDIO_LISTENER_NO_CAMERA", Category.Audio, Severity.Info, listener);
 
-            int dspBuffer = ReadAudioManagerInt("m_DSPBufferSize", -1);
+            // m_DSPBufferSize holds the resolved size; the setting itself is m_RequestedDSPBufferSize (0 = Default).
+            int dspBuffer = ReadAudioManagerInt("m_RequestedDSPBufferSize", ReadAudioManagerInt("m_DSPBufferSize", -1));
             if (dspBuffer == 0)
                 ctx.ReportSetting("AUDIO_DSP_BUFFER", Category.Audio, Severity.Info, "Project/Audio", "Default");
             else if (dspBuffer == 256)
                 ctx.ReportSetting("AUDIO_DSP_BUFFER", Category.Audio, Severity.Info, "Project/Audio", "Best Latency");
 
-            int speakerValue = ReadAudioManagerInt("m_DefaultSpeakerMode", -1);
+            int speakerValue = ReadAudioManagerInt("Default Speaker Mode", ReadAudioManagerInt("m_DefaultSpeakerMode", -1));
             var speakerMode = speakerValue >= 0 ? ((AudioSpeakerMode)speakerValue).ToString() : AudioSettings.GetConfiguration().speakerMode.ToString();
             if (speakerMode != "Mono" && speakerMode != "Stereo" && speakerMode != "Raw")
                 ctx.ReportSetting("AUDIO_SPEAKER_MODE", Category.Audio, Severity.Warning, "Project/Audio", speakerMode);

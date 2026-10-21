@@ -211,10 +211,15 @@ namespace UnityTools.SceneOptimization
                 target = target,
                 args = args ?? new object[0]
             };
+            // Assets (a model's root GameObject too) are located by asset path, scene objects by hierarchy.
             var go = target as GameObject;
             var component = target as Component;
             if (component != null) go = component.gameObject;
-            if (go != null)
+            if (target != null && EditorUtility.IsPersistent(target))
+            {
+                issue.assetPath = AssetDatabase.GetAssetPath(target);
+            }
+            else if (go != null)
             {
                 issue.scene = go.scene.name;
                 issue.objectPath = PathOf(go.transform);

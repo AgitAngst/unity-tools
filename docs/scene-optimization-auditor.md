@@ -4,9 +4,11 @@
 (HTC Vive Pro, SteamVR, 90 Гц) и показывает проблемы по уровням Critical / Warning / Info с подсказкой,
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 
-**Состояние:** код всех четырёх этапов написан, компилируется под 2019.4 (`scripts\compile-check.ps1`:
-0 ошибок, 0 предупреждений). В Unity не запускался; прогон по [TESTPLAN.md](../TESTPLAN.md) и
-проверка окна владельцем ещё впереди.
+**Состояние:** код всех четырёх этапов написан. Автотесты в Unity 2019.4.41f2 зелёные (22.10.2026,
+`scripts
+un-audit-tests.ps1`, 21 шаг): проверки, бюджеты, экспорт, исправления и Undo. Вживую не
+проверены окно, снимок профайлера в Play Mode и ветка XR Plug-in Management — см.
+[TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
 
@@ -168,7 +170,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `VR_CAMERA_NO_MSAA` | W | у VR-камеры выключен Allow MSAA | — |
 | `VR_CAMERA_HDR` | W | у VR-камеры включён HDR | — |
 | `VR_FAR_CLIP` | I | far больше 1000 | — |
-| `VR_NEAR_CLIP` | W | near меньше 0.01 | — |
+| `VR_NEAR_CLIP` | W | near меньше 0.01 — на деле не срабатывает: Unity не даёт поставить меньше 0.01 (решение за владельцем) | — |
 | `VR_IMAGE_EFFECT` | W | скрипт с `OnRenderImage` на VR-камере | — |
 | `VR_CANVAS_OVERLAY` | C | корневой Canvas в Screen Space Overlay | — |
 | `VR_CANVAS_CAMERA` | W | корневой Canvas в Screen Space Camera | — |

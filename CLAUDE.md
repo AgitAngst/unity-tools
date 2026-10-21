@@ -20,8 +20,8 @@
 
 - Быстрая сборка без Unity — `scripts\compile-check.ps1 -Source <Утилита>\Editor` (Roslyn из
   Unity 2019.4.41f2, его DLL, C# 7.3); после блока правок. Полная проверка — компиляция в самом Unity
-  (UnityMCP: `refresh_unity`, затем `read_console`; или Unity в batchmode с выводом в файл) и тесты по
-  [TESTPLAN.md](TESTPLAN.md). Результат — по ошибкам компиляции и коду выхода; вывод в файл, в разговор
+  (UnityMCP: `refresh_unity`, затем `read_console`; или Unity в batchmode с выводом в файл) и автотесты
+  `scripts\run-audit-tests.ps1` (план — [TESTPLAN.md](TESTPLAN.md), тесты — `tests/`). Результат — по ошибкам компиляции и коду выхода; вывод в файл, в разговор
   хвост.
 - Основная цель — **Unity 2019.4** (C# 7.3): код должен компилироваться там, без новых возможностей
   языка (switch-выражения, `??=`, records, nullable-ссылки) и API новее 2019.4.

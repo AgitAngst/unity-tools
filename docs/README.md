@@ -12,7 +12,7 @@
 
 | Утилита | Что делает | Состояние |
 |---|---|---|
-| [SceneOptimizationAuditor](scene-optimization-auditor.md) | аудит загруженных сцен под PC VR (HTC Vive Pro, 90 Гц): проверки, бюджеты, отчёт, исправления, снимок профайлера | код этапов 1–4 написан и компилируется под 2019.4; в Unity не проверен |
+| [SceneOptimizationAuditor](scene-optimization-auditor.md) | аудит загруженных сцен под PC VR (HTC Vive Pro, 90 Гц): проверки, бюджеты, отчёт, исправления, снимок профайлера | код этапов 1–4 написан; автотесты в Unity 2019.4 зелёные; окно и профайлер вживую не проверены |
 
 Версия 0.1.0 не поднята: этапы закрываются после тестов по `TESTPLAN.md` (этап 1 → 0.2.0 и далее по
 `SPEC.md`).
@@ -29,3 +29,7 @@
   компилятором Roslyn из установленного Unity с его DLL и `-langversion:7.3`, без запуска Unity. Ловит
   возможности C# новее 7.3 и API новее версии Unity. Журнал — `unity-tools-scratch\reports\compile-check.log`;
   код выхода 0 — без ошибок, 1 — ошибки, 2 — не найден компилятор или исходники.
+- `scripts\run-audit-tests.ps1 [-Only base,quality]` — автотесты SceneOptimizationAuditor (`tests/AuditTests/`) в
+  проверочном проекте `unity-tools-scratch\TestProject2019` (2019.4.41f2): по запуску Unity на шаг, итог —
+  таблица кодов выхода, отчёты — `unity-tools-scratch\reports\audit-tests\<шаг>.txt`; код выхода 0 — все шаги
+  прошли.

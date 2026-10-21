@@ -1,0 +1,15 @@
+{
+    "name": "AuditTests.SteamVRStub",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "AUDIT_STEAMVR_STUB"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

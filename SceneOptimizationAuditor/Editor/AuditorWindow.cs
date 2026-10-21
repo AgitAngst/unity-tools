@@ -297,7 +297,7 @@ namespace UnityTools.SceneOptimization
             }
             var component = issue.target as Component;
             var go = component != null ? component.gameObject : issue.target as GameObject;
-            if (go != null)
+            if (go != null && !EditorUtility.IsPersistent(go))
             {
                 Selection.activeGameObject = go;
                 EditorGUIUtility.PingObject(go);

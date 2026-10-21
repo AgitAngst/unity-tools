@@ -1,5 +1,26 @@
 # План тестов — SceneOptimizationAuditor
 
+## Итоги прогона 22.10.2026
+
+Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **21 шаг из 21 зелёный** (10 вариантов настроек,
+экспорт — модуль и 5 запусков из командной строки, исправления, SteamVR-заглушка в двух вариантах). Утилита
+импортируется без ошибок и предупреждений, утечек NativeArray нет. Тесты — `tests/AuditTests/`, отчёты —
+`unity-tools-scratch\reports\audit-tests\`.
+
+Найдено и исправлено в утилите:
+- проблемы моделей (`.obj`, `.fbx`) указывали на корень модели как на объект сцены — теперь это ассет с путём;
+- DSP Buffer Size читался из `m_DSPBufferSize` (итоговый размер) — настройка лежит в `m_RequestedDSPBufferSize`;
+- режим динамиков читался из `m_DefaultSpeakerMode` — в 2019.4 поле называется `Default Speaker Mode`.
+
+Решение владельца: Unity не даёт выставить near clip меньше 0.01, поэтому `VR_NEAR_CLIP` (< 0.01) не срабатывает
+никогда. Убрать проверку или поднять порог (например, < 0.05)?
+
+Сверено: `ShaderUtil.HasInstancing` находится через reflection (`DC_INSTANCING_OFF` и безопасное исправление
+работают); переключение уровня качества не меняет `QualitySettings.asset`.
+
+Не проверено: ветка XR Plug-in Management (пакет не ставился), снимок профайлера в Play Mode, окно вживую —
+пункты 0, 6, 7 и часть 8 ниже.
+
 Что проверить, когда дойдём до тестов. Код всех четырёх этапов написан и компилируется компилятором
 Unity 2019.4.41f2 (`scripts\compile-check.ps1`: 0 ошибок, 0 предупреждений), но в Unity не запускался.
 Отмечать `[x]` по мере прохождения; итог прогона — в отчёт `unity-tools-scratch\reports\`.
@@ -9,21 +30,21 @@ Unity 2019.4.41f2 (`scripts\compile-check.ps1`: 0 ошибок, 0 предупр
 - [ ] Решение владельца: ставить ли `com.unity.xr.management` (и OpenVR XR Plugin) в проверочный
       проект — только в scratch, не в утилиту. Без них ветка XR Plug-in Management проверяется лишь как
       «не найден».
-- [ ] Проверочный проект `E:\dev_personal\unity-tools-scratch\TestProject2019` на 2019.4.41f2
+- [x] Проверочный проект `E:\dev_personal\unity-tools-scratch\TestProject2019` на 2019.4.41f2
       (`Unity.exe -batchmode -quit -createProject <путь> -logFile <файл>`).
-- [ ] Папка `SceneOptimizationAuditor` подключена в `Assets/` junction-ом на репозиторий; Unity создала
+- [x] Папка `SceneOptimizationAuditor` подключена в `Assets/` junction-ом на репозиторий; Unity создала
       `.meta` в репозитории; предупреждение Unity о symlink допустимо.
-- [ ] Набор проверочных скриптов — в `TestProject2019/Assets/AuditTests/Editor/` (не в утилите):
+- [x] Набор проверочных скриптов — в `TestProject2019/Assets/AuditTests/Editor/` (не в утилите):
       генератор сцены `AuditSeed`, генератор ассетов, заглушки пакетов, прогон с ожиданиями.
-- [ ] Прогон: `-executeMethod AuditTests.Run -auditVariant <имя>`; сверка — по парам
+- [x] Прогон: `-executeMethod AuditTests.Run -auditVariant <имя>`; сверка — по парам
       (`checkId`, путь объекта или ассета): «должно быть» и «не должно быть»; лишние срабатывания —
       в отчёт, но не провал; код выхода 0 / 1.
 
 ## 1. Компиляция в самом Unity
 
-- [ ] Импорт в 2019.4.41f2 batchmode: код выхода 0, в журнале нет `error CS` и нет `warning CS` из
+- [x] Импорт в 2019.4.41f2 batchmode: код выхода 0, в журнале нет `error CS` и нет `warning CS` из
       файлов утилиты.
-- [ ] Нет предупреждений `A Native Collection has not been disposed` после прогона (`Mesh.GetBonesPerVertex`
+- [x] Нет предупреждений `A Native Collection has not been disposed` после прогона (`Mesh.GetBonesPerVertex`
       не освобождается — по документации не нужно, проверить).
 
 ## 2. Сцена AuditSeed — базовый вариант
@@ -110,9 +131,9 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | `Gen/Missing` — пропавший скрипт (подменить guid в `.unity`) | `GEN_MISSING_SCRIPTS` W | |
 | `Gen/InactiveHeavy` (меш 12k), `Gen/InactiveTex` (T_4096) | `GEN_INACTIVE_HEAVY_MESH` I, `GEN_INACTIVE_HEAVY_TEXTURE` I | |
 | **Прочее** | | |
-| [ ] Один `T_NoMips.png` на 50 объектах — одна запись `TEX_NO_MIPMAPS` с `users = 50` | | |
-| [ ] Сцена `AuditSeedB` загружена вместе с `AuditSeed` — у записей обе сцены по имени | | |
-| [ ] Прогон не меняет сцену и ассеты: хэши `.unity`, `.meta` и `ProjectSettings/*.asset` до и после равны (уровень качества переключается на время чтения) | | |
+| [x] Один `T_NoMips.png` на 50 объектах — одна запись `TEX_NO_MIPMAPS` с `users = 50` | | |
+| [x] Сцена `AuditSeedB` загружена вместе с `AuditSeed` — у записей обе сцены по имени | | |
+| [x] Прогон не меняет сцену и ассеты: хэши `.unity`, `.meta` и `ProjectSettings/*.asset` до и после равны (уровень качества переключается на время чтения) | | |
 
 ## 3. Варианты настроек (`-auditVariant`)
 
@@ -133,24 +154,24 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 
 ## 4. Экспорт (этап 2)
 
-- [ ] `RunFromCommandLine` по `AuditSeed` в `.json` и `.csv`: код выхода 0, файлы есть.
-- [ ] JSON читается (`python -c "import json; json.load(open(...))"`); `summary` совпадает с числом
+- [x] `RunFromCommandLine` по `AuditSeed` в `.json` и `.csv`: код выхода 0, файлы есть.
+- [x] JSON читается (`python -c "import json; json.load(open(...))"`); `summary` совпадает с числом
       записей по уровням; `hasProfilerSnapshot` = false до снимка; `timestamp` — ISO 8601.
-- [ ] CSV: UTF-8 с BOM; `csv.reader` даёт столько строк, сколько записей; текст с запятой и кавычками
+- [x] CSV: UTF-8 с BOM; `csv.reader` даёт столько строк, сколько записей; текст с запятой и кавычками
       экранирован (добавить объект с именем `a, "b"`).
-- [ ] `-auditLang ru`: `severity` по-английски, `message` по-русски.
-- [ ] Без `-auditScene` — ошибка в журнале и код выхода 1; несуществующая сцена — код 1.
+- [x] `-auditLang ru`: `severity` по-английски, `message` по-русски.
+- [x] Без `-auditScene` — ошибка в журнале и код выхода 1; несуществующая сцена — код 1.
 
 ## 5. Исправления (этап 3)
 
-- [ ] На копии `AuditSeed` вызвать `AutoFixer.Apply` для всех Safe: пропали `TEX_NO_MIPMAPS` и
+- [x] На копии `AuditSeed` вызвать `AutoFixer.Apply` для всех Safe: пропали `TEX_NO_MIPMAPS` и
       `DC_INSTANCING_OFF`, остальные `checkId` на месте.
-- [ ] Каждое Review-исправление по одному: после повторного аудита его запись пропала; ничего лишнего
+- [x] Каждое Review-исправление по одному: после повторного аудита его запись пропала; ничего лишнего
       не изменилось (сравнить `.meta` и сцену до и после).
-- [ ] `Undo.PerformUndo()` после сценовых исправлений возвращает Batching Static, Culling Mode,
+- [x] `Undo.PerformUndo()` после сценовых исправлений возвращает Batching Static, Culling Mode,
       Update When Offscreen, Spatial Blend.
-- [ ] Исправление объекта в экземпляре префаба — появился override, префаб-ассет не изменился.
-- [ ] Материал из `Packages/` (или вложенный в модель) — исправление не предлагается.
+- [x] Исправление объекта в экземпляре префаба — появился override, префаб-ассет не изменился.
+- [x] Материал из `Packages/` (или вложенный в модель) — исправление не предлагается.
 - [ ] Окно подтверждения (вручную, владелец): группы «Сцена» и «Ассеты», галочки, «Отмена» ничего не
       меняет, «Применить (N)» считает отмеченные.
 
@@ -165,7 +186,7 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 - [ ] GPU: «н/д», если `FrameTimingManager` не отдаёт данные; в JSON −1.
 - [ ] Два снимка → «Сравнить с прошлым» показывает дельты; после перезапуска Unity снимки на месте.
 - [ ] Экспорт после снимка: `hasProfilerSnapshot` = true.
-- [ ] Кодом на подставленных данных: `ToJson` со снимком и без.
+- [x] Кодом на подставленных данных: `ToJson` со снимком и без.
 
 ## 7. Окно — вручную, владелец
 
@@ -183,11 +204,11 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 
 ## 8. Что сверить в API 2019.4 при первом запуске
 
-- [ ] `ShaderUtil.HasInstancing` (непубличный) находится через reflection — иначе вместо
+- [x] `ShaderUtil.HasInstancing` (непубличный) находится через reflection — иначе вместо
       `DC_INSTANCING_OFF` всегда `DC_INSTANCING_UNKNOWN` и безопасного исправления instancing нет.
 - [ ] `UnityStats.frameTime` — в секундах (код умножает на 1000); совпадает с окном Stats.
-- [ ] `QualitySettings.SetQualityLevel` туда и обратно не оставляет изменённым `QualitySettings.asset`.
-- [ ] `m_PerPlatformDefaultQuality`, `m_BuildTargetVRSettings`, `m_DSPBufferSize`,
+- [x] `QualitySettings.SetQualityLevel` туда и обратно не оставляет изменённым `QualitySettings.asset`.
+- [x] `m_PerPlatformDefaultQuality`, `m_BuildTargetVRSettings`, `m_DSPBufferSize`,
       `m_DefaultSpeakerMode` читаются через `SerializedObject` (имена полей в 2019.4).
 - [ ] XR Management (если пакет поставлен): `XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget`,
       `Manager.activeLoaders` / `loaders`, поле `OpenVRSettings.StereoRenderingMode`.
