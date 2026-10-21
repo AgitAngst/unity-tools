@@ -202,7 +202,7 @@ namespace UnityTools.SceneOptimization
             EditorGUI.EndDisabledGroup();
 
             EditorGUI.BeginDisabledGroup(result == null);
-            if (GUILayout.Button(Strings.Get("ui.export"), EditorStyles.toolbarDropDown))
+            if (GUILayout.Button(new GUIContent(Strings.Get("ui.export"), Strings.Get("ui.export.tip")), EditorStyles.toolbarDropDown))
             {
                 var menu = new GenericMenu();
                 menu.AddItem(new GUIContent("JSON…"), false, () => Export("json"));
@@ -212,7 +212,8 @@ namespace UnityTools.SceneOptimization
             EditorGUI.EndDisabledGroup();
 
             GUILayout.FlexibleSpace();
-            int lang = GUILayout.Toolbar((int)Strings.Current, LangLabels, EditorStyles.toolbarButton, GUILayout.Width(70f));
+            var langs = new[] { new GUIContent(LangLabels[0], Strings.Get("ui.lang.tip")), new GUIContent(LangLabels[1], Strings.Get("ui.lang.tip")) };
+            int lang = GUILayout.Toolbar((int)Strings.Current, langs, EditorStyles.toolbarButton, GUILayout.Width(70f));
             if (lang != (int)Strings.Current) Strings.Current = (Lang)lang;
             EditorGUILayout.EndHorizontal();
         }

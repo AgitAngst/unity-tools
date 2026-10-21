@@ -5,9 +5,9 @@
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 
 **Состояние:** код всех четырёх этапов написан. Автотесты в Unity 2019.4.41f2 зелёные (22.10.2026,
-`scripts\run-audit-tests.ps1`, 25 шагов, из них 4 — XR Plug-in Management): проверки, бюджеты, экспорт, исправления и Undo. Вживую не
-проверены окно, снимок профайлера в Play Mode и настоящий OpenVR XR Plugin (в тестах — заглушки) — см.
-[TESTPLAN.md](../TESTPLAN.md).
+`scripts\run-audit-tests.ps1`, 25 шагов, из них 4 — XR Plug-in Management): проверки, бюджеты, экспорт, исправления и Undo. Окно,
+исправления, снимок профайлера и прогон на настоящей сцене владелец проверил вживую 22.10.2026. Не проверен
+настоящий OpenVR XR Plugin (в тестах — заглушки) — см. [TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
 
@@ -37,7 +37,7 @@
 - **Контекст:** XR-система, режим stereo, проверенный уровень качества, сцены, время прогона.
 - **Полосы бюджетов:** треугольники (LOD0), draw calls, память текстур — «значение из порога
   предупреждения», цвет по порогам, полоса до критичного порога.
-- **Панель списка:** поиск (по названию проблемы, объекту, пути ассета и тексту) с крестиком,
+- **Панель списка:** поиск (по названию проблемы, коду проверки, объекту, пути ассета и тексту) с крестиком,
   «По категориям», «Развернуть все», «Свернуть все».
 - **Список групп.** Группа — одна проверка одного уровня: значок, простое название («Текстура без
   mipmaps»), число объектов, справа «Исправить» / «Исправить все (N)», «Настройки» и категория.
@@ -105,8 +105,9 @@
 Неизменяемые пределы (`VRBudgets`, константы): больше 4 материалов на рендерере, больше 3 одинаковых
 объектов для instancing, больше 4 костей на вершину, Decompress On Load дольше 10 с, PCM больше 1 МБ,
 Preload дольше 30 с, priority 0 больше чем у 5 источников, shadow distance больше 50 м, solver
-iterations больше 6, far clip больше 1000, near clip меньше 0.05, MSAA меньше 4x, occlusion — от 100
-статичных рендереров, глубина иерархии больше 10, FPS: зелёный от 89, жёлтый от 80.
+iterations больше 6, far clip больше 1000, near clip меньше 0.05, MSAA меньше 4x, occlusion — больше 100
+статичных рендереров, глубина иерархии больше 10, FPS: зелёный от 89, жёлтый от 80; допуск Fixed Timestep
+0.0002 с; исправление Load Type — Streaming для клипов от 60 с.
 
 ## Проверки
 
@@ -175,7 +176,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `AUDIO_NO_LISTENER` | W | ни одного | — |
 | `AUDIO_LISTENER_NO_CAMERA` | I | AudioListener не на объекте с Camera | — |
 | `AUDIO_DSP_BUFFER` | I | DSP Buffer Size = Default или Best Latency | — |
-| `AUDIO_SPEAKER_MODE` | W | режим динамиков не Mono / Stereo | — |
+| `AUDIO_SPEAKER_MODE` | W | режим динамиков не Mono / Stereo / Raw | — |
 | `AUDIO_NO_SPATIALIZER` | I | spatializer не выбран | — |
 | **VR-Specific** | | | |
 | `VR_NOT_ENABLED` | C | VR не включён для Standalone | — |
@@ -226,19 +227,25 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 
 ## Отчёт
 
-«Сохранить отчёт» → меню JSON или CSV → диалог сохранения; формат файла определяется расширением.
+«Сохранить отчёт» → меню «JSON…» или «CSV…» → диалог сохранения (имя по умолчанию —
+`<первая сцена>-audit-<yyyyMMdd-HHmm>`); формат файла определяется расширением.
 
 - **JSON** (UTF-8 без BOM): `scenes`, `timestamp` (ISO 8601), `platform`, `targetFPS`, `xr` (`system`:
   `Legacy` / `XRManagement` / `Legacy+XRManagement` / `None`, `loader`, `stereoMode`), `qualityLevel`,
   `summary`, `sceneBudgets` (`isEstimate`, значения и пороги Warning), `hasProfilerSnapshot`,
   `profilerSnapshot` (последний снимок активной сцены или пустой при `false`), `issues` (`checkId`,
   `category`, `severity`, `scene`, `objectPath`, `assetPath` — путь ассета или страница настроек,
-  `message`, `suggestion`, `autoFixable`).
+  `message`, `suggestion`, `autoFixable`). `summary` — `critical`, `warning`, `info`; `sceneBudgets` —
+  `isEstimate`, `totalTris`, `trisLimit`, `estimatedDrawCalls`, `drawCallLimit`, `textureMemoryMB`,
+  `textureMemoryLimitMB`; `category` — `DrawCalls`, `Meshes`, `Textures`, `Lighting`, `Physics`, `Animators`,
+  `Audio`, `VRSpecific`, `General`; поля `profilerSnapshot` — в разделе о снимке ниже.
 - **CSV** (UTF-8 с BOM, RFC 4180): `CheckId, Category, Severity, Scene, ObjectPath, AssetPath, Message,
   Suggestion, AutoFixable`.
 - `checkId`, `category`, `severity`, `xr` — всегда по-английски; `message`, `suggestion` — на языке окна.
 
-Из командной строки (код выхода 0 / 1):
+Из командной строки: `-auditScene` (сцена в проекте) и `-auditReport` (файл; `.csv` — CSV, иначе JSON)
+обязательны, `-auditLang en|ru` — язык текстов (по умолчанию — как в окне). Код выхода 0 — отчёт сохранён, 1 —
+нет аргументов или ошибка (строка `[SceneAudit] …` в журнале).
 
 ```
 Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine -auditScene Assets/Scenes/Main.unity -auditReport E:/reports/main.json -auditLang en
@@ -246,8 +253,8 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 
 ## Снимок профайлера
 
-- Параметры: «Кадров» (300, от 30 до 5000) и «Кадров разогрева» (60) — хранятся в `EditorPrefs`.
-- «Снять данные»: не в Play Mode — входит, пропускает разогрев, мерит N кадров, выходит; в Play Mode —
+- Параметры: «Кадров» (300, от 30 до 5000) и «Кадров разогрева» (60, от 0 до 1000) — хранятся в `EditorPrefs`.
+- «Снять данные»: не в Play Mode — входит, пропускает кадры разогрева, мерит N кадров, выходит; в Play Mode —
   мерит и остаётся. «Отмена» прерывает. Выход из Play Mode или перекомпиляция во время замера
   прерывают его с предупреждением в консоли.
 - Метрики: FPS (сред. / мин. / макс.) по `Time.unscaledDeltaTime`; CPU — время главного потока
@@ -282,5 +289,5 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `ProfilerCapture.cs` | снимок профайлера |
 | `ReflectionUtil.cs` | доступ к типам пакетов по имени |
 
-Новая проверка = блок в методе категории (`ctx.Report(...)`), тексты `<checkId>`, `<checkId>.fix` и
+Новая проверка = блок в методе категории (`ctx.Report(...)`), тексты `<checkId>`, `<checkId>.title`, `<checkId>.fix` и
 для исправимой `<checkId>.do` в `Strings.cs`, строка в таблице выше и в `TESTPLAN.md`.

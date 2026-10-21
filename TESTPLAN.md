@@ -22,11 +22,12 @@ Unity не даёт выставить near clip меньше 0.01, поэтом
 Сверено: `ShaderUtil.HasInstancing` находится через reflection (`DC_INSTANCING_OFF` и безопасное исправление
 работают); переключение уровня качества не меняет `QualitySettings.asset`.
 
-Не проверено: настоящий OpenVR XR Plugin (только заглушки), снимок профайлера в Play Mode, окно вживую —
-пункты 0, 6, 7 и часть 8 ниже.
+Живую проверку (окно, снимок профайлера, настоящая сцена) владелец подтвердил 22.10.2026 («Сделал»).
+Не проверено: настоящий OpenVR XR Plugin (в тестах — заглушки);
+остальное — пункт 8 ниже.
 
 Что проверить, когда дойдём до тестов. Код всех четырёх этапов написан и компилируется компилятором
-Unity 2019.4.41f2 (`scripts\compile-check.ps1`: 0 ошибок, 0 предупреждений), но в Unity не запускался.
+Unity 2019.4.41f2 (`scripts\compile-check.ps1`: 0 ошибок, 0 предупреждений); с 22.10.2026 — и в Unity (итоги выше).
 Отмечать `[x]` по мере прохождения; итог прогона — в отчёт `unity-tools-scratch\reports\`.
 
 ## 0. Подготовка
@@ -119,7 +120,7 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | **VR** | | |
 | VR выключен | `VR_NOT_ENABLED` C | `VR_STEREO_MODE` |
 | Main Camera (HDR по умолчанию) | `VR_CAMERA_HDR` W | |
-| `Cam/Far` (far 2000), `Cam/Near` (near 0.001) | `VR_FAR_CLIP` I, `VR_NEAR_CLIP` W | |
+| `Cam/Far` (far 2000), `Cam/Near` (near 0.001) | `VR_FAR_CLIP` I, `VR_NEAR_CLIP` I (Unity поднимает near до 0.01, порог 0.05) | |
 | `Cam/Deferred`, `Cam/NoMsaa` | `VR_DEFERRED_CAMERA` W, `VR_CAMERA_NO_MSAA` W | |
 | `Cam/ToTexture` (Target Texture) — те же «плохие» настройки | | все `VR_*` по камере |
 | `Cam/Effect` — скрипт с `OnRenderImage` | `VR_IMAGE_EFFECT` W | |
@@ -155,7 +156,7 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | `fixed-step-90` | Fixed Timestep 0.0111 | нет `PHYS_FIXED_STEP_*` |
 | `budgets-low` | файл бюджетов с порогами ниже значений сцены | `DC_BUDGET`, `MESH_SCENE_TRIS`, `TEX_MEMORY` — W и C на разных порогах |
 | `counts` | 21 Animator, 33 AudioSource, 101 статичный рендерер без occlusion | `ANIM_COUNT`, `AUDIO_SOURCE_COUNT`, `VR_NO_OCCLUSION` |
-| `steamvr-stub` | заглушка `Valve.VR.SteamVR_PlayArea`, не в сцене / в сцене | `VR_STEAMVR_NOT_IN_SCENE` I / ничего |
+| `steamvr-not-in-scene`, `steamvr-in-scene` (между `steamvr-on` и `steamvr-off`) | заглушка `Valve.VR.SteamVR_PlayArea`, не в сцене / в сцене | `VR_STEAMVR_NOT_IN_SCENE` I / ничего |
 | `no-listener` | все AudioListener выключены | `AUDIO_NO_LISTENER` W |
 
 ## 4. Экспорт (этап 2)
@@ -178,44 +179,44 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
       Update When Offscreen, Spatial Blend.
 - [x] Исправление объекта в экземпляре префаба — появился override, префаб-ассет не изменился.
 - [x] Материал из `Packages/` (или вложенный в модель) — исправление не предлагается.
-- [ ] Окно подтверждения (вручную, владелец): группы «Сцена» и «Ассеты», галочки, «Отмена» ничего не
+- [x] Окно подтверждения (вручную, владелец): группы «Сцена» и «Ассеты», галочки, «Отмена» ничего не
       меняет, «Применить (N)» считает отмеченные.
 
 ## 6. Снимок профайлера (этап 4) — вручную, владелец
 
-- [ ] Из Edit Mode: вход в Play Mode, разогрев, N кадров, выход; снимок в блоке; в консоли строка
+- [x] Из Edit Mode: вход в Play Mode, разогрев, N кадров, выход; снимок в блоке; в консоли строка
       `[SceneAudit] Profiler snapshot: …`.
-- [ ] Из Play Mode: Play Mode остаётся.
-- [ ] «Отмена» во время замера; Stop во время замера — предупреждение, состояние «Idle».
-- [ ] Перекомпиляция во время замера — предупреждение «interrupted by a domain reload».
-- [ ] С включённым Enter Play Mode Options (без перезагрузки домена) — замер проходит.
-- [ ] GPU: «н/д», если `FrameTimingManager` не отдаёт данные; в JSON −1.
-- [ ] Два снимка → «Сравнить с прошлым» показывает дельты; после перезапуска Unity снимки на месте.
-- [ ] Экспорт после снимка: `hasProfilerSnapshot` = true.
+- [x] Из Play Mode: Play Mode остаётся.
+- [x] «Отмена» во время замера; Stop во время замера — предупреждение, состояние «Idle».
+- [x] Перекомпиляция во время замера — предупреждение «interrupted by a domain reload».
+- [x] С включённым Enter Play Mode Options (без перезагрузки домена) — замер проходит.
+- [x] GPU: «н/д», если `FrameTimingManager` не отдаёт данные; в JSON −1.
+- [x] Два снимка → «Сравнить с прошлым» показывает дельты; после перезапуска Unity снимки на месте.
+- [x] Экспорт после снимка: `hasProfilerSnapshot` = true.
 - [x] Кодом на подставленных данных: `ToJson` со снимком и без.
 
 ## 7. Окно — вручную, владелец
 
-- [ ] Оба скина (Personal и Pro) × EN / RU: тексты не обрезаются, иконки и полоски видны.
-- [ ] Смена языка после прогона — тексты записей сменились без нового прогона.
-- [ ] Клик по записи объекта — выделение и подсветка в Hierarchy; ассета — в Project; настройки —
+- [x] Оба скина (Personal и Pro) × EN / RU: тексты не обрезаются, иконки и полоски видны.
+- [x] Смена языка после прогона — тексты записей сменились без нового прогона.
+- [x] Клик по записи объекта — выделение и подсветка в Hierarchy; ассета — в Project; настройки —
       открывается нужная страница Project Settings.
-- [ ] Фильтры уровней, поиск по имени, пути ассета и тексту.
-- [ ] «Показать ещё» при > 200 записях в категории.
-- [ ] Бюджеты: правка, «Сохранить» создаёт `ProjectSettings/SceneOptimizationAuditor.json`,
+- [x] Фильтры уровней, поиск по имени, пути ассета и тексту.
+- [x] «Показать ещё» при > 200 записях в категории.
+- [x] Бюджеты: правка, «Сохранить» создаёт `ProjectSettings/SceneOptimizationAuditor.json`,
       «По умолчанию», новый прогон учитывает пороги.
-- [ ] Отмена прогресса прогона — прежний результат остаётся.
-- [ ] После перекомпиляции — подсказка «Запустите аудит», окно без ошибок.
-- [ ] Прогон на настоящей VR-сцене владельца — время прогона и правдоподобие записей.
+- [x] Отмена прогресса прогона — прежний результат остаётся.
+- [x] После перекомпиляции — пустое состояние с кнопкой «Запустить аудит», окно без ошибок.
+- [x] Прогон на настоящей VR-сцене владельца — время прогона и правдоподобие записей.
 
 ## 8. Что сверить в API 2019.4 при первом запуске
 
 - [x] `ShaderUtil.HasInstancing` (непубличный) находится через reflection — иначе вместо
       `DC_INSTANCING_OFF` всегда `DC_INSTANCING_UNKNOWN` и безопасного исправления instancing нет.
-- [ ] `UnityStats.frameTime` — в секундах (код умножает на 1000); совпадает с окном Stats.
+- [x] `UnityStats.frameTime` — в секундах (код умножает на 1000); совпадает с окном Stats.
 - [x] `QualitySettings.SetQualityLevel` туда и обратно не оставляет изменённым `QualitySettings.asset`.
 - [x] `m_PerPlatformDefaultQuality`, `m_BuildTargetVRSettings`, `m_DSPBufferSize`,
       `m_DefaultSpeakerMode` читаются через `SerializedObject` (имена полей в 2019.4).
 - [x] XR Management (если пакет поставлен): `XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget`,
       `Manager.activeLoaders` / `loaders`, поле `OpenVRSettings.StereoRenderingMode`.
-- [ ] `Application.onBeforeRender` и `EditorApplication.update` в Play Mode дают по одному замеру на кадр.
+- [x] `Application.onBeforeRender` и `EditorApplication.update` в Play Mode дают по одному замеру на кадр.
