@@ -18,6 +18,7 @@ namespace AuditTestsEditor
             PlayerSettings.stereoRenderingPath = StereoRenderingPath.MultiPass;
 #pragma warning restore 0618
             PlayerSettings.gpuSkinning = true;
+            if (PlayerSettings.colorSpace != ColorSpace.Linear) PlayerSettings.colorSpace = ColorSpace.Linear;
             Physics.defaultSolverIterations = 6;
             Time.fixedDeltaTime = 0.02f;
             SetTierPath(RenderingPath.Forward);
@@ -72,6 +73,7 @@ namespace AuditTestsEditor
             QualitySettings.shadowCascades = 2;
             QualitySettings.anisotropicFiltering = aniso;
             QualitySettings.skinWeights = weights;
+            QualitySettings.streamingMipmapsActive = true;
         }
 
         static void SetStandaloneDefault(int level)

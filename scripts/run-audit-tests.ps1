@@ -63,7 +63,10 @@ foreach ($step in $steps) {
     $log = Join-Path $Reports "$name.log"
     $argLine = "-batchmode -nographics -quit -projectPath `"$Project`" -logFile `"$log`" -executeMethod $($step[1]) $($step[2])"
     $started = Get-Date
-    $p = Start-Process -FilePath $unity -ArgumentList $argLine -Wait -PassThru -NoNewWindow
+    # -Wait would also wait for Unity's helper processes (shader compiler) that linger after exit.
+    $p = Start-Process -FilePath $unity -ArgumentList $argLine -PassThru -NoNewWindow
+    $null = $p.Handle  # keeps the handle, otherwise ExitCode is empty
+    $p.WaitForExit()
     $seconds = [int]((Get-Date) - $started).TotalSeconds
     $ok = $p.ExitCode -eq $expected
     if (-not $ok) { $failed++ }

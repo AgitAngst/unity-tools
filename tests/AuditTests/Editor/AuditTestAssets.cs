@@ -18,6 +18,8 @@ namespace AuditTestsEditor
         public static Material Sky, Plain, NoInst, NoInst3, Big4096, Big8192, Small1024, FakeNormal, Normal, NoMips, Raw, Rgba32, Readable;
         public static Texture2D TOverlayOnly;
         public static Cubemap TCube;
+        public static Mesh ObjAnimated, Channels, Split, Degenerate, DupA, DupB, FarPivot, ObjIndex32, ObjBig, ObjScaled, ObjEmbedded;
+        public static Material Dense, Wall, Metal, MatDupA, MatDupB, Fade, FadeSmall, KeyNormal, Npot, TexDupA, TexDupB, AlphaFull;
         public static Mesh Uv1Good, Uv1Outside, Uv1Overlap, ObjLmNoUv, ObjLmGen;
         public static Mesh Grid12k, Grid30k, Grid16kSkin, TwoSub, Skin8, ObjReadWrite, ObjReadWriteCollider, ObjNotOptimized, ObjClean;
         public static AudioClip A35, A15Pcm, A5;
@@ -65,9 +67,39 @@ namespace AuditTestsEditor
             Sky.SetTexture("_Tex", TCube);
             EditorUtility.SetDirty(Sky);
 
+            var tNpot = Tex("T_Npot", 300, 200, false, i => i.npotScale = TextureImporterNPOTScale.None);
+            var tDupA = Tex("T_DupA", 64, 64, false, i => { }, "dup");
+            var tDupB = Tex("T_DupB", 64, 64, false, i => { }, "dup");
+            var tDense = Tex("T_Dense", 2048, 2048, false, i => { });
+            var tWall = Tex("T_Wall", 128, 128, false, i => { });
+            var tAlphaFull = Tex("T_AlphaFull", 256, 256, false, i =>
+            {
+                var s = i.GetPlatformTextureSettings("Standalone");
+                s.overridden = true;
+                s.format = TextureImporterFormat.DXT5;
+                i.SetPlatformTextureSettings(s);
+            });
+            var tMetal = Tex("T_Metal", 256, 256, false, i => { });
+            Dense = Mat("M_Dense", m => m.mainTexture = tDense);
+            Wall = Mat("M_Wall", m => m.mainTexture = tWall);
+            Metal = Mat("M_Metal", m =>
+            {
+                m.SetTexture("_MetallicGlossMap", tMetal);
+                m.EnableKeyword("_METALLICGLOSSMAP");
+            });
+            MatDupA = Mat("M_DupA", m => { m.mainTexture = tSmall; m.enableInstancing = false; m.color = new Color(0.5f, 0.6f, 0.7f); });
+            MatDupB = Mat("M_DupB", m => { m.mainTexture = tSmall; m.enableInstancing = false; m.color = new Color(0.5f, 0.6f, 0.7f); });
+            Fade = Mat("M_Fade", m => { m.SetFloat("_Mode", 2f); m.renderQueue = 3000; m.EnableKeyword("_ALPHABLEND_ON"); });
+            FadeSmall = Mat("M_FadeSmall", m => { m.color = new Color(1f, 1f, 1f, 0.5f); m.SetFloat("_Mode", 2f); m.renderQueue = 3000; m.EnableKeyword("_ALPHABLEND_ON"); });
+            KeyNormal = Mat("M_KeyNormal", m => m.EnableKeyword("_NORMALMAP"));
+            Npot = Mat("M_Npot", m => m.mainTexture = tNpot);
+            TexDupA = Mat("M_TexDupA", m => m.mainTexture = tDupA);
+            TexDupB = Mat("M_TexDupB", m => m.mainTexture = tDupB);
+            AlphaFull = Mat("M_AlphaFull", m => m.mainTexture = tAlphaFull);
+
             Plain = Mat("M_Plain", m => { m.mainTexture = tSmall; m.enableInstancing = true; });
             NoInst = Mat("M_NoInst", m => { m.mainTexture = tSmall; m.enableInstancing = false; });
-            NoInst3 = Mat("M_NoInst3", m => { m.mainTexture = tSmall; m.enableInstancing = false; });
+            NoInst3 = Mat("M_NoInst3", m => { m.mainTexture = tSmall; m.enableInstancing = false; m.color = new Color(0.9f, 0.9f, 0.9f); });
             Big4096 = Mat("M_Big4096", m => m.mainTexture = t4096);
             Big8192 = Mat("M_Big8192", m => m.mainTexture = t8192);
             Small1024 = Mat("M_1024", m => m.mainTexture = t1024);
@@ -98,6 +130,54 @@ namespace AuditTestsEditor
             ObjClean = Model("Clean", false, MeshOptimizationFlags.Everything);
             ObjLmNoUv = Model("LmNoUv", false, MeshOptimizationFlags.Everything);
             ObjLmGen = Model("LmGen", false, MeshOptimizationFlags.Everything, true);
+            ObjIndex32 = Model("Index32", false, MeshOptimizationFlags.Everything, false, i => i.indexFormat = ModelImporterIndexFormat.UInt32);
+            ObjBig = Model("Big12k", false, MeshOptimizationFlags.Everything, false, null, GridObj(60, 100));
+            ObjAnimated = Model("Animated", false, MeshOptimizationFlags.Everything, false, i =>
+            {
+                i.animationType = ModelImporterAnimationType.Generic;
+                i.importAnimation = true;
+            });
+            ObjScaled = Model("Scaled", false, MeshOptimizationFlags.Everything, false, i => i.globalScale = 0.01f);
+            ObjEmbedded = Model("Embedded", false, MeshOptimizationFlags.Everything, false, i =>
+            {
+                i.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
+                i.materialLocation = ModelImporterMaterialLocation.InPrefab;
+            });
+
+            Channels = MeshAsset("Channels", () =>
+            {
+                var m = Grid(10, 10);
+                m.colors = Enumerable.Repeat(Color.white, m.vertexCount).ToArray();
+                m.RecalculateTangents();
+                m.SetUVs(2, m.uv.ToList());
+                return m;
+            });
+            Split = MeshAsset("Split", () =>
+            {
+                var source = Grid(20, 15);
+                var v = source.vertices;
+                var tri = source.triangles;
+                var mesh = new Mesh { vertices = tri.Select(i => v[i]).ToArray(), triangles = Enumerable.Range(0, tri.Length).ToArray() };
+                mesh.RecalculateNormals();
+                return mesh;
+            });
+            Degenerate = MeshAsset("Degenerate", () =>
+            {
+                var m = Grid(10, 10);
+                var tri = m.triangles;
+                for (int i = 0; i < tri.Length / 2; i += 3) tri[i + 2] = tri[i + 1];
+                m.triangles = tri;
+                return m;
+            });
+            DupA = MeshAsset("DupA", () => Grid(5, 5));
+            DupB = MeshAsset("DupB", () => Grid(5, 5));
+            FarPivot = MeshAsset("FarPivot", () =>
+            {
+                var m = Grid(5, 5);
+                m.vertices = m.vertices.Select(p => p + new Vector3(50f, 0f, 0f)).ToArray();
+                m.RecalculateBounds();
+                return m;
+            });
 
             Uv1Good = MeshAsset("Uv1Good", () => { var m = Grid(10, 10); m.uv2 = m.uv; return m; });
             Uv1Outside = MeshAsset("Uv1Outside", () =>
@@ -127,16 +207,17 @@ namespace AuditTestsEditor
 
         // ---- textures ----
 
-        static Texture2D Tex(string name, int width, int height, bool alpha, Action<TextureImporter> setup)
+        static Texture2D Tex(string name, int width, int height, bool alpha, Action<TextureImporter> setup, string seed = null)
         {
             var path = Root + "/Textures/" + name + ".png";
             if (!File.Exists(path))
             {
                 var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 var pixels = new Color32[width * height];
+                byte salt = (byte)((seed ?? name).Sum(c => (int)c) % 251);
                 for (int y = 0; y < height; y++)
                     for (int x = 0; x < width; x++)
-                        pixels[y * width + x] = new Color32((byte)(x * 255 / width), (byte)(y * 255 / height), 128, (byte)(alpha ? 128 : 255));
+                        pixels[y * width + x] = new Color32((byte)(x * 255 / width), (byte)(y * 255 / height), salt, (byte)(alpha ? 128 : 255));
                 texture.SetPixels32(pixels);
                 File.WriteAllBytes(path, texture.EncodeToPNG());
                 Object.DestroyImmediate(texture);
@@ -153,6 +234,10 @@ namespace AuditTestsEditor
             importer.filterMode = FilterMode.Bilinear;
             importer.alphaSource = TextureImporterAlphaSource.FromInput;
             importer.ClearPlatformTextureSettings("Standalone");
+            importer.npotScale = TextureImporterNPOTScale.ToNearest;
+            importer.sRGBTexture = true;
+            importer.anisoLevel = 1;
+            importer.streamingMipmaps = false;
             setup(importer);
             if (Signature(importer) != before) importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
@@ -164,7 +249,8 @@ namespace AuditTestsEditor
             return string.Join("|", new object[]
             {
                 i.textureType, i.textureShape, i.mipmapEnabled, i.isReadable, i.textureCompression, i.maxTextureSize,
-                i.filterMode, i.alphaSource, i.generateCubemap, s.overridden, s.format, s.maxTextureSize
+                i.filterMode, i.alphaSource, i.generateCubemap, s.overridden, s.format, s.maxTextureSize,
+                i.npotScale, i.sRGBTexture, i.anisoLevel, i.streamingMipmaps
             }.Select(o => o.ToString()).ToArray());
         }
 
@@ -180,6 +266,11 @@ namespace AuditTestsEditor
                 AssetDatabase.CreateAsset(material, path);
             }
             material.mainTexture = null;
+            material.shaderKeywords = new string[0];
+            material.renderQueue = -1;
+            material.color = Color.white;
+            material.SetFloat("_Mode", 0f);
+            material.SetTexture("_MetallicGlossMap", null);
             material.SetTexture("_BumpMap", null);
             material.enableInstancing = true;
             setup(material);
@@ -289,25 +380,54 @@ namespace AuditTestsEditor
             return mesh;
         }
 
-        static Mesh Model(string name, bool readable, MeshOptimizationFlags optimization, bool lightmapUv = false)
+        static Mesh Model(string name, bool readable, MeshOptimizationFlags optimization, bool lightmapUv = false,
+            Action<ModelImporter> extra = null, string obj = null)
         {
             var path = Root + "/Models/" + name + ".obj";
             if (!File.Exists(path))
             {
-                File.WriteAllText(path, CubeObj);
+                File.WriteAllText(path, obj ?? CubeObj);
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             }
             var importer = (ModelImporter)AssetImporter.GetAtPath(path);
-            if (importer.isReadable != readable || importer.meshOptimizationFlags != optimization ||
-                importer.materialImportMode != ModelImporterMaterialImportMode.None || importer.generateSecondaryUV != lightmapUv)
-            {
-                importer.generateSecondaryUV = lightmapUv;
-                importer.isReadable = readable;
-                importer.meshOptimizationFlags = optimization;
-                importer.materialImportMode = ModelImporterMaterialImportMode.None;
-                importer.SaveAndReimport();
-            }
+            var before = ModelSignature(importer);
+            importer.generateSecondaryUV = lightmapUv;
+            importer.isReadable = readable;
+            importer.meshOptimizationFlags = optimization;
+            importer.materialImportMode = ModelImporterMaterialImportMode.None;
+            importer.indexFormat = ModelImporterIndexFormat.Auto;
+            importer.meshCompression = ModelImporterMeshCompression.Off;
+            importer.globalScale = 1f;
+            importer.animationType = ModelImporterAnimationType.None;
+            importer.importAnimation = false;
+            if (extra != null) extra(importer);
+            if (ModelSignature(importer) != before) importer.SaveAndReimport();
             return AssetDatabase.LoadAllAssetsAtPath(path).OfType<Mesh>().First();
+        }
+
+        static string ModelSignature(ModelImporter i)
+        {
+            return string.Join("|", new object[]
+            {
+                i.generateSecondaryUV, i.isReadable, i.meshOptimizationFlags, i.materialImportMode, i.indexFormat, i.meshCompression,
+                i.globalScale, i.animationType, i.importAnimation, i.materialLocation
+            }.Select(o => o.ToString()).ToArray());
+        }
+
+        static string GridObj(int w, int h)
+        {
+            var sb = new System.Text.StringBuilder("o Grid\n");
+            for (int y = 0; y <= h; y++)
+                for (int x = 0; x <= w; x++)
+                    sb.Append("v ").Append(x * 0.01f).Append(" 0 ").Append(y * 0.01f).Append('\n');
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    int i = y * (w + 1) + x + 1;
+                    sb.Append("f ").Append(i).Append(' ').Append(i + w + 1).Append(' ').Append(i + 1).Append('\n');
+                    sb.Append("f ").Append(i + 1).Append(' ').Append(i + w + 1).Append(' ').Append(i + w + 2).Append('\n');
+                }
+            return sb.ToString().Replace(',', '.');
         }
 
         // ---- audio ----

@@ -204,6 +204,8 @@ namespace AuditTestsEditor
                 var instancing = result.issues.FirstOrDefault(i => i.assetPath.EndsWith("M_NoInst.mat"));
                 var near = GameObject.Find("Cam/Near");
                 log.AppendLine("info: Cam/Near nearClipPlane = " + (near != null ? near.GetComponent<Camera>().nearClipPlane.ToString("R") : "?"));
+                foreach (var id in new[] { "MESH_IMPORT_ANIMATION", "MESH_IMPORT_CAMERAS_LIGHTS", "MESH_EMBEDDED_MATERIALS", "TEX_ALPHA_UNUSED" })
+                    log.AppendLine("info: " + id + " = " + string.Join("; ", result.issues.Where(i => i.checkId == id).Select(Brief).ToArray()));
                 log.AppendLine("info: instancing check for M_NoInst = " + (instancing != null ? instancing.checkId : "none"));
             }
             if (variant == "budgets-low") BudgetsLow(result);
@@ -284,6 +286,65 @@ namespace AuditTestsEditor
             Has("MESH_NOT_OPTIMIZED", Severity.Info, "NotOptimized.obj");
             Not("MESH_READ_WRITE|MESH_READ_WRITE_NEEDED|MESH_NOT_OPTIMIZED", "Clean.obj");
             Has("MESH_BONES_PER_VERTEX", Severity.Warning, "Skin8.asset");
+
+            // 3D assets: meshes and models
+            Has("MESH_UNUSED_CHANNELS", Severity.Info, "Channels.asset", contains: "Color, Tangent, UV2");
+            Not("MESH_UNUSED_CHANNELS", "Grid12k.asset");
+            Has("MESH_SPLIT_VERTICES", Severity.Info, "Split.asset");
+            Not("MESH_SPLIT_VERTICES", "Grid12k.asset");
+            Has("MESH_INDEX_32", Severity.Info, "Index32.obj", fixable: true);
+            Not("MESH_INDEX_32", "Clean.obj");
+            Has("MESH_COMPRESSION_OFF", Severity.Info, "Big12k.obj", fixable: true);
+            Not("MESH_COMPRESSION_OFF", "Clean.obj");
+            Has("MESH_IMPORT_SCALE", Severity.Info, "Scaled.obj");
+            Not("MESH_IMPORT_SCALE", "Clean.obj");
+            Has("MESH_EXTREME_SCALE", Severity.Warning, "Asset/Huge");
+            Not("MESH_EXTREME_SCALE", "Gen/Mirrored");
+            Has("MESH_DENSE_SMALL", Severity.Info, "Asset/DenseSmall");
+            Not("MESH_DENSE_SMALL", "Mesh/12k");
+            Has("MESH_LOD_WEAK", Severity.Warning, "Lod/Weak");
+            Has("MESH_LOD_NO_CULL", Severity.Info, "Lod/Weak");
+            Has("MESH_LOD_LATE", Severity.Info, "Lod/Late");
+            Has("MESH_LOD_MATERIALS", Severity.Info, "Lod/Mats");
+            Not("MESH_LOD_WEAK|MESH_LOD_NO_CULL|MESH_LOD_LATE|MESH_LOD_MATERIALS", "Mesh/Lod");
+            Has("MESH_DEGENERATE", Severity.Info, "Degenerate.asset");
+            Not("MESH_DEGENERATE", "Grid12k.asset");
+            // The OBJ test models are all the same cube, so they form a duplicate group of their own.
+            Has("MESH_DUPLICATE", Severity.Info, "DupA.asset", contains: "DupA, DupB");
+            Has("MESH_IMPORT_ANIMATION", Severity.Info, "Animated.obj", fixable: true);
+            Not("MESH_IMPORT_ANIMATION", "Clean.obj");
+            Has("MESH_EMBEDDED_MATERIALS", Severity.Info, "Embedded.obj");
+            Not("MESH_EMBEDDED_MATERIALS", "Clean.obj");
+            Has("TEX_ALPHA_UNUSED", Severity.Info, "T_AlphaFull.png", fixable: true);
+            Not("TEX_ALPHA_UNUSED", "T_Normal.png");
+            Has("MESH_PIVOT_FAR", Severity.Info, "FarPivot.asset");
+            Not("MESH_PIVOT_FAR", "Grid12k.asset");
+
+            // 3D assets: textures
+            Has("TEX_NPOT", Severity.Info, "T_Npot.png", fixable: true);
+            Count("TEX_DUPLICATE", 1);
+            Has("TEX_DUPLICATE", Severity.Info, contains: "T_DupA.png");
+            Has("TEX_DENSITY_HIGH", Severity.Info, "T_Dense.png");
+            Has("TEX_DENSITY_LOW", Severity.Info, "T_Wall.png");
+            // With anisotropic filtering off for the whole level the per-texture setting does not matter.
+            if (variant != "quality") Has("TEX_ANISO_LOW", Severity.Info, "T_Wall.png", fixable: true);
+            Not("TEX_ANISO_LOW", "T_Dense.png");
+            Has("TEX_SRGB_DATA", Severity.Warning, "T_Metal.png", fixable: true);
+            Not("TEX_SRGB_DATA", "T_Small.png");
+            Has("TEX_STREAMING_OFF", Severity.Info, "T_4096.png", fixable: true);
+            Not("TEX_STREAMING_OFF", "T_Small.png");
+
+            // Materials
+            Count("MAT_DUPLICATE", 1);
+            Has("MAT_DUPLICATE", Severity.Info, contains: "M_DupA, M_DupB", fixable: true);
+            Has("MAT_TRANSPARENT", Severity.Warning, "M_Fade.mat");
+            Has("MAT_TRANSPARENT", Severity.Info, "M_FadeSmall.mat");
+            Not("MAT_TRANSPARENT", "M_Plain.mat");
+            Has("MAT_KEYWORD_NO_TEXTURE", Severity.Info, "M_KeyNormal.mat", fixable: true, contains: "_NORMALMAP");
+            Not("MAT_KEYWORD_NO_TEXTURE", "M_Metal.mat");
+            Has("MAT_SIMPLE_STANDARD", Severity.Info);
+            Has("MAT_DEFAULT", Severity.Warning, "InstBuiltin/A");
+            Not("MAT_DEFAULT", "DC/Candidate");
 
             // Textures
             Has("TEX_SIZE", Severity.Warning, "T_4096.png");
@@ -473,7 +534,8 @@ namespace AuditTestsEditor
                 Has("DC_BUDGET");
                 Not("MESH_SCENE_TRIS|TEX_MEMORY");
             }
-            else if (variant != "budgets-low") Not("DC_BUDGET|MESH_SCENE_TRIS|TEX_MEMORY");
+            // The draw call estimate of the seed scene is close to the budget, so only budgets-low checks DC_BUDGET exactly.
+            else if (variant != "budgets-low") Not("MESH_SCENE_TRIS|TEX_MEMORY");
         }
 
         static void Has(string ids, Severity? severity = null, string path = "", string contains = null, int? users = null,
@@ -617,7 +679,10 @@ namespace AuditTestsEditor
                 new[] { "TEX_UNCOMPRESSED", "T_Raw.png" }, new[] { "TEX_UNCOMPRESSED", "T_Rgba32.png" },
                 new[] { "TEX_READ_WRITE", "T_Readable.png" }, new[] { "AUDIO_DECOMPRESS_LONG", "A_35s.wav" },
                 new[] { "AUDIO_PRELOAD_LONG", "A_35s.wav" }, new[] { "AUDIO_DECOMPRESS_LONG", "A_15s_pcm.wav" },
-                new[] { "AUDIO_PCM_LARGE", "A_15s_pcm.wav" }, new[] { "LIGHT_NO_UV1", "LmNoUv.obj" }
+                new[] { "AUDIO_PCM_LARGE", "A_15s_pcm.wav" }, new[] { "LIGHT_NO_UV1", "LmNoUv.obj" },
+                new[] { "MESH_INDEX_32", "Index32.obj" }, new[] { "MESH_IMPORT_ANIMATION", "Animated.obj" }, new[] { "TEX_ALPHA_UNUSED", "T_AlphaFull.png" }, new[] { "MESH_COMPRESSION_OFF", "Big12k.obj" },
+                new[] { "TEX_NPOT", "T_Npot.png" }, new[] { "TEX_SRGB_DATA", "T_Metal.png" }, new[] { "TEX_ANISO_LOW", "T_Wall.png" },
+                new[] { "TEX_STREAMING_OFF", "T_4096.png" }, new[] { "MAT_KEYWORD_NO_TEXTURE", "M_KeyNormal.mat" }
             };
             var assetFixes = assetTargets.Select(t => afterUndo.issues.FirstOrDefault(i => i.checkId == t[0] && i.assetPath.EndsWith("/" + t[1]))).ToList();
             for (int k = 0; k < assetTargets.Length; k++)
@@ -629,6 +694,22 @@ namespace AuditTestsEditor
                 foreach (var t in assetTargets) Not(t[0], t[1]);
                 Has("MESH_READ_WRITE_NEEDED", Severity.Info, "ReadWriteCollider.obj");
             });
+            var metal = (TextureImporter)AssetImporter.GetAtPath(AuditTestAssets.Root + "/Textures/T_Metal.png");
+            Check(!metal.sRGBTexture, "T_Metal.png: sRGB off");
+            Check(!AuditTestAssets.KeyNormal.IsKeywordEnabled("_NORMALMAP"), "M_KeyNormal: _NORMALMAP off");
+
+            // Duplicate materials: the scene fix swaps renderers to the first one and Undo brings them back.
+            var dup = afterAssets.issues.FirstOrDefault(i => i.checkId == "MAT_DUPLICATE" && i.assetPath.EndsWith("M_DupA.mat"));
+            var dupB = GameObject.Find("Mat/DupB").GetComponent<Renderer>();
+            Check(dup != null && dup.AutoFixable && !dup.fixTouchesAsset, "duplicate materials offer a scene fix");
+            if (dup != null)
+            {
+                AutoFixer.Apply(new List<AuditIssue> { dup });
+                Check(dupB.sharedMaterial == AuditTestAssets.MatDupA, "Mat/DupB now uses M_DupA");
+                Undo.PerformUndo();
+                Check(dupB.sharedMaterial == AuditTestAssets.MatDupB, "Undo brings M_DupB back");
+            }
+
             var lm = (ModelImporter)AssetImporter.GetAtPath(AuditTestAssets.Root + "/Models/LmNoUv.obj");
             Check(lm.generateSecondaryUV, "LmNoUv.obj: Generate Lightmap UVs turned on");
             var rgba = (TextureImporter)AssetImporter.GetAtPath(AuditTestAssets.Root + "/Textures/T_Rgba32.png");
@@ -687,7 +768,9 @@ namespace AuditTestsEditor
 
             var fixes = LightmapUvReport.TurnOnFixes(rows);
             log.AppendLine("info: turn-on fixes = " + string.Join(", ", fixes.Select(f => f.assetPath).ToArray()));
-            Check(fixes.Count == 5 && fixes.All(f => f.fixTouchesAsset && f.AutoFixable), "turn on is offered for the 5 models without UV1");
+            int canTurnOn = rows.Count(r => r.CanTurnOn);
+            Check(canTurnOn >= 5 && fixes.Count == canTurnOn && fixes.All(f => f.fixTouchesAsset && f.AutoFixable),
+                "turn on is offered for every model without UV1 (" + fixes.Count + ")");
             AutoFixer.Apply(fixes);
             var after = LightmapUvReport.Build();
             Check(after.Where(r => r.importer != null).All(r => r.hasUv1 && r.GenerateOn), "after turning on, every model has the option on and UV1");

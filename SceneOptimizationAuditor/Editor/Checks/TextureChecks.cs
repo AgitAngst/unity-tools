@@ -109,6 +109,8 @@ namespace UnityTools.SceneOptimization
                 ctx.ReportSetting("TEX_ANISO_DISABLED", Category.Textures, Severity.Info, "Project/Quality");
             if (notTrilinear > 0)
                 ctx.Report("TEX_NOT_TRILINEAR", Category.Textures, Severity.Info, null, notTrilinear);
+
+            AuditTextureAssets(ctx);
         }
 
         // Standalone override when set, otherwise the default platform settings.

@@ -45,6 +45,7 @@ namespace UnityTools.SceneOptimization
                 new KeyValuePair<Category, Action<AuditContext>>(Category.DrawCalls, AuditDrawCalls),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Meshes, AuditMeshes),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Textures, AuditTextures),
+                new KeyValuePair<Category, Action<AuditContext>>(Category.Materials, AuditMaterials),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Lighting, AuditLighting),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Physics, AuditPhysics),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Animators, AuditAnimators),
@@ -56,16 +57,25 @@ namespace UnityTools.SceneOptimization
             try
             {
                 if (Progress(showProgress, Strings.Get("ui.progress.collect"), 0f)) return null;
+                // Slow steps are named in the log line, so a heavy scene shows where the time goes.
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                var slow = new List<string>();
                 var ctx = new AuditContext(budgets);
                 ctx.Collect();
+                if (watch.Elapsed.TotalSeconds > 0.5) slow.Add("collect " + watch.Elapsed.TotalSeconds.ToString("F1") + " s");
                 for (int i = 0; i < steps.Length; i++)
                 {
                     var info = Strings.Format("ui.progress.category", new object[] { Strings.CategoryName(steps[i].Key) });
                     if (Progress(showProgress, info, (i + 1f) / (steps.Length + 1f))) return null;
+                    var stepStart = watch.Elapsed.TotalSeconds;
                     steps[i].Value(ctx);
+                    var took = watch.Elapsed.TotalSeconds - stepStart;
+                    if (took > 0.5) slow.Add(steps[i].Key + " " + took.ToString("F1") + " s");
                 }
                 var result = ToResult(ctx);
-                UnityEngine.Debug.Log("[SceneAudit] Audit " + ToolVersion.Full + ": " + result.issues.Count + " issues in " + result.sceneNames.Length + " scene(s).");
+                UnityEngine.Debug.Log("[SceneAudit] Audit " + ToolVersion.Full + ": " + result.issues.Count + " issues in " +
+                    result.sceneNames.Length + " scene(s), " + watch.Elapsed.TotalSeconds.ToString("F1") + " s" +
+                    (slow.Count > 0 ? " (slow: " + string.Join(", ", slow.ToArray()) + ")" : "") + ".");
                 return result;
             }
             finally

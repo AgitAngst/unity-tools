@@ -80,6 +80,7 @@ namespace UnityTools.SceneOptimization
             AddAudio();
             AddVr();
             AddGeneral();
+            AddAssets();
             AddTitles();
         }
 
@@ -169,6 +170,36 @@ namespace UnityTools.SceneOptimization
                 "VR_PROBE_EVERY_FRAME", "Reflection probe updated every frame", "Reflection Probe каждый кадр",
                 "VR_PROBE_REALTIME", "Realtime reflection probe", "Realtime Reflection Probe",
                 "VR_NO_OCCLUSION", "Occlusion culling not baked", "Occlusion culling не запечён",
+                "MESH_UNUSED_CHANNELS", "Unused vertex channels", "Лишние каналы вершин",
+                "MESH_SPLIT_VERTICES", "Split mesh", "Рваная сетка",
+                "MESH_INDEX_32", "32-bit indices without need", "32-битные индексы без нужды",
+                "MESH_COMPRESSION_OFF", "Mesh compression off", "Сжатие меша выключено",
+                "MESH_IMPORT_SCALE", "Import scale is not 1", "Масштаб импорта не 1",
+                "MESH_EXTREME_SCALE", "Extreme scale", "Крайний масштаб",
+                "MESH_DENSE_SMALL", "Small object with a dense mesh", "Мелкий объект с плотной сеткой",
+                "MESH_LOD_WEAK", "Weak LOD1", "Слабый LOD1",
+                "MESH_LOD_NO_CULL", "LOD without culling", "LOD без отсечения",
+                "MESH_LOD_LATE", "Late LOD transition", "Поздний переход LOD",
+                "MESH_LOD_MATERIALS", "LOD levels with different materials", "Разные материалы в LOD",
+                "MESH_IMPORT_ANIMATION", "Animation import on a static model", "Импорт анимации у статичной модели",
+                "MESH_IMPORT_CAMERAS_LIGHTS", "Cameras or lights inside the model", "Камеры или свет внутри модели",
+                "MESH_EMBEDDED_MATERIALS", "Materials inside the model", "Материалы внутри модели",
+                "MESH_DEGENERATE", "Zero-area triangles", "Вырожденные треугольники",
+                "MESH_DUPLICATE", "Duplicate meshes", "Дубликаты мешей",
+                "MESH_PIVOT_FAR", "Far pivot", "Далёкий pivot",
+                "TEX_NPOT", "Non-power-of-two texture", "Текстура не степени двойки",
+                "TEX_DUPLICATE", "Duplicate textures", "Дубликаты текстур",
+                "TEX_DENSITY_HIGH", "Texture too dense for the object", "Текстура слишком плотная для объекта",
+                "TEX_DENSITY_LOW", "Texture too sparse for the object", "Текстура слишком редкая для объекта",
+                "TEX_ALPHA_UNUSED", "Unused alpha channel", "Пустая альфа",
+                "TEX_SRGB_DATA", "sRGB on a data map", "sRGB у карты данных",
+                "TEX_ANISO_LOW", "Low anisotropic filtering", "Низкая анизотропия",
+                "TEX_STREAMING_OFF", "No mip streaming", "Без стриминга mip",
+                "MAT_DUPLICATE", "Duplicate materials", "Одинаковые материалы",
+                "MAT_TRANSPARENT", "Transparent material", "Прозрачный материал",
+                "MAT_KEYWORD_NO_TEXTURE", "Keyword without a texture", "Ключевое слово без текстуры",
+                "MAT_SIMPLE_STANDARD", "Simple Standard materials", "Простые материалы Standard",
+                "MAT_DEFAULT", "Default material", "Материал по умолчанию",
                 "GEN_EMPTY_LEAF", "Empty object", "Пустой объект",
                 "GEN_NEGATIVE_SCALE", "Negative scale", "Отрицательный масштаб",
                 "GEN_DEEP_HIERARCHY", "Deep hierarchy", "Глубокая иерархия",
@@ -344,6 +375,7 @@ namespace UnityTools.SceneOptimization
             Add("cat.DrawCalls", "Draw Calls", "Draw calls и батчинг");
             Add("cat.Meshes", "Meshes", "Меши");
             Add("cat.Textures", "Textures", "Текстуры");
+            Add("cat.Materials", "Materials", "Материалы");
             Add("cat.Lighting", "Lighting", "Освещение");
             Add("cat.Physics", "Physics", "Физика");
             Add("cat.Animators", "Animators", "Аниматоры");
@@ -591,6 +623,81 @@ namespace UnityTools.SceneOptimization
             Add("VR_PROBE_REALTIME.fix", "Baked probes are preferred in VR.", "В VR лучше запечённые пробы.");
             Add("VR_NO_OCCLUSION", "{0} static renderers, but no occlusion culling data is baked.", "{0} статичных рендереров, но occlusion culling не запечён.");
             Add("VR_NO_OCCLUSION.fix", "Bake occlusion culling (Window > Rendering > Occlusion Culling).", "Запеките occlusion culling (Window > Rendering > Occlusion Culling).");
+        }
+
+        static void AddAssets()
+        {
+            Add("MESH_UNUSED_CHANNELS", "Mesh {0} carries vertex data its materials do not use: {1}.", "Меш {0} несёт данные вершин, которые его материалы не используют: {1}.");
+            Add("MESH_UNUSED_CHANNELS.fix", "Turn off Import Tangents without normal maps, remove vertex colors and extra UV sets in the 3D editor — less memory and bandwidth.", "Без карт нормалей выключите Import Tangents, уберите цвета вершин и лишние UV-наборы в 3D-редакторе — меньше памяти и нагрузки.");
+            Add("MESH_SPLIT_VERTICES", "Mesh {0}: {1} vertices for {2} triangles — the mesh is split.", "Меш {0}: {1} вершин на {2} треугольников — сетка рваная.");
+            Add("MESH_SPLIT_VERTICES.fix", "Usually split normals or UV seams from the export: smooth normals, weld vertices, fewer UV islands.", "Обычно это разбитые нормали или швы UV после экспорта: сгладьте нормали, сварите вершины, уменьшите число островов UV.");
+            Add("MESH_INDEX_32", "Mesh {0} uses 32-bit indices with only {1} vertices.", "Меш {0} с 32-битными индексами при {1} вершинах.");
+            Add("MESH_INDEX_32.fix", "16-bit indices are enough below 65 535 vertices and take half the memory.", "До 65 535 вершин хватает 16-битных индексов — вдвое меньше памяти.");
+            Add("MESH_INDEX_32.do", "Set Index Format to Auto", "Поставить Index Format = Auto");
+            Add("MESH_COMPRESSION_OFF", "Mesh Compression is off for a model of {0} triangles.", "У модели на {0} треугольников выключен Mesh Compression.");
+            Add("MESH_COMPRESSION_OFF.fix", "Compression only shrinks the build, not runtime memory; Low rarely shows artifacts.", "Сжатие уменьшает только размер сборки, не память в игре; Low редко даёт артефакты.");
+            Add("MESH_COMPRESSION_OFF.do", "Set Mesh Compression to Low", "Поставить Mesh Compression = Low");
+            Add("MESH_IMPORT_SCALE", "Model imported with Scale Factor {0}.", "Модель импортирована со Scale Factor {0}.");
+            Add("MESH_IMPORT_SCALE.fix", "Export in meters with scale 1: a wrong unit breaks lighting, physics and lightmap density.", "Экспортируйте в метрах с масштабом 1: неверная единица ломает свет, физику и плотность lightmap.");
+            Add("MESH_EXTREME_SCALE", "Extreme object scale {0}.", "Крайний масштаб объекта {0}.");
+            Add("MESH_EXTREME_SCALE.fix", "The model was probably exported in the wrong units: fix the export instead of scaling in the scene.", "Скорее всего, модель выгружена в неверных единицах: исправьте экспорт, а не масштаб в сцене.");
+            Add("MESH_DENSE_SMALL", "{0} triangles on an object of {1} cm.", "{0} треугольников на объекте {1} см.");
+            Add("MESH_DENSE_SMALL.fix", "Small objects need few triangles in VR: simplify the mesh or add LODs.", "Мелким объектам в VR хватает немногих треугольников: упростите меш или добавьте LOD.");
+            Add("MESH_LOD_WEAK", "LOD1 keeps {0}% of LOD0 triangles.", "LOD1 сохраняет {0}% треугольников LOD0.");
+            Add("MESH_LOD_WEAK.fix", "A useful LOD1 has about half of LOD0 or less.", "Полезный LOD1 — примерно половина LOD0 и меньше.");
+            Add("MESH_LOD_NO_CULL", "The last LOD level is never culled.", "Последний уровень LOD никогда не отсекается.");
+            Add("MESH_LOD_NO_CULL.fix", "Give the last level a transition above 0% so distant objects disappear.", "Дайте последнему уровню переход больше 0 %, чтобы дальние объекты пропадали.");
+            Add("MESH_LOD_LATE", "LOD0 is used down to {0}% of the screen.", "LOD0 держится до {0}% экрана.");
+            Add("MESH_LOD_LATE.fix", "Switch to LOD1 earlier (around 30–50%): the full mesh is wasted on small screen sizes.", "Переключайте на LOD1 раньше (около 30–50 %): полный меш на маленьком размере на экране не нужен.");
+            Add("MESH_LOD_MATERIALS", "LOD level {0} uses other materials than LOD0.", "Уровень LOD {0} использует другие материалы, чем LOD0.");
+            Add("MESH_LOD_MATERIALS.fix", "Different materials between levels add SetPass calls and popping; share one material.", "Разные материалы на уровнях добавляют SetPass и скачки вида; используйте общий материал.");
+            Add("MESH_IMPORT_ANIMATION", "Model without animation imports it (Animation Type {0}).", "Модель без анимации импортирует её (Animation Type {0}).");
+            Add("MESH_IMPORT_ANIMATION.fix", "Static models need Animation Type None: otherwise each instance gets an empty Animator.", "Статичным моделям нужен Animation Type = None: иначе каждый экземпляр получает пустой Animator.");
+            Add("MESH_IMPORT_ANIMATION.do", "Set Animation Type to None and turn off Import Animation", "Поставить Animation Type = None и выключить Import Animation");
+            Add("MESH_IMPORT_CAMERAS_LIGHTS", "Model contains {0} from the 3D editor.", "В модели есть {0} из 3D-редактора.");
+            Add("MESH_IMPORT_CAMERAS_LIGHTS.fix", "Cameras and lights from the model end up in the scene; turn off Import Cameras and Import Lights.", "Камеры и свет из модели попадают в сцену; выключите Import Cameras и Import Lights.");
+            Add("MESH_IMPORT_CAMERAS_LIGHTS.do", "Turn off Import Cameras and Import Lights", "Выключить Import Cameras и Import Lights");
+            Add("MESH_EMBEDDED_MATERIALS", "Model keeps {0} materials inside the file.", "Модель держит {0} материалов внутри файла.");
+            Add("MESH_EMBEDDED_MATERIALS.fix", "Embedded materials cannot be edited or shared; extract them (Materials tab → Extract Materials) or use your own.", "Вложенные материалы нельзя править и переиспользовать; извлеките их (вкладка Materials → Extract Materials) или используйте свои.");
+            Add("MESH_DEGENERATE", "Mesh {0} has {1} zero-area triangles.", "У меша {0} {1} треугольников нулевой площади.");
+            Add("MESH_DEGENERATE.fix", "Degenerate triangles cost time and break normals and lightmap UVs; clean the mesh in the 3D editor.", "Вырожденные треугольники тратят время и портят нормали и развёртку под свет; почистите меш в 3D-редакторе.");
+            Add("MESH_DUPLICATE", "{0} identical meshes stored separately: {1}.", "{0} одинаковых меша хранятся отдельно: {1}.");
+            Add("MESH_DUPLICATE.fix", "Use one mesh asset: duplicates take memory and break batching.", "Используйте один меш: дубликаты занимают память и мешают батчингу.");
+            Add("MESH_PIVOT_FAR", "Pivot of mesh {0} is {1} m away from the mesh.", "Pivot меша {0} в {1} м от самого меша.");
+            Add("MESH_PIVOT_FAR.fix", "A far pivot breaks culling, LOD and transparent sorting; put the pivot at the base of the object in the 3D editor.", "Далёкий pivot ломает отсечение, LOD и сортировку прозрачных; поставьте pivot в основание объекта в 3D-редакторе.");
+            Add("TEX_NPOT", "Texture size {0} is not a power of two and NPOT scaling is off.", "Размер текстуры {0} не степень двойки, масштаб NPOT выключен.");
+            Add("TEX_NPOT.fix", "Power-of-two sizes compress better and get proper mip levels.", "Размеры степени двойки лучше сжимаются и дают правильные mip-уровни.");
+            Add("TEX_NPOT.do", "Set Non-Power of 2 to To Nearest", "Поставить Non-Power of 2 = To Nearest");
+            Add("TEX_DUPLICATE", "{0} identical texture files: {1}.", "{0} одинаковых файла текстур: {1}.");
+            Add("TEX_DUPLICATE.fix", "Keep one file and point the materials to it.", "Оставьте один файл и переназначьте его в материалах.");
+            Add("TEX_DENSITY_HIGH", "About {0} px per meter: {1} px texture on an object of {2} m.", "Около {0} px на метр: текстура {1} px на объекте {2} м.");
+            Add("TEX_DENSITY_HIGH.fix", "Lower Max Size: in VR around 512–1024 px per meter is usually enough.", "Уменьшите Max Size: в VR обычно хватает 512–1024 px на метр.");
+            Add("TEX_DENSITY_LOW", "About {0} px per meter: {1} px texture on an object of {2} m.", "Около {0} px на метр: текстура {1} px на объекте {2} м.");
+            Add("TEX_DENSITY_LOW.fix", "The surface will look blurry up close; tile the texture or use a larger one.", "Вблизи поверхность будет размытой; затайлите текстуру или возьмите крупнее.");
+            Add("TEX_ALPHA_UNUSED", "Alpha is fully opaque, but the texture keeps it ({0}).", "Альфа полностью непрозрачная, но текстура её хранит ({0}).");
+            Add("TEX_ALPHA_UNUSED.fix", "Without alpha the texture compresses to DXT1: half the memory.", "Без альфы текстура сожмётся в DXT1 — вдвое меньше памяти.");
+            Add("TEX_ALPHA_UNUSED.do", "Set Alpha Source to None", "Поставить Alpha Source = None");
+            Add("TEX_SRGB_DATA", "Data map in {0} is imported as sRGB colour.", "Карта данных в {0} импортирована как цвет (sRGB).");
+            Add("TEX_SRGB_DATA.fix", "Metallic, occlusion, height and masks are data: with sRGB on, lighting is wrong in the Linear color space.", "Metallic, occlusion, высота и маски — это данные: с sRGB освещение в Linear-пространстве неверное.");
+            Add("TEX_SRGB_DATA.do", "Turn sRGB off", "Выключить sRGB");
+            Add("TEX_ANISO_LOW", "Large floor or wall texture with Aniso Level {0}.", "Текстура большого пола или стены с Aniso Level {0}.");
+            Add("TEX_ANISO_LOW.fix", "Surfaces at grazing angles blur and shimmer in VR; Aniso Level 4 is a good balance.", "Поверхности под углом размываются и мерцают в VR; Aniso Level 4 — хороший баланс.");
+            Add("TEX_ANISO_LOW.do", "Set Aniso Level to 4", "Поставить Aniso Level = 4");
+            Add("TEX_STREAMING_OFF", "Texture of {0} px without Streaming Mip Maps.", "Текстура {0} px без Streaming Mip Maps.");
+            Add("TEX_STREAMING_OFF.fix", "Texture streaming is on in the quality settings: large textures should use it to save memory.", "В настройках качества включён стриминг текстур: большим текстурам стоит его использовать.");
+            Add("TEX_STREAMING_OFF.do", "Turn on Streaming Mip Maps", "Включить Streaming Mip Maps");
+            Add("MAT_DUPLICATE", "{0} identical materials: {1}.", "{0} одинаковых материала: {1}.");
+            Add("MAT_DUPLICATE.fix", "One material instead of copies: fewer SetPass calls and better batching.", "Один материал вместо копий: меньше SetPass и лучше батчинг.");
+            Add("MAT_DUPLICATE.do", "Use the first material on every scene renderer of the copies", "Поставить первый материал всем рендерерам копий в сцене");
+            Add("MAT_TRANSPARENT", "Transparent material; largest object {0} m.", "Прозрачный материал; самый крупный объект {0} м.");
+            Add("MAT_TRANSPARENT.fix", "Transparency is drawn without depth and overlaps: on large surfaces it eats fill rate. Use Cutout or Opaque where possible.", "Прозрачное рисуется без глубины и с наложением: на крупных поверхностях это съедает fill rate. Где можно — Cutout или Opaque.");
+            Add("MAT_KEYWORD_NO_TEXTURE", "Keyword {0} is on without its texture.", "Ключевое слово {0} включено без своей текстуры.");
+            Add("MAT_KEYWORD_NO_TEXTURE.fix", "The shader runs the more expensive variant for nothing; turn the keyword off.", "Шейдер зря работает в более дорогом варианте; выключите ключевое слово.");
+            Add("MAT_KEYWORD_NO_TEXTURE.do", "Turn the keyword off", "Выключить ключевое слово");
+            Add("MAT_SIMPLE_STANDARD", "{0} Standard materials use only an albedo map.", "{0} материалов Standard используют только альбедо.");
+            Add("MAT_SIMPLE_STANDARD.fix", "If full PBR is not needed, Mobile/Diffuse or Legacy Diffuse is cheaper; check the look first.", "Если полный PBR не нужен, Mobile/Diffuse или Legacy Diffuse дешевле; сначала проверьте вид.");
+            Add("MAT_DEFAULT", "Object renders with the built-in Default-Material.", "Объект рисуется встроенным Default-Material.");
+            Add("MAT_DEFAULT.fix", "Assign a project material: the built-in one cannot be edited or batched with yours.", "Назначьте материал проекта: встроенный нельзя править и батчить с вашими.");
         }
 
         static void AddGeneral()

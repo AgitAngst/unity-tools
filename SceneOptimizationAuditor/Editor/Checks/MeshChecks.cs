@@ -31,6 +31,7 @@ namespace UnityTools.SceneOptimization
             Budget(ctx, "MESH_SCENE_TRIS", Category.Meshes, total, b.sceneTrisWarning, b.sceneTrisCritical);
 
             AuditModelImporters(ctx);
+            AuditMeshAssets(ctx);
 
             var checkedSkins = new HashSet<Mesh>();
             foreach (var skinned in ctx.All<SkinnedMeshRenderer>())

@@ -22,7 +22,7 @@
 Вид — по [ui-guideline.md](ui-guideline.md); снимки — `scripts\shoot-audit-window.ps1`.
 
 - **Тулбар:** «Запустить аудит» («Запустить снова» после прогона), «Исправить безопасное (N)»,
-  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v0.7.0.12` (X.Y.Z и номер сборки — число коммитов
+  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v0.8.0.13` (X.Y.Z и номер сборки — число коммитов
   репозитория) и `EN | RU` (хранится в `EditorPrefs`). Версия видна и на экране до первого прогона.
 - **Вкладки:** «Проблемы (N)», «Развёртка под свет», «Бюджеты», «Профайлер».
 - **До первого прогона** — что проверит, что ничего не меняет, крупная кнопка «Запустить аудит» и
@@ -151,6 +151,23 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `MESH_BONES_PER_VERTEX` | W | больше 4 костей на вершину | — |
 | `MESH_QUALITY_SKIN_WEIGHTS` | I | Skin Weights уровня больше Four Bones (есть skinned) | — |
 | `MESH_GPU_SKINNING_OFF` | W | GPU Skinning выключен (есть skinned) | — |
+| `MESH_UNUSED_CHANNELS` | I | меш несёт цвета вершин, касательные без карты нормалей или UV2–UV7, а все его материалы — Standard, Legacy или Mobile | — |
+| `MESH_SPLIT_VERTICES` | I | больше 1,5 вершины на треугольник при 500+ треугольниках (рваная сетка) | — |
+| `MESH_INDEX_32` | I | 32-битные индексы при меньше 65 535 вершин (исправление — Index Format = Auto у модели) | R |
+| `MESH_COMPRESSION_OFF` | I | Mesh Compression выключен у модели больше порога объекта (исправление — Low; влияет на размер сборки) | R |
+| `MESH_IMPORT_SCALE` | I | Scale Factor импорта модели ≠ 1 | — |
+| `MESH_EXTREME_SCALE` | W | масштаб объекта больше 50 или меньше 0,02 | — |
+| `MESH_DENSE_SMALL` | I | объект меньше 30 см и больше 2 000 треугольников | — |
+| `MESH_LOD_WEAK` | W | LOD1 сохраняет больше 70 % треугольников LOD0 | — |
+| `MESH_LOD_NO_CULL` | I | последний уровень LOD не отсекается (переход 0) | — |
+| `MESH_LOD_LATE` | I | LOD0 держится до меньше 15 % экрана | — |
+| `MESH_LOD_MATERIALS` | I | у уровней LOD другие материалы, чем у LOD0 | — |
+| `MESH_IMPORT_ANIMATION` | I | модель без клипов и skinned-мешей с Animation Type ≠ None или Import Animation (исправление — None и выключить) | R |
+| `MESH_IMPORT_CAMERAS_LIGHTS` | I | в модели есть камеры или свет (исправление — выключить Import Cameras и Import Lights) | R |
+| `MESH_EMBEDDED_MATERIALS` | I | материалы хранятся внутри файла модели | — |
+| `MESH_DEGENERATE` | I | треугольников нулевой площади не меньше 1 % | — |
+| `MESH_DUPLICATE` | I | одинаковые меши (раскладка, позиции, UV0, индексы) в разных ассетах; одна запись на группу | — |
+| `MESH_PIVOT_FAR` | I | pivot дальше max(1 м, 3 × размер меша) от центра меша | — |
 | **Textures** | | | |
 | `TEX_SIZE` | W / C | сторона выше порога (cubemap и skybox — не выше W; lightmaps и probes не проверяются) | — |
 | `TEX_NOT_NORMAL_MAP` | C | в свойстве нормалей, тип не Normal map | R |
@@ -160,6 +177,20 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `TEX_MEMORY` | W / C | оценка памяти выше порога | — |
 | `TEX_ANISO_DISABLED` | I | анизотропная фильтрация выключена на уровне | — |
 | `TEX_NOT_TRILINEAR` | I | число 3D-текстур с mipmaps на Point/Bilinear (одна запись) | — |
+| `TEX_NPOT` | I | размер не степень двойки при Non-Power of 2 = None (исправление — To Nearest) | R |
+| `TEX_DUPLICATE` | I | одинаковые файлы текстур под разными именами (по хэшу файла); одна запись на группу | — |
+| `TEX_DENSITY_HIGH` | I | сторона от 1024 px и больше 4 096 px на метр самого маленького объекта | — |
+| `TEX_DENSITY_LOW` | I | меньше 64 px на метр у объекта больше 4 м | — |
+| `TEX_ALPHA_UNUSED` | I | PNG с полностью непрозрачной альфой, а формат её хранит (DXT5, BC7, RGBA…); карты нормалей не проверяются (исправление — Alpha Source = None) | R |
+| `TEX_SRGB_DATA` | W | Linear-пространство, sRGB включён у текстуры в слоте `_MetallicGlossMap`, `_OcclusionMap`, `_ParallaxMap`, `_DetailMask` (исправление — выключить sRGB) | R |
+| `TEX_ANISO_LOW` | I | Aniso Level 0–1 у текстуры большого пола или стены (больше 4 м, толщина меньше 10 %) при анизотропии «Per Texture» (исправление — 4) | R |
+| `TEX_STREAMING_OFF` | I | стриминг mip включён в качестве, а у текстуры от 2048 px — нет (исправление — включить) | R |
+| **Materials** | | | |
+| `MAT_DUPLICATE` | I | материалы с одним шейдером, очередью, instancing, ключевыми словами и значениями; одна запись на группу (исправление — всем рендерерам копий в сцене поставить первый по пути, откатывается Undo) | R |
+| `MAT_TRANSPARENT` | W / I | очередь отрисовки от 2501 (прозрачный); W — если объект больше 2 м | — |
+| `MAT_KEYWORD_NO_TEXTURE` | I | ключевое слово `_NORMALMAP`, `_METALLICGLOSSMAP`, `_SPECGLOSSMAP`, `_PARALLAXMAP`, `_DETAIL_MULX2` без своей текстуры (исправление — выключить) | R |
+| `MAT_SIMPLE_STANDARD` | I | число материалов Standard только с альбедо (одна запись) | — |
+| `MAT_DEFAULT` | W | объект рисуется встроенным Default-Material | — |
 | **Lighting** | | | |
 | `LIGHT_REALTIME` | W | Point/Spot в Realtime | — |
 | `LIGHT_SHADOWED` | W / C | Realtime/Mixed источников с тенями больше порога | — |
@@ -241,7 +272,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 - Сцена: одна группа Undo «Scene Audit Fix», сцены помечаются изменёнными. Ассеты: импорт одним пакетом
   (`StartAssetEditing`), материалы сохраняются; ассеты вне `Assets/` пропускаются с предупреждением в
   консоли. Каждое изменение — строка `[SceneAudit] Fixed <checkId>: <путь>`; каждый прогон — строка
-  `[SceneAudit] Audit <версия>: N issues in M scene(s).` После применения аудит
+  `[SceneAudit] Audit <версия>: N issues in M scene(s), T s (slow: …).` — время прогона и категории дольше 0,5 с. После применения аудит
   запускается снова.
 - Не исправляются: Canvas Screen Space Overlay и все настройки проекта — только подсказка и кнопка
   «Настройки».
@@ -251,7 +282,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 «Сохранить отчёт» → меню «JSON…» или «CSV…» → диалог сохранения (имя по умолчанию —
 `<первая сцена>-audit-<yyyyMMdd-HHmm>`); формат файла определяется расширением.
 
-- **JSON** (UTF-8 без BOM): `scenes`, `toolVersion` (например `0.7.0.12`), `timestamp` (ISO 8601), `platform`, `targetFPS`, `xr` (`system`:
+- **JSON** (UTF-8 без BOM): `scenes`, `toolVersion` (например `0.8.0.13`), `timestamp` (ISO 8601), `platform`, `targetFPS`, `xr` (`system`:
   `Legacy` / `XRManagement` / `Legacy+XRManagement` / `None`, `loader`, `stereoMode`), `qualityLevel`,
   `summary`, `sceneBudgets` (`isEstimate`, значения и пороги Warning), `hasProfilerSnapshot`,
   `profilerSnapshot` (последний снимок активной сцены или пустой при `false`), `issues` (`checkId`,
@@ -308,6 +339,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |
 | `ReportExporter.cs` | JSON, CSV, командная строка |
 | `ProfilerCapture.cs` | снимок профайлера |
+| `Checks/MeshAssetChecks.cs`, `Checks/TextureAssetChecks.cs`, `Checks/MaterialChecks.cs` | проверки 3D-ассетов: модели, меши, текстуры, материалы |
 | `LightmapUvReport.cs` | вкладка «Развёртка под свет»: сканирование всех моделей, исправления, CSV |
 | `ToolVersion.cs` | версия утилиты и номер сборки (`scripts\stamp-version.ps1`) |
 | `ReflectionUtil.cs` | доступ к типам пакетов по имени |

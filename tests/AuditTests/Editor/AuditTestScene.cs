@@ -117,6 +117,36 @@ namespace AuditTestsEditor
             MeshObj("Mesh/Clean", A.ObjClean, A.Plain);
             Skinned("Mesh/Skin8", A.Skin8, 8, false);
 
+            // 3D assets.
+            MeshObj("Asset/Channels", A.Channels, A.Plain);
+            MeshObj("Asset/Split", A.Split, A.Plain);
+            MeshObj("Asset/Degenerate", A.Degenerate, A.Plain);
+            MeshObj("Asset/DupA", A.DupA, A.Plain);
+            MeshObj("Asset/DupB", A.DupB, A.Plain);
+            MeshObj("Asset/FarPivot", A.FarPivot, A.Plain);
+            MeshObj("Asset/Index32", A.ObjIndex32, A.Plain);
+            MeshObj("Asset/Big12k", A.ObjBig, A.Plain);
+            MeshObj("Asset/Scaled", A.ObjScaled, A.Plain);
+            MeshObj("Asset/Animated", A.ObjAnimated, A.Plain);
+            MeshObj("Asset/Embedded", A.ObjEmbedded, A.Plain);
+            Cube("Asset/Huge", A.Plain).transform.localScale = new Vector3(100f, 100f, 100f);
+            MeshObj("Asset/DenseSmall", A.Grid12k, A.Plain).transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+            Lod("Lod/Weak", A.Grid12k, A.Grid12k, A.Plain, A.Plain, 0.5f, 0f);
+            Lod("Lod/Late", A.Grid12k, A.DupA, A.Plain, A.Plain, 0.05f, 0.01f);
+            Lod("Lod/Mats", A.Grid12k, A.DupA, A.Plain, A.NoInst3, 0.5f, 0.1f);
+            Cube("Tex/DenseSmall", A.Dense).transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+            Cube("Tex/BigWall", A.Wall).transform.localScale = new Vector3(20f, 20f, 0.2f);
+            Cube("Tex/Npot", A.Npot);
+            Cube("Tex/DupA", A.TexDupA);
+            Cube("Tex/DupB", A.TexDupB);
+            Cube("Tex/Metal", A.Metal);
+            Cube("Tex/AlphaFull", A.AlphaFull);
+            Cube("Mat/DupA", A.MatDupA);
+            Cube("Mat/DupB", A.MatDupB);
+            Cube("Mat/FadeBig", A.Fade).transform.localScale = new Vector3(5f, 5f, 0.1f);
+            Cube("Mat/FadeSmall", A.FadeSmall);
+            Cube("Mat/KeyNormal", A.KeyNormal);
+
             // Textures.
             Cube("Tex/Big4096", A.Big4096);
             Cube("Tex/Big8192", A.Big8192);
@@ -266,6 +296,14 @@ namespace AuditTestsEditor
             var go = MeshObj(path, mesh, A.Plain);
             GameObjectUtility.SetStaticEditorFlags(go, StaticEditorFlags.ContributeGI | StaticEditorFlags.BatchingStatic);
             go.GetComponent<MeshRenderer>().receiveGI = ReceiveGI.Lightmaps;
+        }
+
+        static void Lod(string path, Mesh lod0, Mesh lod1, Material m0, Material m1, float t0, float t1)
+        {
+            var group = Obj(path).AddComponent<LODGroup>();
+            var r0 = MeshObj(path + "/LOD0", lod0, m0).GetComponent<Renderer>();
+            var r1 = MeshObj(path + "/LOD1", lod1, m1).GetComponent<Renderer>();
+            group.SetLODs(new[] { new LOD(t0, new[] { r0 }), new LOD(t1, new[] { r1 }) });
         }
 
         static GameObject Concave(string path)
