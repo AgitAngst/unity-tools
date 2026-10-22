@@ -47,6 +47,7 @@ $steps = @(
     @("cli-no-args", "UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine", "", 1),
     @("cli-bad-scene", "UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine", "-auditScene Assets/Nope.unity -auditReport $Reports\nope.json", 1),
     @("fixes", "AuditTestsEditor.AuditTests.RunFixes", ""),
+    @("lightmap-report", "AuditTestsEditor.AuditTests.RunLightmapReport", ""),
     @("steamvr-on", "AuditTestsEditor.AuditTests.EnableSteamVrStub", ""),
     @("steamvr-not-in-scene", "AuditTestsEditor.AuditTests.Run", "-auditVariant steamvr-not-in-scene"),
     @("steamvr-in-scene", "AuditTestsEditor.AuditTests.Run", "-auditVariant steamvr-in-scene"),

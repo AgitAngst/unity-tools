@@ -71,7 +71,7 @@ namespace UnityTools.SceneOptimization
         }
 
         // Share of UV1 vertices outside 0..1 (with a small tolerance).
-        static float OutsideShare(List<Vector2> uv)
+        internal static float OutsideShare(List<Vector2> uv)
         {
             if (uv.Count == 0) return 0f;
             const float t = VRBudgets.LightmapUvTolerance;
@@ -83,7 +83,7 @@ namespace UnityTools.SceneOptimization
 
         // Share of covered lightmap texels that more than one UV1 triangle covers. Texel centres exactly on an
         // edge count for no triangle, so neighbours that only share an edge do not overlap.
-        static float OverlapShare(Mesh mesh, List<Vector2> uv)
+        internal static float OverlapShare(Mesh mesh, List<Vector2> uv)
         {
             const int grid = VRBudgets.LightmapUvOverlapGrid;
             var coverage = new byte[grid * grid];

@@ -188,6 +188,37 @@ namespace UnityTools.SceneOptimization
             Add("ui.tab.problems", "Problems", "Проблемы");
             Add("ui.tab.problems.n", "Problems ({0})", "Проблемы ({0})");
             Add("ui.tab.budgets", "Budgets", "Бюджеты");
+            Add("ui.tab.lightmap", "Lightmap UVs", "Развёртка под свет");
+            Add("ui.lm.intro", "Checks every model in the loaded scenes, including objects not marked for lightmaps: is Generate Lightmap UVs on, is there a lightmap UV channel (UV1), does it stay inside 0–1 and does it overlap.",
+                "Проверяет все модели загруженных сцен, в том числе у объектов без отметки под lightmap: стоит ли галочка Generate Lightmap UVs, есть ли развёртка под свет (UV1), не выходит ли она за 0–1 и нет ли наложений.");
+            Add("ui.lm.scan", "Scan Models", "Проверить модели");
+            Add("ui.lm.scan.tip", "Scans the loaded scenes, inactive objects too. Nothing is changed.", "Сканирует загруженные сцены, и неактивные объекты тоже. Ничего не меняет.");
+            Add("ui.lm.enableAll", "Turn on for all without UV1 ({0})", "Включить у всех без UV1 ({0})");
+            Add("ui.lm.enable", "Turn on", "Включить галочку");
+            Add("ui.lm.csv", "Save CSV", "Сохранить CSV");
+            Add("ui.lm.onlyProblems", "Problems only", "Только проблемные");
+            Add("ui.lm.notScanned", "Press Scan Models to list the models of the loaded scenes.", "Нажмите «Проверить модели», чтобы увидеть модели загруженных сцен.");
+            Add("ui.lm.summary", "Models: {0} · without UV1: {1} · option on: {2} · with problems: {3}", "Моделей: {0} · без UV1: {1} · галочка стоит: {2} · с проблемами: {3}");
+            Add("ui.lm.none", "No meshes in the loaded scenes.", "В загруженных сценах нет мешей.");
+            Add("ui.lm.allGood", "No problems: every model has clean lightmap UVs.", "Проблем нет: у всех моделей чистая развёртка под свет.");
+            Add("ui.lm.builtIn", "Built-in or scene mesh without an asset", "Встроенный меш или меш сцены без ассета");
+            Add("ui.lm.on", "on", "стоит");
+            Add("ui.lm.off", "off", "нет");
+            Add("ui.lm.yes", "yes", "есть");
+            Add("ui.lm.no", "no", "нет");
+            Add("ui.lm.objects", "{0} (baked {1})", "{0} (в lightmap {1})");
+            Add("ui.lm.col.model", "Model", "Модель");
+            Add("ui.lm.col.model.tip", "Click to select it in the Project window.", "Клик — выделить в окне Project.");
+            Add("ui.lm.col.flag", "Generate UVs", "Галочка");
+            Add("ui.lm.col.flag.tip", "Generate Lightmap UVs in the model import settings; — for meshes without a model file.", "Generate Lightmap UVs в импорте модели; «—» — у мешей без файла модели.");
+            Add("ui.lm.col.uv1", "UV1", "UV1");
+            Add("ui.lm.col.uv1.tip", "Lightmap UV channel present in every mesh of the model.", "Развёртка под свет есть у всех мешей модели.");
+            Add("ui.lm.col.outside", "Out of 0–1", "За 0–1");
+            Add("ui.lm.col.outside.tip", "Share of UV1 vertices outside 0–1.", "Доля вершин UV1 за пределами 0–1.");
+            Add("ui.lm.col.overlap", "Overlaps", "Наложения");
+            Add("ui.lm.col.overlap.tip", "Share of lightmap texels shared by several UV1 triangles; above 1% is a problem.", "Доля текселей lightmap, общих у нескольких треугольников UV1; больше 1 % — проблема.");
+            Add("ui.lm.col.objects", "Objects", "Объекты");
+            Add("ui.lm.col.objects.tip", "Objects that use the model, and how many of them are baked into lightmaps.", "Объекты с этой моделью и сколько из них запекаются в lightmap.");
             Add("ui.tab.profiler", "Profiler", "Профайлер");
             Add("ui.empty.title", "VR scene audit", "Аудит VR-сцены");
             Add("ui.empty.text", "Checks the open scenes for HTC Vive Pro at 90 FPS: draw calls, meshes, textures, lighting, physics, animation, audio and VR settings. Nothing is changed: fixes are applied only when you press Fix and confirm.",

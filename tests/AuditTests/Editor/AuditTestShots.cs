@@ -47,6 +47,11 @@ namespace AuditTestsEditor
             if (!string.IsNullOrEmpty(expand)) Invoke("ExpandForShot", expand);
             var tab = Arg("-shotTab");
             if (tab != null) SetField("tab", int.Parse(tab));
+            if (HasArg("-shotScan"))
+            {
+                SetField("lmOnlyProblems", false);
+                Invoke("ScanLightmapUvs");
+            }
             frames = 0;
             started = EditorApplication.timeSinceStartup;
             EditorApplication.update += Tick;

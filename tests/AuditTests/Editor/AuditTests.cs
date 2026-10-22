@@ -641,6 +641,64 @@ namespace AuditTestsEditor
             return Finish("fixes", afterAssets);
         }
 
+        // ---- lightmap UV report ----
+
+        public static void RunLightmapReport()
+        {
+            int code;
+            try
+            {
+                code = LightmapReport();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[AuditTests] lightmap report crashed: " + e);
+                WriteReport("lightmap-report", "CRASH\n" + e);
+                code = 2;
+            }
+            EditorApplication.Exit(code);
+        }
+
+        static int LightmapReport()
+        {
+            Begin();
+            Setup("base");
+            var rows = LightmapUvReport.Build();
+            Func<string, LightmapUvRow> row = name => rows.FirstOrDefault(r => r.name == name);
+            foreach (var r in rows)
+                log.AppendLine("info: " + r.name + " gen=" + (r.importer == null ? "-" : r.GenerateOn.ToString()) + " uv1=" + r.hasUv1 +
+                               " out=" + r.outsideShare.ToString("F3") + " overlap=" + r.overlapShare.ToString("F3") + " objects=" + r.objects + " baked=" + r.bakedObjects);
+
+            var readWrite = row("ReadWrite.obj");
+            Check(readWrite != null && readWrite.importer != null && !readWrite.GenerateOn && !readWrite.hasUv1 && readWrite.bakedObjects == 0 && readWrite.CanTurnOn,
+                "model outside lightmaps without UV1 is listed and can be turned on");
+            var gen = row("LmGen.obj");
+            Check(gen != null && gen.GenerateOn && gen.hasUv1 && !gen.HasProblem, "model with Generate Lightmap UVs: option on, UV1, no problem");
+            var noUv = row("LmNoUv.obj");
+            Check(noUv != null && noUv.objects == 2 && noUv.bakedObjects == 2, "LmNoUv.obj: 2 objects, 2 baked");
+            var overlap = row("Uv1Overlap");
+            Check(overlap != null && overlap.importer == null && overlap.overlapShare > 0.9f && overlap.HasProblem, "mesh asset with overlapping UV1");
+            var outside = row("Uv1Outside");
+            Check(outside != null && outside.outsideShare > 0f && outside.HasProblem, "mesh asset with UV1 outside 0-1");
+            var good = row("Uv1Good");
+            Check(good != null && !good.HasProblem, "mesh asset with clean UV1 has no problem");
+            var inactive = rows.Any(r => r.meshes.Contains(AuditTestAssets.Grid12k) && r.objects >= 5);
+            Check(inactive, "inactive objects are counted too");
+
+            var fixes = LightmapUvReport.TurnOnFixes(rows);
+            log.AppendLine("info: turn-on fixes = " + string.Join(", ", fixes.Select(f => f.assetPath).ToArray()));
+            Check(fixes.Count == 5 && fixes.All(f => f.fixTouchesAsset && f.AutoFixable), "turn on is offered for the 5 models without UV1");
+            AutoFixer.Apply(fixes);
+            var after = LightmapUvReport.Build();
+            Check(after.Where(r => r.importer != null).All(r => r.hasUv1 && r.GenerateOn), "after turning on, every model has the option on and UV1");
+            Check(LightmapUvReport.TurnOnFixes(after).Count == 0, "nothing left to turn on");
+
+            var csv = Path.Combine(ReportDir, "lightmap-uv.csv");
+            LightmapUvReport.SaveCsv(after, csv);
+            Check(File.ReadAllLines(csv).Length == after.Count + 1, "CSV has a header and one line per model");
+            return Finish("lightmap-report", null);
+        }
+
         // ---- export ----
 
         static int ExportUnit()
