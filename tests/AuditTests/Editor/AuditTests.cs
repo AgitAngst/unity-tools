@@ -654,6 +654,7 @@ namespace AuditTestsEditor
             Check(without.issues.Length == result.issues.Count, "JSON issue count");
             Check(without.summary.critical == result.Count(Severity.Critical), "JSON summary critical");
             Check(without.xr.system == "None", "JSON xr.system None");
+            Check(without.toolVersion == ToolVersion.Full && ToolVersion.Build > 0, "JSON toolVersion " + without.toolVersion);
 
             var snapshot = new ProfilerSnapshot { frames = 300, avgFPS = 88.5f, avgCPUms = 9.2f, avgGPUms = -1f, peakGPUms = -1f, drawCalls = 640 };
             var with = JsonUtility.FromJson<ReportExporter.ReportDto>(ReportExporter.ToJson(result, snapshot));

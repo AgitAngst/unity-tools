@@ -22,7 +22,8 @@
 Вид — по [ui-guideline.md](ui-guideline.md); снимки — `scripts\shoot-audit-window.ps1`.
 
 - **Тулбар:** «Запустить аудит» («Запустить снова» после прогона), «Исправить безопасное (N)»,
-  «Сохранить отчёт ▾» (JSON или CSV), справа `EN | RU` (хранится в `EditorPrefs`).
+  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v0.6.1.11` (X.Y.Z и номер сборки — число коммитов
+  репозитория) и `EN | RU` (хранится в `EditorPrefs`). Версия видна и на экране до первого прогона.
 - **Вкладки:** «Проблемы (N)», «Бюджеты», «Профайлер».
 - **До первого прогона** — что проверит, что ничего не меняет, крупная кнопка «Запустить аудит» и
   найденная XR-система.
@@ -222,7 +223,8 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
   экземплярах префабов помечены «станет override префаба».
 - Сцена: одна группа Undo «Scene Audit Fix», сцены помечаются изменёнными. Ассеты: импорт одним пакетом
   (`StartAssetEditing`), материалы сохраняются; ассеты вне `Assets/` пропускаются с предупреждением в
-  консоли. Каждое изменение — строка `[SceneAudit] Fixed <checkId>: <путь>`. После применения аудит
+  консоли. Каждое изменение — строка `[SceneAudit] Fixed <checkId>: <путь>`; каждый прогон — строка
+  `[SceneAudit] Audit <версия>: N issues in M scene(s).` После применения аудит
   запускается снова.
 - Не исправляются: Canvas Screen Space Overlay и все настройки проекта — только подсказка и кнопка
   «Настройки».
@@ -232,7 +234,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 «Сохранить отчёт» → меню «JSON…» или «CSV…» → диалог сохранения (имя по умолчанию —
 `<первая сцена>-audit-<yyyyMMdd-HHmm>`); формат файла определяется расширением.
 
-- **JSON** (UTF-8 без BOM): `scenes`, `timestamp` (ISO 8601), `platform`, `targetFPS`, `xr` (`system`:
+- **JSON** (UTF-8 без BOM): `scenes`, `toolVersion` (например `0.6.1.11`), `timestamp` (ISO 8601), `platform`, `targetFPS`, `xr` (`system`:
   `Legacy` / `XRManagement` / `Legacy+XRManagement` / `None`, `loader`, `stereoMode`), `qualityLevel`,
   `summary`, `sceneBudgets` (`isEstimate`, значения и пороги Warning), `hasProfilerSnapshot`,
   `profilerSnapshot` (последний снимок активной сцены или пустой при `false`), `issues` (`checkId`,
@@ -289,6 +291,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |
 | `ReportExporter.cs` | JSON, CSV, командная строка |
 | `ProfilerCapture.cs` | снимок профайлера |
+| `ToolVersion.cs` | версия утилиты и номер сборки (`scripts\stamp-version.ps1`) |
 | `ReflectionUtil.cs` | доступ к типам пакетов по имени |
 
 Новая проверка = блок в методе категории (`ctx.Report(...)`), тексты `<checkId>`, `<checkId>.title`, `<checkId>.fix` и

@@ -266,6 +266,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.export.title", "Export Report", "Сохранить отчёт");
             Add("ui.export.tip", "Saves the problem list as JSON or CSV.", "Сохраняет список проблем в JSON или CSV.");
             Add("ui.lang.tip", "Window language", "Язык окна");
+            Add("ui.version", "v{0}", "v{0}");
+            Add("ui.version.tip", "Utility version; the last number is the build (commit count).", "Версия утилиты; последнее число — номер сборки (число коммитов).");
             Add("ui.export.done", "Report saved: {0}", "Отчёт сохранён: {0}");
             Add("ui.export.error", "Could not save the report: {0}", "Не удалось сохранить отчёт: {0}");
 

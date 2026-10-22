@@ -58,6 +58,7 @@ namespace UnityTools.SceneOptimization
         {
             public string[] scenes;
             public string timestamp;
+            public string toolVersion = ToolVersion.Full;
             public string platform = "PC VR - HTC Vive Pro";
             public int targetFPS = VRBudgets.TargetFps;
             public XrDto xr;

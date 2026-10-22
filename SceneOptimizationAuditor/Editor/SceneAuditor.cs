@@ -64,7 +64,9 @@ namespace UnityTools.SceneOptimization
                     if (Progress(showProgress, info, (i + 1f) / (steps.Length + 1f))) return null;
                     steps[i].Value(ctx);
                 }
-                return ToResult(ctx);
+                var result = ToResult(ctx);
+                UnityEngine.Debug.Log("[SceneAudit] Audit " + ToolVersion.Full + ": " + result.issues.Count + " issues in " + result.sceneNames.Length + " scene(s).");
+                return result;
             }
             finally
             {

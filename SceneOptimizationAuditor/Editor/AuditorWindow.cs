@@ -212,6 +212,7 @@ namespace UnityTools.SceneOptimization
             EditorGUI.EndDisabledGroup();
 
             GUILayout.FlexibleSpace();
+            GUILayout.Label(new GUIContent(Strings.Format("ui.version", ToolVersion.Full), Strings.Get("ui.version.tip")), EditorStyles.miniLabel);
             var langs = new[] { new GUIContent(LangLabels[0], Strings.Get("ui.lang.tip")), new GUIContent(LangLabels[1], Strings.Get("ui.lang.tip")) };
             int lang = GUILayout.Toolbar((int)Strings.Current, langs, EditorStyles.toolbarButton, GUILayout.Width(70f));
             if (lang != (int)Strings.Current) Strings.Current = (Lang)lang;
@@ -300,6 +301,7 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(10f);
             if (xrPreview != null) GUILayout.Label(XrLine(xrPreview) + "  ·  " + StereoLine(xrPreview), centeredMini);
+            GUILayout.Label(Strings.Format("ui.version", ToolVersion.Full), centeredMini);
             EditorGUILayout.EndVertical();
             GUILayout.Space(30f);
             EditorGUILayout.EndHorizontal();
