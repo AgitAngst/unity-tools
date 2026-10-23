@@ -2,8 +2,8 @@
 
 ## Итоги прогона 22.10.2026
 
-Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **26 шагов из 26 зелёные** (с 0.6.0 — проверки развёртки под свет, с 0.7.0 — шаг `lightmap-report`, с 0.8.0 —
-проверки 3D-ассетов; `MESH_IMPORT_CAMERAS_LIGHTS` не покрыт: OBJ не хранит камер и света) (14 вариантов настроек, из них 4 — XR Plug-in Management;
+Unity 2019.4.41f2 batchmode, `scripts\run-audit-tests.ps1`: **27 шагов из 27 зелёные** (с 0.6.0 — проверки развёртки под свет, с 0.7.0 — шаг `lightmap-report`, с 0.8.0 —
+проверки 3D-ассетов, с 0.9.0 — шаг `multi-select`; `MESH_IMPORT_CAMERAS_LIGHTS` не покрыт: OBJ не хранит камер и света) (14 вариантов настроек, из них 4 — XR Plug-in Management;
 экспорт — модуль и 5 запусков из командной строки, исправления, SteamVR-заглушка в двух вариантах). Утилита
 импортируется без ошибок и предупреждений, утечек NativeArray нет. Тесты — `tests/AuditTests/`, отчёты —
 `unity-tools-scratch\reports\audit-tests\`.

@@ -227,6 +227,26 @@ namespace UnityTools.SceneOptimization
             Add("ui.lm.enableAll", "Turn on for all without UV1 ({0})", "Включить у всех без UV1 ({0})");
             Add("ui.lm.enable", "Turn on", "Включить галочку");
             Add("ui.lm.csv", "Save CSV", "Сохранить CSV");
+            Add("ui.lm.sel.count", "Selected models: {0}", "Выбрано моделей: {0}");
+            Add("ui.lm.sel.enable", "Turn on for selected ({0})", "Включить у выбранных ({0})");
+            Add("ui.lm.sel.assets", "Select in Project ({0})", "Выделить в Project ({0})");
+            Add("ui.lm.sel.assets.tip", "Selects the model files, so their import settings can be changed together in the Inspector.",
+                "Выделяет файлы моделей, чтобы поменять их импорт вместе в Inspector.");
+            Add("ui.lm.sel.objects", "Select objects in scene ({0})", "Выделить объекты в сцене ({0})");
+            Add("ui.lm.sel.objects.tip", "Selects every scene object with these models, for example to set Contribute GI on all of them.",
+                "Выделяет все объекты сцены с этими моделями — например, чтобы поставить им Contribute GI.");
+            Add("ui.lm.sel.all.tip", "Pick every model in the list.", "Выбрать все модели списка.");
+            Add("ui.sel.count", "Selected: {0}", "Выбрано: {0}");
+            Add("ui.sel.hidden", "{0} hidden by the filter", "скрыто фильтром: {0}");
+            Add("ui.sel.fix", "Fix selected ({0})", "Исправить выбранные ({0})");
+            Add("ui.sel.select", "Select in Unity ({0})", "Выделить в Unity ({0})");
+            Add("ui.sel.select.tip", "Selects the objects and assets in the Hierarchy and Project, so you can edit them together in the Inspector.",
+                "Выделяет объекты и ассеты в Hierarchy и Project, чтобы править их вместе в Inspector.");
+            Add("ui.sel.clear", "Clear selection", "Снять выбор");
+            Add("ui.sel.all", "Select all", "Выбрать все");
+            Add("ui.sel.all.tip", "Picks every shown problem that has an object or a fix.", "Выбирает все показанные проблемы с объектом или исправлением.");
+            Add("ui.sel.group.tip", "Pick every object of this problem.", "Выбрать все объекты этой проблемы.");
+            Add("ui.sel.pick.tip", "Add to the selection.", "Добавить в выбор.");
             Add("ui.lm.onlyProblems", "Problems only", "Только проблемные");
             Add("ui.lm.notScanned", "Press Scan Models to list the models of the loaded scenes.", "Нажмите «Проверить модели», чтобы увидеть модели загруженных сцен.");
             Add("ui.lm.summary", "Models: {0} · without UV1: {1} · option on: {2} · with problems: {3}", "Моделей: {0} · без UV1: {1} · галочка стоит: {2} · с проблемами: {3}");

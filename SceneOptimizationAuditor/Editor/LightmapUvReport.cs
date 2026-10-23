@@ -25,6 +25,8 @@ namespace UnityTools.SceneOptimization
         public int objects;
         public int bakedObjects;
         public readonly List<Mesh> meshes = new List<Mesh>();
+        // Scene objects that use the model, inactive ones included.
+        public readonly List<GameObject> users = new List<GameObject>();
 
         public bool GenerateOn { get { return importer != null && importer.generateSecondaryUV; } }
         public bool CanTurnOn { get { return importer != null && !importer.generateSecondaryUV && !hasUv1; } }
@@ -48,9 +50,9 @@ namespace UnityTools.SceneOptimization
                 foreach (var root in scene.GetRootGameObjects())
                 {
                     foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true))
-                        Add(rows, filter.sharedMesh, filter.GetComponent<MeshRenderer>());
+                        Add(rows, filter.sharedMesh, filter.GetComponent<MeshRenderer>(), filter.gameObject);
                     foreach (var skinned in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                        Add(rows, skinned.sharedMesh, null);
+                        Add(rows, skinned.sharedMesh, null, skinned.gameObject);
                 }
             }
 
@@ -76,7 +78,7 @@ namespace UnityTools.SceneOptimization
                 .ToList();
         }
 
-        static void Add(Dictionary<string, LightmapUvRow> rows, Mesh mesh, MeshRenderer renderer)
+        static void Add(Dictionary<string, LightmapUvRow> rows, Mesh mesh, MeshRenderer renderer, GameObject owner)
         {
             if (mesh == null) return;
             var path = AssetDatabase.GetAssetPath(mesh);
@@ -97,6 +99,7 @@ namespace UnityTools.SceneOptimization
             }
             if (!row.meshes.Contains(mesh)) row.meshes.Add(mesh);
             row.objects++;
+            if (!row.users.Contains(owner)) row.users.Add(owner);
             if (renderer != null && renderer.receiveGI == ReceiveGI.Lightmaps &&
                 (GameObjectUtility.GetStaticEditorFlags(renderer.gameObject) & StaticEditorFlags.ContributeGI) != 0)
                 row.bakedObjects++;

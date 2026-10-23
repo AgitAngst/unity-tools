@@ -65,6 +65,9 @@ namespace UnityTools.SceneOptimization
         [SerializeField] Vector2 pageScroll;
         [SerializeField] bool lmOnlyProblems = true;
         List<LightmapUvRow> lmRows;
+        // Rows picked with their checkboxes, for actions on several at once.
+        readonly HashSet<AuditIssue> picked = new HashSet<AuditIssue>();
+        readonly HashSet<LightmapUvRow> lmPicked = new HashSet<LightmapUvRow>();
 
         AuditResult result;
         List<IssueGroup> groups = new List<IssueGroup>();
@@ -176,6 +179,7 @@ namespace UnityTools.SceneOptimization
             groups = IssueGroup.Build(r.issues);
             expanded.Clear();
             limits.Clear();
+            picked.Clear();
             foreach (var g in groups) if (g.severity == Severity.Critical) expanded[g.key] = true;
             Repaint();
         }
@@ -183,6 +187,14 @@ namespace UnityTools.SceneOptimization
         void AfterFix()
         {
             EditorApplication.delayCall += Run;
+        }
+
+        // Used by the screenshot test: picks the rows of the first group and the first lightmap rows.
+        void PickForShot()
+        {
+            var first = groups.FirstOrDefault(IsShown);
+            if (first != null) foreach (var issue in first.issues) if (MultiSelect.CanPick(issue)) picked.Add(issue);
+            if (lmRows != null) foreach (var row in lmRows.Take(3)) lmPicked.Add(row);
         }
 
         // Used by the screenshot test: "all" expands every group.
@@ -409,7 +421,41 @@ namespace UnityTools.SceneOptimization
                 foreach (var g in groups) expanded[g.key] = true;
             if (GUILayout.Button(Strings.Get("ui.collapseAll"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                 expanded.Clear();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(new GUIContent(Strings.Get("ui.sel.all"), Strings.Get("ui.sel.all.tip")), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
+                foreach (var g in groups)
+                    if (IsShown(g))
+                        foreach (var issue in Visible(g)) if (MultiSelect.CanPick(issue)) picked.Add(issue);
             EditorGUILayout.EndHorizontal();
+            DrawSelectionBar();
+        }
+
+        // Shown only while something is picked: count on one line, actions on the next.
+        void DrawSelectionBar()
+        {
+            if (picked.Count == 0) return;
+            var fixable = MultiSelect.Fixable(picked);
+            var objects = MultiSelect.SelectionOf(picked);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            // Picked rows stay picked when a severity card hides them; say so instead of a puzzling count.
+            int hidden = picked.Count(i => !show[(int)i.severity]);
+            GUILayout.Label(Strings.Format("ui.sel.count", picked.Count) + (hidden > 0 ? "  ·  " + Strings.Format("ui.sel.hidden", hidden) : ""), EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(Strings.Get("ui.sel.clear"), EditorStyles.miniButton, GUILayout.ExpandWidth(false))) picked.Clear();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(fixable.Count == 0);
+            if (GUILayout.Button(new GUIContent(Strings.Format("ui.sel.fix", fixable.Count), Strings.Get("ui.fix.tip")), GUILayout.ExpandWidth(false)))
+                EditorApplication.delayCall += () => AutoFixer.Confirm(fixable, AfterFix);
+            EditorGUI.EndDisabledGroup();
+            EditorGUI.BeginDisabledGroup(objects.Length == 0);
+            if (GUILayout.Button(new GUIContent(Strings.Format("ui.sel.select", objects.Length), Strings.Get("ui.sel.select.tip")), GUILayout.ExpandWidth(false)))
+                MultiSelect.Select(objects);
+            EditorGUI.EndDisabledGroup();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
         }
 
         void DrawNothing()
@@ -484,12 +530,24 @@ namespace UnityTools.SceneOptimization
 
             var head = new Rect(rect.x + 8f, rect.y, right - rect.x - 8f, rect.height);
             bool toggled = EditorGUI.Foldout(new Rect(head.x, head.y + 5f, 14f, 16f), open, GUIContent.none, true);
-            GUI.DrawTexture(new Rect(head.x + 16f, head.y + 5f, 16f, 16f), IconOf(g.severity));
+            var pickable = visible.Where(MultiSelect.CanPick).ToList();
+            if (pickable.Count > 0)
+            {
+                bool all = pickable.All(picked.Contains);
+                bool now = GUI.Toggle(new Rect(head.x + 16f, head.y + 5f, 16f, 16f), all, new GUIContent("", Strings.Get("ui.sel.group.tip")));
+                if (now != all)
+                {
+                    foreach (var issue in pickable)
+                        if (now) picked.Add(issue);
+                        else picked.Remove(issue);
+                }
+            }
+            GUI.DrawTexture(new Rect(head.x + 36f, head.y + 5f, 16f, 16f), IconOf(g.severity));
             // Scene-wide problems have no objects, so a count would only confuse.
             bool hasObjects = visible.Any(i => i.objectPath.Length > 0 || i.assetPath.Length > 0);
             var title = new GUIContent(hasObjects ? g.Title + "  ·  " + visible.Count : g.Title, g.checkId);
-            GUI.Label(new Rect(head.x + 36f, head.y + 4f, head.width - 36f, 18f), title, EditorStyles.boldLabel);
-            if (Event.current.type == EventType.MouseDown && head.Contains(Event.current.mousePosition) && Event.current.mousePosition.x > head.x + 14f)
+            GUI.Label(new Rect(head.x + 56f, head.y + 4f, head.width - 56f, 18f), title, EditorStyles.boldLabel);
+            if (Event.current.type == EventType.MouseDown && head.Contains(Event.current.mousePosition) && Event.current.mousePosition.x > head.x + 34f)
             {
                 toggled = !open;
                 Event.current.Use();
@@ -527,6 +585,14 @@ namespace UnityTools.SceneOptimization
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(40f);
+            if (MultiSelect.CanPick(issue))
+            {
+                bool on = picked.Contains(issue);
+                bool now = GUILayout.Toggle(on, new GUIContent("", Strings.Get("ui.sel.pick.tip")), GUILayout.Width(18f));
+                if (now && !on) picked.Add(issue);
+                else if (!now && on) picked.Remove(issue);
+            }
+            else GUILayout.Space(22f);
             EditorGUILayout.BeginVertical();
             var location = issue.Location;
             if (issue.users > 0) location += (location.Length > 0 ? "  ·  " : "") + Strings.Format("ui.users", issue.users);
@@ -579,10 +645,12 @@ namespace UnityTools.SceneOptimization
         const float LmOverlap = 84f;
         const float LmObjects = 120f;
         const float LmAction = 140f;
+        const float LmCheck = 22f;
 
         void ScanLightmapUvs()
         {
             lmRows = LightmapUvReport.Build();
+            lmPicked.Clear();
             Repaint();
         }
 
@@ -624,7 +692,8 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.EndHorizontal();
 
             var visible = lmOnlyProblems ? lmRows.Where(r => r.HasProblem).ToList() : lmRows;
-            DrawLightmapHeader();
+            DrawLightmapSelectionBar();
+            DrawLightmapHeader(visible);
             listScroll = EditorGUILayout.BeginScrollView(listScroll);
             for (int i = 0; i < visible.Count; i++) DrawLightmapRow(visible[i], i);
             if (visible.Count == 0)
@@ -635,14 +704,44 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.EndScrollView();
         }
 
-        // Model column takes what the fixed columns leave.
+        void DrawLightmapSelectionBar()
+        {
+            if (lmPicked.Count == 0) return;
+            var turnOn = LightmapUvReport.TurnOnFixes(lmPicked);
+            var assets = MultiSelect.AssetsOf(lmPicked);
+            var objects = MultiSelect.SceneObjectsOf(lmPicked);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label(Strings.Format("ui.lm.sel.count", lmPicked.Count), EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button(Strings.Get("ui.sel.clear"), EditorStyles.miniButton, GUILayout.ExpandWidth(false))) lmPicked.Clear();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(turnOn.Count == 0);
+            if (GUILayout.Button(new GUIContent(Strings.Format("ui.lm.sel.enable", turnOn.Count), Strings.Get("ui.fix.tip")), GUILayout.ExpandWidth(false)))
+                EditorApplication.delayCall += () => AutoFixer.Confirm(turnOn, () => EditorApplication.delayCall += ScanLightmapUvs);
+            EditorGUI.EndDisabledGroup();
+            EditorGUI.BeginDisabledGroup(assets.Length == 0);
+            if (GUILayout.Button(new GUIContent(Strings.Format("ui.lm.sel.assets", assets.Length), Strings.Get("ui.lm.sel.assets.tip")), GUILayout.ExpandWidth(false)))
+                MultiSelect.Select(assets);
+            EditorGUI.EndDisabledGroup();
+            EditorGUI.BeginDisabledGroup(objects.Length == 0);
+            if (GUILayout.Button(new GUIContent(Strings.Format("ui.lm.sel.objects", objects.Length), Strings.Get("ui.lm.sel.objects.tip")), GUILayout.ExpandWidth(false)))
+                MultiSelect.Select(objects);
+            EditorGUI.EndDisabledGroup();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        // Checkbox and model columns first; the model column takes what the fixed columns leave.
         Rect[] LightmapColumns(Rect rect)
         {
-            float fixedWidth = LmFlag + LmUv + LmOutside + LmOverlap + LmObjects + LmAction;
+            float fixedWidth = LmCheck + LmFlag + LmUv + LmOutside + LmOverlap + LmObjects + LmAction;
             float model = Mathf.Max(120f, rect.width - fixedWidth - 8f);
             float x = rect.x + 8f;
-            var cells = new Rect[7];
-            var widths = new[] { model, LmFlag, LmUv, LmOutside, LmOverlap, LmObjects, LmAction };
+            var cells = new Rect[8];
+            var widths = new[] { LmCheck, model, LmFlag, LmUv, LmOutside, LmOverlap, LmObjects, LmAction };
             for (int i = 0; i < widths.Length; i++)
             {
                 cells[i] = new Rect(x, rect.y, widths[i] - 4f, rect.height);
@@ -651,11 +750,20 @@ namespace UnityTools.SceneOptimization
             return cells;
         }
 
-        void DrawLightmapHeader()
+        void DrawLightmapHeader(List<LightmapUvRow> visible)
         {
             var rect = Padded(GUILayoutUtility.GetRect(0f, 20f, GUILayout.ExpandWidth(true)));
             var cells = LightmapColumns(rect);
-            var keys = new[] { "ui.lm.col.model", "ui.lm.col.flag", "ui.lm.col.uv1", "ui.lm.col.outside", "ui.lm.col.overlap", "ui.lm.col.objects", "" };
+            if (visible.Count > 0)
+            {
+                bool all = visible.All(lmPicked.Contains);
+                bool now = GUI.Toggle(new Rect(cells[0].x, cells[0].y + 2f, 16f, 16f), all, new GUIContent("", Strings.Get("ui.lm.sel.all.tip")));
+                if (now != all)
+                    foreach (var row in visible)
+                        if (now) lmPicked.Add(row);
+                        else lmPicked.Remove(row);
+            }
+            var keys = new[] { "", "ui.lm.col.model", "ui.lm.col.flag", "ui.lm.col.uv1", "ui.lm.col.outside", "ui.lm.col.overlap", "ui.lm.col.objects", "" };
             for (int i = 0; i < keys.Length; i++)
                 if (keys[i].Length > 0) GUI.Label(cells[i], new GUIContent(Strings.Get(keys[i]), Strings.Get(keys[i] + ".tip")), EditorStyles.miniBoldLabel);
         }
@@ -669,21 +777,25 @@ namespace UnityTools.SceneOptimization
                 if (row.HasProblem) EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3f, rect.height), row.hasUv1 ? WarningColor : CriticalColor);
             }
             var cells = LightmapColumns(rect);
+            bool on = lmPicked.Contains(row);
+            bool now = GUI.Toggle(new Rect(cells[0].x, cells[0].y + 3f, 16f, 16f), on, new GUIContent("", Strings.Get("ui.sel.pick.tip")));
+            if (now && !on) lmPicked.Add(row);
+            else if (!now && on) lmPicked.Remove(row);
             var name = new GUIContent(row.name, string.IsNullOrEmpty(row.assetPath) ? Strings.Get("ui.lm.builtIn") : row.assetPath);
-            if (GUI.Button(new Rect(cells[0].x, cells[0].y + 3f, cells[0].width, 16f), name, link) && row.asset != null)
+            if (GUI.Button(new Rect(cells[1].x, cells[1].y + 3f, cells[1].width, 16f), name, link) && row.asset != null)
             {
                 Selection.activeObject = row.asset;
                 EditorGUIUtility.PingObject(row.asset);
             }
-            EditorGUIUtility.AddCursorRect(cells[0], MouseCursor.Link);
+            EditorGUIUtility.AddCursorRect(cells[1], MouseCursor.Link);
 
-            Cell(cells[1], row.importer == null ? "—" : Strings.Get(row.GenerateOn ? "ui.lm.on" : "ui.lm.off"),
+            Cell(cells[2], row.importer == null ? "—" : Strings.Get(row.GenerateOn ? "ui.lm.on" : "ui.lm.off"),
                 row.importer == null ? (Color?)null : row.GenerateOn ? OkColor : row.hasUv1 ? (Color?)null : CriticalColor);
-            Cell(cells[2], Strings.Get(row.hasUv1 ? "ui.lm.yes" : "ui.lm.no"), row.hasUv1 ? OkColor : CriticalColor);
-            Cell(cells[3], row.hasUv1 ? Percent(row.outsideShare) : "—", row.outsideShare > 0f ? WarningColor : (Color?)null);
-            Cell(cells[4], row.hasUv1 ? Percent(row.overlapShare) : "—", row.overlapShare > VRBudgets.LightmapUvOverlapMinShare ? WarningColor : (Color?)null);
-            Cell(cells[5], Strings.Format("ui.lm.objects", row.objects, row.bakedObjects), null);
-            if (row.CanTurnOn && GUI.Button(new Rect(cells[6].x, cells[6].y + 2f, cells[6].width, 18f),
+            Cell(cells[3], Strings.Get(row.hasUv1 ? "ui.lm.yes" : "ui.lm.no"), row.hasUv1 ? OkColor : CriticalColor);
+            Cell(cells[4], row.hasUv1 ? Percent(row.outsideShare) : "—", row.outsideShare > 0f ? WarningColor : (Color?)null);
+            Cell(cells[5], row.hasUv1 ? Percent(row.overlapShare) : "—", row.overlapShare > VRBudgets.LightmapUvOverlapMinShare ? WarningColor : (Color?)null);
+            Cell(cells[6], Strings.Format("ui.lm.objects", row.objects, row.bakedObjects), null);
+            if (row.CanTurnOn && GUI.Button(new Rect(cells[7].x, cells[7].y + 2f, cells[7].width, 18f),
                     new GUIContent(Strings.Get("ui.lm.enable"), Strings.Get("ui.fix.tip")), EditorStyles.miniButton))
             {
                 var fixes = LightmapUvReport.TurnOnFixes(new[] { row });

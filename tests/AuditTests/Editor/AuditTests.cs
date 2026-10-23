@@ -722,6 +722,65 @@ namespace AuditTestsEditor
             return Finish("fixes", afterAssets);
         }
 
+        // ---- picking several rows ----
+
+        public static void RunMultiSelect()
+        {
+            int code;
+            try
+            {
+                code = MultiSelectTest();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[AuditTests] multi-select crashed: " + e);
+                WriteReport("multi-select", "CRASH\n" + e);
+                code = 2;
+            }
+            EditorApplication.Exit(code);
+        }
+
+        static int MultiSelectTest()
+        {
+            Begin();
+            Setup("base");
+            var result = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            var picked = result.issues.Where(i =>
+                (i.checkId == "DC_STATIC_CANDIDATE" && (i.objectPath == "DC/Candidate" || i.objectPath == "Gen/Mirrored")) ||
+                (i.checkId == "TEX_READ_WRITE" && i.assetPath.EndsWith("T_Readable.png"))).ToList();
+            var setting = result.issues.FirstOrDefault(i => i.checkId == "AUDIO_DSP_BUFFER");
+            Check(picked.Count == 3 && picked.All(MultiSelect.CanPick), "three rows can be picked");
+            Check(setting != null && !MultiSelect.CanPick(setting), "a settings row without a fix cannot be picked");
+            var selection = MultiSelect.SelectionOf(picked);
+            Check(selection.Length == 3 && selection.Count(o => o is GameObject) == 2 && selection.Any(o => o is Texture),
+                "selection: 2 scene objects and 1 texture asset");
+            var fixes = MultiSelect.Fixable(picked);
+            Check(fixes.Count == 3, "all three picked rows are fixable");
+            MultiSelect.Select(selection);
+            Check(Selection.objects.Length == 3, "Unity selection holds the 3 picked objects");
+            AutoFixer.Apply(fixes);
+            var after = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            ExpectNow(after, "after fixing the picked rows", () =>
+            {
+                Not("DC_STATIC_CANDIDATE", "DC/Candidate");
+                Not("DC_STATIC_CANDIDATE", "Gen/Mirrored");
+                Not("TEX_READ_WRITE", "T_Readable.png");
+                Has("DC_STATIC_CANDIDATE", Severity.Info, "Tex/Big4096");
+            });
+
+            var rows = LightmapUvReport.Build();
+            var lmPicked = rows.Where(r => r.name == "LmNoUv.obj" || r.name == "ReadWrite.obj").ToList();
+            Check(lmPicked.Count == 2, "two models picked");
+            Check(LightmapUvReport.TurnOnFixes(lmPicked).Count == 2, "turn on for the two picked models");
+            Check(MultiSelect.AssetsOf(lmPicked).Length == 2, "two model assets to select");
+            Check(MultiSelect.SceneObjectsOf(lmPicked).Length == 3, "three scene objects use them (2 + 1)");
+            AutoFixer.Apply(LightmapUvReport.TurnOnFixes(lmPicked));
+            var rescanned = LightmapUvReport.Build();
+            Check(rescanned.Where(r => r.name == "LmNoUv.obj" || r.name == "ReadWrite.obj").All(r => r.hasUv1), "picked models now have UV1");
+            Check(rescanned.Any(r => r.name == "Clean.obj" && !r.hasUv1), "models that were not picked are untouched");
+            return Finish("multi-select", after);
+        }
+
         // ---- lightmap UV report ----
 
         public static void RunLightmapReport()

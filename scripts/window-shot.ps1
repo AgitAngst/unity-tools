@@ -21,6 +21,7 @@ public static class WinShot {
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hWnd, IntPtr hdc, uint flags);
+    [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
     public static IntPtr Find(string part) {
         IntPtr found = IntPtr.Zero;
@@ -36,6 +37,8 @@ public static class WinShot {
 }
 "@
 
+# Real pixel sizes under display scaling, otherwise the window rectangle is scaled down and cut.
+[void][WinShot]::SetProcessDPIAware()
 $hwnd = [WinShot]::Find($Title)
 if ($hwnd -eq [IntPtr]::Zero) { Write-Output "window not found: $Title"; exit 1 }
 $r = New-Object WinShot+RECT

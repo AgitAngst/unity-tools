@@ -52,6 +52,7 @@ namespace AuditTestsEditor
                 SetField("lmOnlyProblems", false);
                 Invoke("ScanLightmapUvs");
             }
+            if (HasArg("-shotPick")) Invoke("PickForShot");
             frames = 0;
             started = EditorApplication.timeSinceStartup;
             EditorApplication.update += Tick;
