@@ -25,6 +25,7 @@ namespace UnityTools.SceneOptimization
             public int critical;
             public int warning;
             public int info;
+            public int accepted;
         }
 
         [Serializable]
@@ -51,6 +52,7 @@ namespace UnityTools.SceneOptimization
             public string message;
             public string suggestion;
             public bool autoFixable;
+            public bool accepted;
         }
 
         [Serializable]
@@ -95,7 +97,8 @@ namespace UnityTools.SceneOptimization
                 {
                     critical = result.Count(Severity.Critical),
                     warning = result.Count(Severity.Warning),
-                    info = result.Count(Severity.Info)
+                    info = result.Count(Severity.Info),
+                    accepted = result.AcceptedCount
                 },
                 sceneBudgets = new BudgetsDto
                 {
@@ -124,7 +127,8 @@ namespace UnityTools.SceneOptimization
                     assetPath = !string.IsNullOrEmpty(issue.assetPath) ? issue.assetPath : issue.settingsPath,
                     message = issue.Message,
                     suggestion = issue.Suggestion,
-                    autoFixable = issue.AutoFixable
+                    autoFixable = issue.AutoFixable,
+                    accepted = issue.accepted
                 };
             }
             return JsonUtility.ToJson(report, true);
@@ -133,7 +137,7 @@ namespace UnityTools.SceneOptimization
         public static string ToCsv(AuditResult result)
         {
             var sb = new StringBuilder();
-            sb.Append("CheckId,Category,Severity,Scene,ObjectPath,AssetPath,Message,Suggestion,AutoFixable\r\n");
+            sb.Append("CheckId,Category,Severity,Scene,ObjectPath,AssetPath,Message,Suggestion,AutoFixable,Accepted\r\n");
             foreach (var issue in result.issues)
             {
                 var assetPath = !string.IsNullOrEmpty(issue.assetPath) ? issue.assetPath : issue.settingsPath;
@@ -145,7 +149,8 @@ namespace UnityTools.SceneOptimization
                   .Append(Csv(assetPath)).Append(',')
                   .Append(Csv(issue.Message)).Append(',')
                   .Append(Csv(issue.Suggestion)).Append(',')
-                  .Append(issue.AutoFixable ? "true" : "false").Append("\r\n");
+                  .Append(issue.AutoFixable ? "true" : "false").Append(',')
+                  .Append(issue.accepted ? "true" : "false").Append("\r\n");
             }
             return sb.ToString();
         }
@@ -162,6 +167,7 @@ namespace UnityTools.SceneOptimization
         // Unity.exe -batchmode -quit -projectPath <project> -executeMethod
         //   UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine
         //   -auditScene Assets/Scenes/Main.unity -auditReport E:/reports/main.json [-auditLang en|ru]
+        //   [-auditHistory [-auditNote "text"]]
         public static void RunFromCommandLine()
         {
             int code = 1;
@@ -173,7 +179,7 @@ namespace UnityTools.SceneOptimization
                 if (!string.IsNullOrEmpty(lang)) Strings.Current = lang.ToLowerInvariant() == "ru" ? Lang.Ru : Lang.En;
                 if (string.IsNullOrEmpty(scene) || string.IsNullOrEmpty(report))
                 {
-                    Debug.LogError("[SceneAudit] Usage: -auditScene <Assets/...unity> -auditReport <file.json|file.csv> [-auditLang en|ru]");
+                    Debug.LogError("[SceneAudit] Usage: -auditScene <Assets/...unity> -auditReport <file.json|file.csv> [-auditLang en|ru] [-auditHistory [-auditNote <text>]]");
                 }
                 else
                 {
@@ -183,6 +189,11 @@ namespace UnityTools.SceneOptimization
                     else
                     {
                         Save(result, report);
+                        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-auditHistory") >= 0)
+                        {
+                            AuditHistory.Record(result, Argument("-auditNote"));
+                            Debug.Log("[SceneAudit] History point saved: " + AuditHistory.FileFor(result.scenePaths));
+                        }
                         code = 0;
                     }
                 }

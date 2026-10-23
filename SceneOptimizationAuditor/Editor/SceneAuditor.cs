@@ -13,25 +13,31 @@ namespace UnityTools.SceneOptimization
         public QualitySnapshot quality;
         public VRBudgets budgets;
         public string[] sceneNames = new string[0];
+        public string[] scenePaths = new string[0];
         public string activeScenePath = "";
         public DateTime time;
         public long sceneTris;
         public long drawCallEstimate;
         public double textureMemoryMB;
 
+        // Counts leave accepted problems out.
         public int Count(Severity severity)
         {
             int n = 0;
-            foreach (var issue in issues) if (issue.severity == severity) n++;
+            foreach (var issue in issues) if (!issue.accepted && issue.severity == severity) n++;
             return n;
         }
 
         public int Count(Category category, Severity severity)
         {
             int n = 0;
-            foreach (var issue in issues) if (issue.category == category && issue.severity == severity) n++;
+            foreach (var issue in issues) if (!issue.accepted && issue.category == category && issue.severity == severity) n++;
             return n;
         }
+
+        public int ActiveCount { get { return issues.Count(i => !i.accepted); } }
+
+        public int AcceptedCount { get { return issues.Count(i => i.accepted); } }
     }
 
     // Entry point of the audit. Each category lives in its own partial file under Checks/.
@@ -91,19 +97,22 @@ namespace UnityTools.SceneOptimization
 
         static AuditResult ToResult(AuditContext ctx)
         {
-            return new AuditResult
+            var result = new AuditResult
             {
                 issues = ctx.issues.OrderBy(i => (int)i.category).ThenBy(i => (int)i.severity).ToList(),
                 xr = ctx.xr,
                 quality = ctx.quality,
                 budgets = ctx.budgets,
                 sceneNames = ctx.scenes.Select(s => s.name).ToArray(),
+                scenePaths = ctx.scenes.Select(s => s.path).ToArray(),
                 activeScenePath = SceneManager.GetActiveScene().path,
                 time = DateTime.Now,
                 sceneTris = ctx.sceneTris,
                 drawCallEstimate = ctx.drawCallEstimate,
                 textureMemoryMB = ctx.textureMemoryMB
             };
+            AcceptedList.Load().Apply(result.issues);
+            return result;
         }
 
         // Shared helper: Warning or Critical issue for a value over a budget.

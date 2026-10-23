@@ -49,6 +49,8 @@ $steps = @(
     @("fixes", "AuditTestsEditor.AuditTests.RunFixes", ""),
     @("lightmap-report", "AuditTestsEditor.AuditTests.RunLightmapReport", ""),
     @("multi-select", "AuditTestsEditor.AuditTests.RunMultiSelect", ""),
+    @("accepted", "AuditTestsEditor.AuditTests.RunAccepted", ""),
+    @("history", "AuditTestsEditor.AuditTests.RunHistory", ""),
     @("steamvr-on", "AuditTestsEditor.AuditTests.EnableSteamVrStub", ""),
     @("steamvr-not-in-scene", "AuditTestsEditor.AuditTests.Run", "-auditVariant steamvr-not-in-scene"),
     @("steamvr-in-scene", "AuditTestsEditor.AuditTests.Run", "-auditVariant steamvr-in-scene"),

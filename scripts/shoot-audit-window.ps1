@@ -25,7 +25,9 @@ $shots = @(
     @("picked-ru-dark", "ru", "dark", "-shotExpand critical -shotPick"),
     @("lightmap-picked-ru-dark", "ru", "dark", "-shotTab 1 -shotScan -shotPick"),
     @("budgets-ru-dark", "ru", "dark", "-shotTab 2"),
-    @("profiler-en-dark", "en", "dark", "-shotTab 3")
+    @("profiler-en-dark", "en", "dark", "-shotTab 3"),
+    @("history-ru-dark", "ru", "dark", "-shotTab 4 -shotHistory"),
+    @("history-en-dark", "en", "dark", "-shotTab 4 -shotHistory")
 )
 
 foreach ($shot in $shots) {

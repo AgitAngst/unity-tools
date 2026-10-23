@@ -1,3 +1,5 @@
+using System.IO;
+using UnityTools.SceneOptimization;
 using UnityEditor;
 using UnityEditor.Rendering;
 using UnityEngine;
@@ -18,6 +20,8 @@ namespace AuditTestsEditor
             PlayerSettings.stereoRenderingPath = StereoRenderingPath.MultiPass;
 #pragma warning restore 0618
             PlayerSettings.gpuSkinning = true;
+            if (File.Exists(AcceptedList.FilePath)) File.Delete(AcceptedList.FilePath);
+            if (Directory.Exists(AuditHistory.Folder)) Directory.Delete(AuditHistory.Folder, true);
             if (PlayerSettings.colorSpace != ColorSpace.Linear) PlayerSettings.colorSpace = ColorSpace.Linear;
             Physics.defaultSolverIterations = 6;
             Time.fixedDeltaTime = 0.02f;

@@ -722,6 +722,160 @@ namespace AuditTestsEditor
             return Finish("fixes", afterAssets);
         }
 
+        // ---- history ----
+
+        public static void RunHistory()
+        {
+            int code;
+            try
+            {
+                code = HistoryTest();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[AuditTests] history crashed: " + e);
+                WriteReport("history", "CRASH\n" + e);
+                code = 2;
+            }
+            EditorApplication.Exit(code);
+        }
+
+        static int HistoryTest()
+        {
+            Begin();
+            Setup("base");
+            Check(!Directory.Exists(AuditHistory.Folder), "no history folder at the start");
+            var monday = new DateTime(2026, 10, 5, 10, 0, 0);
+            var first = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            var path = AuditHistory.FileFor(first.scenePaths);
+            AuditHistory.Record(first, "", monday);
+            Check(File.Exists(path) && path.StartsWith(AuditHistory.Folder), "history file next to Assets: " + path);
+            AuditHistory.Record(first, "", monday.AddHours(2));
+            Check(AuditHistory.Load(path).points.Count == 1, "runs of one day make one point");
+
+            var h = AuditHistory.Load(path);
+            h.points[0].note = "LOD on houses";
+            h.Save(path);
+            AuditHistory.Record(first, "", monday.AddHours(3));
+            h = AuditHistory.Load(path);
+            Check(h.points.Count == 2 && h.points[0].note == "LOD on houses", "a noted point stays, the next run adds a point");
+            var p0 = h.points[0];
+            Check(p0.critical == first.Count(Severity.Critical) && p0.warning == first.Count(Severity.Warning) && p0.sceneTris == first.sceneTris,
+                "point keeps the counts and budgets");
+            Check(p0.checks.Sum(c => c.count) == first.ActiveCount && p0.problems.Count == first.issues.Count, "point keeps counts per check and the problems");
+
+            // A week later the huge object is gone.
+            var huge = first.issues.First(i => i.checkId == "MESH_EXTREME_SCALE" && i.objectPath == "Asset/Huge");
+            UnityEngine.Object.DestroyImmediate(GameObject.Find("Asset/Huge"));
+            var later = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            AuditHistory.Record(later, "", monday.AddDays(7));
+            h = AuditHistory.Load(path);
+            Check(h.points.Count == 3, "next week is a new point");
+            var diff = AuditHistory.Compare(h.points[0], h.points[2]);
+            var key = huge.checkId + "|" + huge.Location;
+            Check(diff.problemsKnown && diff.fixedProblems.Contains(key), "the huge object is in Fixed");
+            Check(!diff.newProblems.Contains(key), "and not in New");
+            Check(diff.checkChanges.Any(c => c.Key == "MESH_EXTREME_SCALE" && c.Value < 0), "MESH_EXTREME_SCALE count went down");
+
+            // Marking a problem acceptable is not a fix.
+            var sound = later.issues.FirstOrDefault(i => i.checkId == "AUDIO_2D_SOURCE");
+            Check(sound != null, "base scene has a 2D sound to mark");
+            if (sound == null) return Finish("history", first);
+            var list = AcceptedList.Load();
+            list.Accept(new[] { sound });
+            var marked = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            AuditHistory.Record(marked, "", monday.AddDays(8));
+            h = AuditHistory.Load(path);
+            var diff2 = AuditHistory.Compare(h.points[2], h.points[3]);
+            Check(diff2.acceptedSince == 1 && !diff2.fixedProblems.Contains(sound.checkId + "|" + sound.Location), "acceptable is counted apart from fixed");
+            Check(h.points[3].accepted == h.points[2].accepted + 1, "acceptable count grows by one");
+            list.Clear();
+
+            // Other scenes go to another file; the history keeps 200 points, old ones without problems.
+            Check(AuditHistory.FileFor(new[] { "Assets/A.unity" }) != AuditHistory.FileFor(new[] { "Assets/B.unity" }), "file per scene set");
+            Check(AuditHistory.FileFor(new[] { "Assets/A.unity", "Assets/B.unity" }) == AuditHistory.FileFor(new[] { "Assets/B.unity", "Assets/A.unity" }),
+                "scene order does not matter");
+            var big = new AuditHistory();
+            for (int i = 0; i < 205; i++)
+                big.Add(AuditHistory.PointOf(first, null, null, "", monday.AddDays(i)), monday.AddDays(i));
+            Check(big.points.Count == AuditHistory.MaxPoints, "at most " + AuditHistory.MaxPoints + " points");
+            Check(!big.points[0].problemsKept && big.points[0].problems.Count == 0 && big.points[AuditHistory.MaxPoints - 1].problemsKept,
+                "old points keep numbers only");
+            Check(big.points.Count(p => p.problemsKept) == AuditHistory.PointsWithProblems, AuditHistory.PointsWithProblems + " points keep problems");
+            Check(!AuditHistory.Compare(big.points[0], big.points[199]).problemsKnown, "comparison with an old point has no problem lists");
+
+            // A profiler snapshot is attached once: not again to the next point.
+            var snapshot = new ProfilerSnapshot { timestamp = "2026-10-05 11:00", avgFPS = 88f, avgCPUms = 9f };
+            var withProfiler = AuditHistory.PointOf(first, snapshot, null, "", monday);
+            var again = AuditHistory.PointOf(first, snapshot, withProfiler, "", monday.AddDays(1));
+            Check(withProfiler.hasProfiler && withProfiler.avgFPS == 88f && !again.hasProfiler, "profiler snapshot attached once");
+            return Finish("history", first);
+        }
+
+        // ---- acceptable problems ----
+
+        public static void RunAccepted()
+        {
+            int code;
+            try
+            {
+                code = AcceptedTest();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[AuditTests] accepted crashed: " + e);
+                WriteReport("accepted", "CRASH\n" + e);
+                code = 2;
+            }
+            EditorApplication.Exit(code);
+        }
+
+        static int AcceptedTest()
+        {
+            Begin();
+            Setup("base");
+            Check(!File.Exists(AcceptedList.FilePath), "no accepted file at the start");
+            var before = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            int warningsBefore = before.Count(Severity.Warning);
+            var huge = before.issues.First(i => i.checkId == "MESH_EXTREME_SCALE" && i.objectPath == "Asset/Huge");
+            var budget = before.issues.FirstOrDefault(i => i.checkId == "DC_BUDGET");
+
+            var list = AcceptedList.Load();
+            list.Accept(new[] { huge });
+            if (budget != null) list.Accept(new[] { budget });
+            list.Disable(new[] { "AUDIO_2D_SOURCE" });
+            Check(File.Exists(AcceptedList.FilePath), "accepted file written to ProjectSettings");
+
+            var after = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            var hugeAfter = after.issues.First(i => i.checkId == "MESH_EXTREME_SCALE" && i.objectPath == "Asset/Huge");
+            Check(hugeAfter.accepted, "Asset/Huge is acceptable after a new run (key survives)");
+            Check(after.issues.Where(i => i.checkId == "AUDIO_2D_SOURCE").All(i => i.accepted), "every 2D sound is acceptable: the check is off");
+            Check(after.issues.Where(i => i.checkId == "MESH_EXTREME_SCALE" && i.objectPath != "Asset/Huge").All(i => !i.accepted), "other objects of the check still count");
+            int expected = warningsBefore - 1 - (budget != null && budget.severity == Severity.Warning ? 1 : 0);
+            Check(after.Count(Severity.Warning) == expected, "warnings counted without the accepted ones (" + after.Count(Severity.Warning) + " = " + expected + ")");
+            Check(after.AcceptedCount >= 3, "accepted count " + after.AcceptedCount);
+
+            var json = JsonUtility.FromJson<ReportExporter.ReportDto>(ReportExporter.ToJson(after, null));
+            Check(json.summary.accepted == after.AcceptedCount && json.issues.Any(i => i.checkId == "MESH_EXTREME_SCALE" && i.accepted),
+                "JSON: summary.accepted and issue.accepted");
+            Check(ReportExporter.ToCsv(after).Split('\n')[0].TrimEnd().EndsWith(",Accepted"), "CSV has the Accepted column");
+
+            // Moving the object does not lose the mark.
+            GameObject.Find("Asset/Huge").transform.position += Vector3.right * 5f;
+            var moved = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            Check(moved.issues.First(i => i.checkId == "MESH_EXTREME_SCALE" && i.objectPath == "Asset/Huge").accepted, "mark survives moving the object");
+
+            var reload = AcceptedList.Load();
+            reload.Release(new[] { hugeAfter });
+            reload.Enable("AUDIO_2D_SOURCE");
+            var released = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            Check(!released.issues.First(i => i.checkId == "MESH_EXTREME_SCALE" && i.objectPath == "Asset/Huge").accepted, "released problem counts again");
+            Check(released.issues.Where(i => i.checkId == "AUDIO_2D_SOURCE").All(i => !i.accepted), "turned-on check counts again");
+            reload.Clear();
+            Check(!File.Exists(AcceptedList.FilePath), "empty list removes the file");
+            return Finish("accepted", after);
+        }
+
         // ---- picking several rows ----
 
         public static void RunMultiSelect()

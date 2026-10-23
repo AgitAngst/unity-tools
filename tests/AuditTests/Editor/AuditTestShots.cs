@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEditorInternal;
@@ -42,6 +43,7 @@ namespace AuditTestsEditor
             window.titleContent = new GUIContent(Strings.Get("ui.title"));
             window.ShowUtility();
             window.position = new Rect(80, 80, 760, 860);
+            if (HasArg("-shotHistory")) SeedHistory();
             if (!HasArg("-shotEmpty")) Invoke("Run");
             var expand = Arg("-shotExpand");
             if (!string.IsNullOrEmpty(expand)) Invoke("ExpandForShot", expand);
@@ -53,9 +55,36 @@ namespace AuditTestsEditor
                 Invoke("ScanLightmapUvs");
             }
             if (HasArg("-shotPick")) Invoke("PickForShot");
+            if (HasArg("-shotHistory")) SetField("histFixedOpen", true);
             frames = 0;
             started = EditorApplication.timeSinceStartup;
             EditorApplication.update += Tick;
+        }
+
+        // Made-up weeks of work before today's run, so the History tab has a trend to show.
+        static void SeedHistory()
+        {
+            var result = SceneAuditor.RunFullAudit(new VRBudgets(), false);
+            var history = new AuditHistory { scenes = result.scenePaths };
+            var notes = new[] { "", "LOD on houses", "Texture atlas for props", "Baked lights, fewer shadow casters" };
+            var start = DateTime.Now.Date.AddDays(-28).AddHours(11);
+            for (int week = 0; week < notes.Length; week++)
+            {
+                var time = start.AddDays(7 * week);
+                var p = AuditHistory.PointOf(result, null, null, notes[week], time);
+                int extra = (notes.Length - week) * 3;
+                p.critical += extra / 2;
+                p.warning += extra * 2;
+                p.sceneTris += (long)(extra * 90000);
+                p.drawCalls += extra * 40;
+                p.textureMemoryMB += extra * 35;
+                for (int i = 0; i < extra; i++) p.problems.Add("W|MESH_NO_LOD|Demo: Town/House_" + (i + 1).ToString("00"));
+                var noLod = p.checks.FirstOrDefault(c => c.checkId == "MESH_NO_LOD");
+                if (noLod == null) p.checks.Add(noLod = new CheckCount { checkId = "MESH_NO_LOD" });
+                noLod.count += extra;
+                history.Add(p, time);
+            }
+            history.Save(AuditHistory.FileFor(result.scenePaths));
         }
 
         static void Tick()

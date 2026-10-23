@@ -243,6 +243,31 @@ namespace UnityTools.SceneOptimization
             Add("ui.sel.select.tip", "Selects the objects and assets in the Hierarchy and Project, so you can edit them together in the Inspector.",
                 "Выделяет объекты и ассеты в Hierarchy и Project, чтобы править их вместе в Inspector.");
             Add("ui.sel.clear", "Clear selection", "Снять выбор");
+            Add("ui.acc.tag", "acceptable", "допустимо");
+            Add("ui.acc.show", "Acceptable ({0})", "Допустимые ({0})");
+            Add("ui.acc.show.tip", "Show problems marked as acceptable; they are not counted.", "Показать проблемы, помеченные допустимыми; они не считаются.");
+            Add("ui.acc.hiddenNote", "{0} acceptable problems are hidden — turn on \"Acceptable\" to see them.",
+                "Ещё {0} допустимых проблем скрыто — включите «Допустимые», чтобы увидеть.");
+            Add("ui.acc.mark", "Mark as acceptable ({0})", "Пометить допустимыми ({0})");
+            Add("ui.acc.mark.tip", "The problem stays where it is but is not counted any more, for example large houses on purpose. Saved for the project.",
+                "Проблема остаётся, но больше не считается — например, большие дома так и задуманы. Сохраняется для проекта.");
+            Add("ui.acc.release", "Remove the mark ({0})", "Снять пометку ({0})");
+            Add("ui.acc.release.tip", "Count these problems again.", "Снова считать эти проблемы.");
+            Add("ui.acc.disable", "Turn off the check ({0})", "Отключить проверку ({0})");
+            Add("ui.acc.disable.tip", "Every problem of these checks becomes acceptable in the whole project.", "Все проблемы этих проверок становятся допустимыми во всём проекте.");
+            Add("ui.acc.disable.title", "Turn off checks", "Отключить проверки");
+            Add("ui.acc.disable.ask", "Turn off these checks for the whole project?\n\n{0}\n\nThey can be turned on again on the Budgets tab.",
+                "Отключить эти проверки во всём проекте?\n\n{0}\n\nВключить их снова можно на вкладке «Бюджеты».");
+            Add("ui.acc.disable.yes", "Turn off", "Отключить");
+            Add("ui.acc.section", "Acceptable problems and turned-off checks", "Допустимые проблемы и отключённые проверки");
+            Add("ui.acc.section.note", "Marks are kept per object or asset and survive renames; problems without an object (budgets, settings) are marked for the whole project.",
+                "Пометки хранятся по объекту или ассету и переживают переименование; проблемы без объекта (бюджеты, настройки) помечаются для всего проекта.");
+            Add("ui.acc.marked", "Marked as acceptable: {0}", "Помечено допустимыми: {0}");
+            Add("ui.acc.clearAll", "Remove all marks", "Снять все пометки");
+            Add("ui.acc.clearAll.ask", "Remove every acceptable mark and turn every check on again?", "Снять все пометки и снова включить все проверки?");
+            Add("ui.acc.noDisabled", "No checks are turned off.", "Отключённых проверок нет.");
+            Add("ui.acc.enable", "Turn on", "Включить");
+            Add("ui.acc.file", "Saved in {0} — commit it to share with the team.", "Хранится в {0} — закоммитьте, чтобы команда видела то же.");
             Add("ui.sel.all", "Select all", "Выбрать все");
             Add("ui.sel.all.tip", "Picks every shown problem that has an object or a fix.", "Выбирает все показанные проблемы с объектом или исправлением.");
             Add("ui.sel.group.tip", "Pick every object of this problem.", "Выбрать все объекты этой проблемы.");
@@ -271,6 +296,57 @@ namespace UnityTools.SceneOptimization
             Add("ui.lm.col.objects", "Objects", "Объекты");
             Add("ui.lm.col.objects.tip", "Objects that use the model, and how many of them are baked into lightmaps.", "Объекты с этой моделью и сколько из них запекаются в lightmap.");
             Add("ui.tab.profiler", "Profiler", "Профайлер");
+            Add("ui.tab.history", "History", "История");
+            Add("ui.h.title", "Progress over time", "Прогресс во времени");
+            Add("ui.h.intro", "Every audit run is a point of the scene history. Runs of one day make one point (the last one); a point with a note stays, and the next run adds a new one. Pick points A and B in the table to compare them.",
+                "Каждый прогон аудита — точка истории сцены. Прогоны одного дня — одна точка (последний); точка с заметкой остаётся, и следующий прогон добавит новую. Отметьте в таблице точки A и B, чтобы сравнить их.");
+            Add("ui.h.scene", "Scenes", "Сцены");
+            Add("ui.h.scene.tip", "History of the audited scenes or of another scene set recorded in this project.", "История проверенных сцен или другого набора сцен этого проекта.");
+            Add("ui.h.scene.current", "{0} (current)", "{0} (текущие)");
+            Add("ui.h.none", "No history for these scenes yet. Run the audit: the run becomes the first point.", "У этих сцен истории пока нет. Запустите аудит — прогон станет первой точкой.");
+            Add("ui.h.trend", "Trend", "Динамика");
+            Add("ui.h.trend.note", "Grey lines — points A and B; dashed — the Warning budget. The number on the right is at the later point, below it the change since the earlier one.",
+                "Серые линии — точки A и B, пунктир — порог Warning. Справа — значение в поздней точке, под ним — изменение с ранней.");
+            Add("ui.h.sinceA", "since earlier: {0}", "с ранней: {0}");
+            Add("ui.h.sinceA.tip", "Change between the compared points.", "Изменение между сравниваемыми точками.");
+            Add("ui.h.critical", "Critical", "Критичные");
+            Add("ui.h.warning", "Warnings", "Предупреждения");
+            Add("ui.h.info", "Info", "Сведения");
+            Add("ui.h.accepted", "Acceptable", "Допустимые");
+            Add("ui.h.cpu", "CPU frame, ms", "Кадр CPU, мс");
+            Add("ui.h.gpu", "GPU frame, ms", "Кадр GPU, мс");
+            Add("ui.h.points", "Points ({0})", "Точки ({0})");
+            Add("ui.h.points.note", "Newest at the top. A and B are the compared points; the order does not matter.",
+                "Новые сверху. A и B — сравниваемые точки, порядок не важен.");
+            Add("ui.h.col.date", "Date", "Дата");
+            Add("ui.h.col.critical", "Crit.", "Крит.");
+            Add("ui.h.col.warning", "Warn.", "Пред.");
+            Add("ui.h.col.info", "Info", "Свед.");
+            Add("ui.h.col.tris", "Triangles", "Треуг.");
+            Add("ui.h.col.drawCalls", "Draw calls", "Draw calls");
+            Add("ui.h.col.texMem", "Tex., MB", "Текст., МБ");
+            Add("ui.h.col.note", "Note", "Заметка");
+            Add("ui.h.col.a.tip", "Point A of the comparison.", "Точка A для сравнения.");
+            Add("ui.h.col.b.tip", "Point B of the comparison; its note can be edited below.", "Точка B для сравнения; её заметку можно изменить ниже.");
+            Add("ui.h.noteOf", "Note to point B ({0})", "Заметка к точке B ({0})");
+            Add("ui.h.note.hint", "What was done before this run, e.g. \"LODs on the houses, atlas for props\". A noted point is not replaced by later runs of the same day.",
+                "Что сделано перед этим прогоном, например «LOD у домов, атлас для мелочи». Точку с заметкой поздние прогоны того же дня не заменят.");
+            Add("ui.h.note.save", "Save note", "Сохранить заметку");
+            Add("ui.h.version", "Audited by v{0}", "Проверено v{0}");
+            Add("ui.h.delete", "Remove point", "Удалить точку");
+            Add("ui.h.delete.ask", "Remove the point of {0} from the history? This cannot be undone.", "Удалить точку {0} из истории? Отменить нельзя.");
+            Add("ui.h.compare", "Comparison: {0} → {1}", "Сравнение: {0} → {1}");
+            Add("ui.h.checks", "Checks with a changed count ({0})", "Проверки, где число изменилось ({0})");
+            Add("ui.h.checks.none", "No check changed its count.", "Ни у одной проверки число не изменилось.");
+            Add("ui.h.fixed", "Fixed ({0})", "Исправлено ({0})");
+            Add("ui.h.new", "New ({0})", "Появилось ({0})");
+            Add("ui.h.more", "…and {0} more", "…и ещё {0}");
+            Add("ui.h.acceptedSince", "Marked acceptable in between: {0} (not counted as fixed).", "Помечено допустимыми за это время: {0} (не считаются исправленными).");
+            Add("ui.h.problems.old", "Old points keep only the numbers, not the list of problems: fixed and new problems are shown for the last 50 points.",
+                "У старых точек хранятся только числа, без списка проблем: исправленные и новые видны для последних 50 точек.");
+            Add("ui.h.file", "Saved in {0} — commit it to share the history with the team.", "Хранится в {0} — закоммитьте, чтобы история была у всей команды.");
+            Add("ui.h.since", "Since the last point ({0}): Critical {1} · Warnings {2}", "С прошлой точки ({0}): критичных {1} · предупреждений {2}");
+            Add("ui.h.since.tip", "Compared with the previous point of the History tab.", "Сравнение с прошлой точкой вкладки «История».");
             Add("ui.empty.title", "VR scene audit", "Аудит VR-сцены");
             Add("ui.empty.text", "Checks the open scenes for HTC Vive Pro at 90 FPS: draw calls, meshes, textures, lighting, physics, animation, audio and VR settings. Nothing is changed: fixes are applied only when you press Fix and confirm.",
                 "Проверит открытые сцены под HTC Vive Pro и 90 FPS: draw calls, меши, текстуры, свет, физику, анимацию, звук и настройки VR. Ничего не меняет: исправления — только по кнопке «Исправить» и после подтверждения.");

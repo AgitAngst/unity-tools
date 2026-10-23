@@ -30,6 +30,9 @@ namespace UnityTools.SceneOptimization
         public string messageKey;
         public object[] args;
 
+        // Marked as acceptable by the team or its check is turned off (AcceptedList); not counted, hidden by default.
+        public bool accepted;
+
         public FixKind fixKind;
         public Action fixAction;
         // Object recorded for Undo (scene fixes) or marked dirty (asset fixes).
