@@ -32,6 +32,21 @@ chosen GPU SHALL be shown in the context line of the Problems tab.
 - **WHEN** a project saved a texture memory Warning of 1536 MB before this version
 - **THEN** the audit still warns above 1536 MB and the Budgets tab shows the thresholds as custom
 
+### Requirement: Readable window in both skins and at minimum width
+The window tabs SHALL be as wide as their labels so that no tab label is cut at the minimum window width of 560.
+Text coloured by severity SHALL use a shade per editor skin with a contrast of at least 4.5:1 against the background
+(dark skin: Critical `#FF8A8A`, Warning `#F2B833`, good `#5CC968`; light skin: `#9E1C1C`, `#6B4700`, `#185A22`);
+stripes, dots, backgrounds and icons SHALL keep the severity colours. A table row picked by a click SHALL have the
+editor selection colour as its background.
+
+#### Scenario: Narrow window
+- **WHEN** the window is 560 wide and has six tabs
+- **THEN** every tab label is shown in full
+
+#### Scenario: Light skin
+- **WHEN** the editor uses the light skin and a value is over the Critical threshold
+- **THEN** the value is shown in `#9E1C1C`, not in the Critical stripe colour
+
 ### Requirement: Viewpoints in the history
 When a viewpoint estimate newer than the previous history point exists, a new history point SHALL store the worst
 viewpoint triangles, draw calls and transparent share and the number of viewpoints over budget, and the History tab

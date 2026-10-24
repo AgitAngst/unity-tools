@@ -74,8 +74,11 @@ default), editable on the Budgets tab and stored with the other budgets.
 - **THEN** the viewpoint is over budget and its draw call value is shown in the Warning colour
 
 ### Requirement: Viewpoints tab
-The window SHALL have a Viewpoints tab second after Problems with a short explanation, a toolbar ("Place viewpoints"
-with the source menu, "Add from here", "Estimate", "Save CSV" and an "Only over budget" filter), a summary line
+The window SHALL have a Viewpoints tab second after Problems with a short explanation, a toolbar ("Estimate", "Place
+viewpoints" opening a panel under the button with the source checkboxes and what each found, the grid step, the eye
+height, "Cancel" and "Place (≈ N)", "Add from here", "Save CSV", and on the right "Account for walls" and "Only over
+budget"; on a narrow window the toolbar SHALL wrap to two rows), an empty state before any viewpoint exists (what the
+tool does, that the scene is not changed, one large "Place viewpoints…" button and what was found), a summary line
 (number of viewpoints, how many are over budget, the worst viewpoint and its value) and a table sorted worst first
 with the columns viewpoint, triangles, draw calls, transparent and direction, values coloured by the thresholds and a
 side stripe on rows over budget. Clicking a row SHALL move the Scene view camera to the viewpoint looking in its
@@ -89,6 +92,10 @@ count: batching and instancing, Unity occlusion culling, objects spawned at runt
 #### Scenario: Jump to the worst place
 - **WHEN** the user clicks the first row of the table
 - **THEN** the Scene view camera stands at that viewpoint and looks in its worst direction
+
+#### Scenario: Several sources at once
+- **WHEN** the user opens "Place viewpoints", ticks NavMesh and teleports and changes the step to 6 m
+- **THEN** the panel stays open until "Place (≈ N)" or "Cancel" and N follows the ticked sources and the step
 
 #### Scenario: Heavy prefab
 - **WHEN** forty copies of one prefab without a LOD group are visible in the worst direction
