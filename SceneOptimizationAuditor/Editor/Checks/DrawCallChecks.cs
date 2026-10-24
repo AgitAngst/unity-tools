@@ -99,7 +99,8 @@ namespace UnityTools.SceneOptimization
             }
         }
 
-        static int SlotCount(Renderer renderer)
+        // Draw calls of a renderer before batching: its material slots, one for particles, lines and sprites.
+        internal static int SlotCount(Renderer renderer)
         {
             if (renderer is MeshRenderer || renderer is SkinnedMeshRenderer)
             {

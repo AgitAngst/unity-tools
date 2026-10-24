@@ -201,7 +201,7 @@ namespace UnityTools.SceneOptimization
             Add("ui.budgets.warning", "Warning", "Предупреждение");
             Add("ui.budgets.critical", "Critical", "Критично");
             Add("ui.b.drawCalls", "Draw calls per frame", "Draw calls за кадр");
-            Add("ui.b.sceneTris", "Scene triangles", "Треугольники сцены");
+            Add("ui.b.sceneTris", "Scene and frame triangles", "Треугольники сцены и кадра");
             Add("ui.b.objectTris", "Object triangles without LOD", "Треугольники объекта без LOD");
             Add("ui.b.texMem", "Texture memory, MB", "Память текстур, МБ");
             Add("ui.b.texSize", "Texture side, px", "Сторона текстуры, px");

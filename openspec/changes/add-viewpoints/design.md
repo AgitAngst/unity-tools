@@ -7,7 +7,7 @@
 `AuditContext.ShadowPassesPerCaster`, удвоение при multi-pass — `XrInfo.DoublesDrawCalls`. История хранит файл на
 набор сцен (`AuditHistory`: `SceneAuditHistory/<сцена>-<хэш>.json`). После `split-auditor-window` у окна по файлу на
 вкладку. API этапа (`GeometryUtility.CalculateFrustumPlanes(Matrix4x4, Plane[])`, `TestPlanesAABB`,
-`NavMesh.CalculateTriangulation`, `NavMesh.SamplePosition`, `LODGroup.GetLODs/size/localReferencePoint`,
+`NavMesh.CalculateTriangulation`, `LODGroup.GetLODs/size/localReferencePoint`,
 `QualitySettings.lodBias/maximumLODLevel`, `SceneView.duringSceneGui`, `SceneView.LookAt`, `Handles.PositionHandle`,
 `PrefabUtility.GetNearestPrefabInstanceRoot`, `GlobalObjectId`) собраны пробной компиляцией против DLL 2019.4.41f2
 24.10.2026.
@@ -32,9 +32,9 @@
   требует runtime-сборки, а утилита — только Editor.
 - **Файл по набору сцен, как у истории.** Ключ и хэш — те же, что у `AuditHistory`, помощник один. Папка
   `SceneAuditPoints/` рядом с `SceneAuditHistory/`.
-- **Расстановка по NavMesh:** границы вершин `CalculateTriangulation` → узлы сетки XZ с шагом → `SamplePosition`
-  (радиус — полшага) → отбрасывание ближе полшага к уже взятой (хэш по клеткам) → +1,7 м. Больше 500 — шаг ×1,25,
-  пока не уложится. Телепорты — типы `Valve.VR.InteractionSystem.TeleportPoint` и `TeleportArea` через
+- **Расстановка по NavMesh:** для каждого треугольника `CalculateTriangulation` — узлы сетки XZ с шагом внутри его
+  проекции (барицентрика даёт высоту), один узел на клетку и этаж (высота с шагом 1,5 м) → отбрасывание ближе полшага
+  к уже взятой (хэш по клеткам) → +1,7 м. Больше 500 авто-точек — шаг ×1,25, пока не уложится. Телепорты — типы `Valve.VR.InteractionSystem.TeleportPoint` и `TeleportArea` через
   `ReflectionUtil`; область — та же сетка по её `bounds` с лучом вниз, попадание — в её коллайдер. Лучи вниз без
   NavMesh — по границам всех рендереров, нормаль попадания ближе 45° к вертикали.
 - **Кэш рендереров один раз за оценку:** `bounds`, треугольники, слоты, отбрасывает ли тень, прозрачный ли,
@@ -49,10 +49,10 @@
   пропускаются; ниже последнего перехода — группа не рисуется. Сверка с Unity — в тесте на известных расстояниях и
   вживую по полосе LODGroup в инспекторе.
 - **Тени:** directional — casters, у которых `bounds.SqrDistance(глаз)` ≤ shadow distance², × каскады; point (×6) и
-  spot (×1) — их casters, если сфера range пересекает пирамиду. Отсечение casters каскадами не моделируется —
+  spot (×1) — их casters, если куб вокруг сферы range (`Bounds` со стороной 2 × range) пересекает пирамиду. Отсечение casters каскадами не моделируется —
   оценка сверху.
-- **Прозрачное:** 8 углов `bounds` → экранные координаты; угол за глазом — прямоугольник до края экрана; глаз
-  внутри `bounds` — 100 %. Сумма долей, обрезанных по экрану.
+- **Прозрачное:** 8 углов `bounds` → экранные координаты; угол за глазом (ближе near) или глаз внутри `bounds` —
+  весь экран, 100 %. Сумма долей, обрезанных по экрану.
 - **«Учитывать стены»:** `Physics.SyncTransforms`, затем лучи к центру и 4 верхним углам `bounds`
   (`RaycastNonAlloc`, без триггеров); попадание в коллайдер самого объекта или его детей не считается. Объект
   скрыт, если все 5 лучей упёрлись раньше. Лучи — на точку, а не на направление, только у объектов, видимых хоть
@@ -86,6 +86,6 @@
   пишет, откуда точки.
 - [Лучи «стен» без коллайдеров на стенах ничего не скрывают] → режим по умолчанию выключен, подпись.
 - [Большие сцены (десятки тысяч рендереров) — оценка дольше 10 с] → полоса хода с отменой, время в журнале
-  `[SceneAudit] Viewpoints: N points, T s.`; «Оценить выбранные».
+  `[SceneAudit] Viewpoints: N estimated, T s.`; «Оценить выбранные».
 - [Сдвиг вкладок ломает снимки тестов] → `PickForShot`/`ExpandForShot` и `shoot-audit-window.ps1` обновляются в этом
   же изменении.

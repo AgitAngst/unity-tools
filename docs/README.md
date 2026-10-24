@@ -1,6 +1,6 @@
 # unity-tools — документация
 
-Версия программы: 1.1.1
+Версия программы: 1.2.0
 
 Это документация того, что есть сейчас. Правила для сессий — [CLAUDE.md](../CLAUDE.md); замысел и
 этапы — [SPEC.md](../SPEC.md); что осталось проверить — [TESTPLAN.md](../TESTPLAN.md).
@@ -12,12 +12,13 @@
 
 | Утилита | Что делает | Состояние |
 |---|---|---|
-| [SceneOptimizationAuditor](scene-optimization-auditor.md) | аудит загруженных сцен под PC VR (HTC Vive Pro, 90 Гц): проверки, бюджеты, отчёт, исправления, снимок профайлера | этапы 1–4 готовы: автотесты в Unity 2019.4 зелёные, живая проверка владельца — 22.10.2026 |
+| [SceneOptimizationAuditor](scene-optimization-auditor.md) | аудит загруженных сцен под PC VR (HTC Vive Pro, 90 Гц): проверки, бюджеты под целевую видеокарту, точки обзора, отчёт, исправления, снимок профайлера, история | автотесты в Unity 2019.4 зелёные; живая проверка владельца — этапы 1–4 (22.10.2026), этапы 5–12 ещё не смотрены |
 
 Этапы 1–4 из `SPEC.md` закрыты 22.10.2026 (автотесты зелёные, живую проверку владелец подтвердил) —
 0.5.0. Этап 5 — проверки развёртки под свет (lightmap UV) — 0.6.0; этап 6 — вкладка «Развёртка под свет» — 0.7.0;
 этап 7 — проверки 3D-ассетов — 0.8.0; этап 8 — выбор нескольких записей — 0.9.0; этап 9 — допустимые проблемы — 1.0.0; этап 10 — история прогонов — 1.1.0;
-этап 11 — окно и тексты по файлам, без нового поведения, и тестовый сервер — 1.1.1.
+этап 11 — окно и тексты по файлам, без нового поведения, и тестовый сервер — 1.1.1; этап 12 — точки обзора (оценка в
+редакторе) и выбор целевой видеокарты — 1.2.0.
 Выпуска и тега нет.
 
 ## Оглавление
@@ -49,8 +50,9 @@
   Шаги `cli-*` вызывают тот же экспорт, что `RunFromCommandLine`, через `ReportExporter.RunWithArgs` — без
   выхода из редактора.
 - `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark] [-Out …]` — снимки окна SceneOptimizationAuditor в
-  тестовом сервере (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `lightmap-ru-dark`,
-  `lightmap-en-dark`, `picked-ru-dark`, `lightmap-picked-ru-dark`, `budgets-ru-dark`, `profiler-en-dark`,
+  тестовом сервере (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `viewpoints-empty-ru-dark`,
+  `viewpoints-ru-dark`, `viewpoints-en-dark`, `viewpoints-narrow-ru-dark`, `lightmap-ru-dark`, `lightmap-en-dark`,
+  `picked-ru-dark`, `lightmap-picked-ru-dark`, `budgets-ru-dark`, `budgets-en-dark`, `profiler-en-dark`,
   `history-ru-dark`, `history-en-dark`) в тёмном скине (светлый в 2019.4 из кода не переключить): окно открывается
   на время снимка и закрывается, редактор остаётся. Снимки — `unity-tools-scratch\reports\shots\`.
 - `scripts\stamp-version.ps1 [-Version X.Y.Z]` — перед каждым коммитом: пишет версию и номер сборки (число

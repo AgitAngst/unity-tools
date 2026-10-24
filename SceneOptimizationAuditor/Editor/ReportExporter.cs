@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -56,6 +57,33 @@ namespace UnityTools.SceneOptimization
         }
 
         [Serializable]
+        public sealed class ViewpointDto
+        {
+            public string name;
+            public string kind;
+            public float x;
+            public float y;
+            public float z;
+            public float worstYaw;
+            public long tris;
+            public int drawCalls;
+            public float transparentPercent;
+            public bool overBudget;
+        }
+
+        [Serializable]
+        public sealed class ViewpointsDto
+        {
+            public string estimatedAt = "";
+            public string toolVersion = "";
+            public bool wallsCounted;
+            public int trisLimit;
+            public int drawCallLimit;
+            public int transparentLimitPercent;
+            public ViewpointDto[] points = new ViewpointDto[0];
+        }
+
+        [Serializable]
         public sealed class ReportDto
         {
             public string[] scenes;
@@ -63,12 +91,16 @@ namespace UnityTools.SceneOptimization
             public string toolVersion = ToolVersion.Full;
             public string platform = "PC VR - HTC Vive Pro";
             public int targetFPS = VRBudgets.TargetFps;
+            // Id of the target GPU, or "Custom" when the thresholds differ from its set.
+            public string targetGpu;
             public XrDto xr;
             public string qualityLevel;
             public SummaryDto summary;
             public BudgetsDto sceneBudgets;
             public bool hasProfilerSnapshot;
             public ProfilerSnapshot profilerSnapshot;
+            public bool hasViewpoints;
+            public ViewpointsDto viewpoints;
             public IssueDto[] issues;
         }
 
@@ -80,12 +112,27 @@ namespace UnityTools.SceneOptimization
             Debug.Log("[SceneAudit] Scene audit report saved: " + path);
         }
 
+        // The last viewpoint estimate of the audited scenes goes into the report when there is one.
         public static string ToJson(AuditResult result, ProfilerSnapshot snapshot)
+        {
+            var set = ViewpointSet.Load(result.scenePaths);
+            try
+            {
+                return ToJson(result, snapshot, set.HasEstimate ? set : null);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(set);
+            }
+        }
+
+        public static string ToJson(AuditResult result, ProfilerSnapshot snapshot, ViewpointSet viewpoints)
         {
             var report = new ReportDto
             {
                 scenes = result.sceneNames,
                 timestamp = result.time.ToString("o", CultureInfo.InvariantCulture),
+                targetGpu = result.budgets.GpuReportName,
                 xr = new XrDto
                 {
                     system = result.xr.SystemName,
@@ -112,6 +159,8 @@ namespace UnityTools.SceneOptimization
                 // JsonUtility cannot write null for a nested class, hence the flag.
                 hasProfilerSnapshot = snapshot != null,
                 profilerSnapshot = snapshot ?? new ProfilerSnapshot(),
+                hasViewpoints = viewpoints != null,
+                viewpoints = viewpoints != null ? ViewpointsOf(viewpoints, result.budgets) : new ViewpointsDto(),
                 issues = new IssueDto[result.issues.Count]
             };
             for (int i = 0; i < result.issues.Count; i++)
@@ -132,6 +181,32 @@ namespace UnityTools.SceneOptimization
                 };
             }
             return JsonUtility.ToJson(report, true);
+        }
+
+        static ViewpointsDto ViewpointsOf(ViewpointSet set, VRBudgets b)
+        {
+            return new ViewpointsDto
+            {
+                estimatedAt = set.estimatedAt,
+                toolVersion = set.estimateVersion,
+                wallsCounted = set.estimateWalls,
+                trisLimit = b.sceneTrisWarning,
+                drawCallLimit = b.drawCallsWarning,
+                transparentLimitPercent = b.transparentWarningPercent,
+                points = set.points.Where(p => p.Estimated).Select(p => new ViewpointDto
+                {
+                    name = p.Name,
+                    kind = p.kind.ToString(),
+                    x = p.position.x,
+                    y = p.position.y,
+                    z = p.position.z,
+                    worstYaw = p.Worst.yaw,
+                    tris = p.Worst.tris,
+                    drawCalls = p.Worst.drawCalls,
+                    transparentPercent = p.Worst.transparentPercent,
+                    overBudget = ViewpointEstimator.LevelOf(p.Worst, b) != null
+                }).ToArray()
+            };
         }
 
         public static string ToCsv(AuditResult result)
@@ -167,7 +242,7 @@ namespace UnityTools.SceneOptimization
         // Unity.exe -batchmode -quit -projectPath <project> -executeMethod
         //   UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine
         //   -auditScene Assets/Scenes/Main.unity -auditReport E:/reports/main.json [-auditLang en|ru]
-        //   [-auditHistory [-auditNote "text"]]
+        //   [-auditHistory [-auditNote "text"]] [-auditViewpoints]
         public static void RunFromCommandLine()
         {
             EditorApplication.Exit(RunWithArgs(Environment.GetCommandLineArgs()));
@@ -186,7 +261,7 @@ namespace UnityTools.SceneOptimization
                 if (!string.IsNullOrEmpty(lang)) Strings.Current = lang.ToLowerInvariant() == "ru" ? Lang.Ru : Lang.En;
                 if (string.IsNullOrEmpty(scene) || string.IsNullOrEmpty(report))
                 {
-                    Debug.LogError("[SceneAudit] Usage: -auditScene <Assets/...unity> -auditReport <file.json|file.csv> [-auditLang en|ru] [-auditHistory [-auditNote <text>]]");
+                    Debug.LogError("[SceneAudit] Usage: -auditScene <Assets/...unity> -auditReport <file.json|file.csv> [-auditLang en|ru] [-auditHistory [-auditNote <text>]] [-auditViewpoints]");
                 }
                 else
                 {
@@ -195,6 +270,7 @@ namespace UnityTools.SceneOptimization
                     if (result == null) Debug.LogError("[SceneAudit] Audit returned no result.");
                     else
                     {
+                        if (Array.IndexOf(args, "-auditViewpoints") >= 0) EstimateViewpoints(result.scenePaths);
                         Save(result, report);
                         if (Array.IndexOf(args, "-auditHistory") >= 0)
                         {
@@ -210,6 +286,34 @@ namespace UnityTools.SceneOptimization
                 Debug.LogError("[SceneAudit] Command-line export failed: " + e);
             }
             return code;
+        }
+
+        // -auditViewpoints: estimates the saved viewpoints of the scenes; without a viewpoint file they are placed
+        // from the NavMesh and teleports first (rays down when there are neither).
+        static void EstimateViewpoints(string[] scenePaths)
+        {
+            var set = ViewpointSet.Load(scenePaths);
+            try
+            {
+                if (set.points.Count == 0)
+                {
+                    float step;
+                    var settings = new PlacementSettings { navMesh = true, teleports = true, rays = true };
+                    set.placement = settings;
+                    set.ReplaceAuto(ViewpointPlacer.Place(settings, out step), step);
+                }
+                if (set.points.Count == 0)
+                {
+                    Debug.LogWarning("[SceneAudit] No viewpoints: the scene has no NavMesh, teleports or surfaces to stand on.");
+                    return;
+                }
+                ViewpointEstimator.Estimate(set, set.points, set.estimateWalls, null);
+                set.Save();
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(set);
+            }
         }
 
         static string Argument(string[] args, string name)

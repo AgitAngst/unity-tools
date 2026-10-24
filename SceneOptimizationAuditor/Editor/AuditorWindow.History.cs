@@ -152,6 +152,23 @@ namespace UnityTools.SceneOptimization
                 double delta = lastFps != null && firstFps != null ? lastFps.avgFPS - firstFps.avgFPS : 0;
                 Trend("ui.m.fps", fps, OkColor, VRBudgets.FpsWarning, value, delta, true);
             }
+            if (points.Any(p => p.hasViewpoints))
+            {
+                var lastVp = points.Take(to + 1).LastOrDefault(p => p.hasViewpoints);
+                var firstVp = points.Skip(from).Take(to - from + 1).FirstOrDefault(p => p.hasViewpoints);
+                bool both = lastVp != null && firstVp != null;
+                var dc = points.Select(p => p.hasViewpoints ? (double)p.vpDrawCalls : double.NaN).ToList();
+                Trend("ui.h.vp.dc", dc, lastVp != null ? StateColor(lastVp.vpDrawCalls, lastVp.drawCallLimit) : OkColor, lastVp != null ? lastVp.drawCallLimit : (double?)null,
+                    lastVp != null ? lastVp.vpDrawCalls : double.NaN, both ? lastVp.vpDrawCalls - firstVp.vpDrawCalls : 0, false);
+                var tris = points.Select(p => p.hasViewpoints ? (double)p.vpTris : double.NaN).ToList();
+                Trend("ui.h.vp.tris", tris, lastVp != null ? StateColor(lastVp.vpTris, lastVp.trisLimit) : OkColor, lastVp != null ? lastVp.trisLimit : (double?)null,
+                    lastVp != null ? lastVp.vpTris : double.NaN, both ? lastVp.vpTris - firstVp.vpTris : 0, false);
+                var transparent = points.Select(p => p.hasViewpoints ? (double)p.vpTransparent : double.NaN).ToList();
+                Trend("ui.h.vp.transparent", transparent, WarningColor, null, lastVp != null ? lastVp.vpTransparent : double.NaN,
+                    both ? lastVp.vpTransparent - firstVp.vpTransparent : 0, false);
+                var over = points.Select(p => p.hasViewpoints ? (double)p.vpOver : double.NaN).ToList();
+                Trend("ui.h.vp.over", over, WarningColor, null, lastVp != null ? lastVp.vpOver : double.NaN, both ? lastVp.vpOver - firstVp.vpOver : 0, false);
+            }
             GUILayout.Label(Strings.Get("ui.h.trend.note"), wrapMini);
         }
 
@@ -209,7 +226,7 @@ namespace UnityTools.SceneOptimization
             {
                 bool better = higherIsBetter ? delta > 0 : delta < 0;
                 var style = new GUIStyle(EditorStyles.miniLabel);
-                style.normal.textColor = better ? OkColor : CriticalColor;
+                style.normal.textColor = better ? TextOk : TextCritical;
                 GUI.Label(new Rect(valueRect.x, valueRect.y + rect.height / 2f, valueRect.width, rect.height / 2f),
                     new GUIContent(Strings.Format("ui.h.sinceA", DeltaText(delta)), Strings.Get("ui.h.sinceA.tip")), style);
             }
@@ -310,6 +327,13 @@ namespace UnityTools.SceneOptimization
                 CompareRow("ui.h.cpu", a.avgCPUms, b.avgCPUms, false);
                 if (a.avgGPUms >= 0f && b.avgGPUms >= 0f) CompareRow("ui.h.gpu", a.avgGPUms, b.avgGPUms, false);
             }
+            if (a.hasViewpoints && b.hasViewpoints)
+            {
+                CompareRow("ui.h.vp.dc", a.vpDrawCalls, b.vpDrawCalls, false);
+                CompareRow("ui.h.vp.tris", a.vpTris, b.vpTris, false);
+                CompareRow("ui.h.vp.transparent", a.vpTransparent, b.vpTransparent, false);
+                CompareRow("ui.h.vp.over", a.vpOver, b.vpOver, false);
+            }
 
             GUILayout.Space(6f);
             GUILayout.Label(Strings.Format("ui.h.checks", diff.checkChanges.Count), EditorStyles.boldLabel);
@@ -345,7 +369,7 @@ namespace UnityTools.SceneOptimization
             double delta = b - a;
             if (Math.Abs(delta) < 0.0001) return;
             var style = new GUIStyle(EditorStyles.label);
-            if (higherIsBetter.HasValue) style.normal.textColor = (higherIsBetter.Value ? delta > 0 : delta < 0) ? OkColor : CriticalColor;
+            if (higherIsBetter.HasValue) style.normal.textColor = (higherIsBetter.Value ? delta > 0 : delta < 0) ? TextOk : TextCritical;
             GUI.Label(new Rect(x + 186f, rect.y, Mathf.Max(0f, rect.xMax - x - 186f), rect.height), DeltaText(delta), style);
         }
 

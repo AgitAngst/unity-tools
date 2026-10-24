@@ -21,14 +21,19 @@ $shots = @(
     @("problems-ru-dark", "ru", "dark", @("-shotExpand", "critical")),
     @("problems-en-dark", "en", "dark", @("-shotExpand", "critical")),
     # Light skin: Unity 2019.4 has no API to switch skins from code, check it by hand.
-    @("lightmap-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotScan")),
-    @("lightmap-en-dark", "en", "dark", @("-shotTab", "1", "-shotScan")),
+    @("viewpoints-empty-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpointsEmpty")),
+    @("viewpoints-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints")),
+    @("viewpoints-en-dark", "en", "dark", @("-shotTab", "1", "-shotViewpoints")),
+    @("viewpoints-narrow-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotWidth", "560")),
+    @("lightmap-ru-dark", "ru", "dark", @("-shotTab", "2", "-shotScan")),
+    @("lightmap-en-dark", "en", "dark", @("-shotTab", "2", "-shotScan")),
     @("picked-ru-dark", "ru", "dark", @("-shotExpand", "critical", "-shotPick")),
-    @("lightmap-picked-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotScan", "-shotPick")),
-    @("budgets-ru-dark", "ru", "dark", @("-shotTab", "2")),
-    @("profiler-en-dark", "en", "dark", @("-shotTab", "3")),
-    @("history-ru-dark", "ru", "dark", @("-shotTab", "4", "-shotHistory")),
-    @("history-en-dark", "en", "dark", @("-shotTab", "4", "-shotHistory"))
+    @("lightmap-picked-ru-dark", "ru", "dark", @("-shotTab", "2", "-shotScan", "-shotPick")),
+    @("budgets-ru-dark", "ru", "dark", @("-shotTab", "3")),
+    @("budgets-en-dark", "en", "dark", @("-shotTab", "3")),
+    @("profiler-en-dark", "en", "dark", @("-shotTab", "4")),
+    @("history-ru-dark", "ru", "dark", @("-shotTab", "5", "-shotHistory")),
+    @("history-en-dark", "en", "dark", @("-shotTab", "5", "-shotHistory"))
 )
 
 foreach ($shot in $shots) {

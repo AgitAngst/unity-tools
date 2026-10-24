@@ -33,7 +33,9 @@ chosen GPU SHALL be shown in the context line of the Problems tab.
 - **THEN** the audit still warns above 1536 MB and the Budgets tab shows the thresholds as custom
 
 ### Requirement: Readable window in both skins and at minimum width
-The window tabs SHALL be as wide as their labels so that no tab label is cut at the minimum window width of 560.
+No tab label SHALL be cut, down to the minimum window width of 560: tabs SHALL be of equal width while the longest
+label fits and as wide as their labels otherwise. On a window narrower than 640 the version and the language switch
+SHALL move to a second toolbar row.
 Text coloured by severity SHALL use a shade per editor skin with a contrast of at least 4.5:1 against the background
 (dark skin: Critical `#FF8A8A`, Warning `#F2B833`, good `#5CC968`; light skin: `#9E1C1C`, `#6B4700`, `#185A22`);
 stripes, dots, backgrounds and icons SHALL keep the severity colours. A table row picked by a click SHALL have the
@@ -48,9 +50,10 @@ editor selection colour as its background.
 - **THEN** the value is shown in `#9E1C1C`, not in the Critical stripe colour
 
 ### Requirement: Viewpoints in the history
-When a viewpoint estimate newer than the previous history point exists, a new history point SHALL store the worst
-viewpoint triangles, draw calls and transparent share and the number of viewpoints over budget, and the History tab
-SHALL chart them like the other budgets.
+When a viewpoint estimate newer than the previous history point exists, a new history point SHALL store, for the
+viewpoint with the most draw calls, its draw calls, triangles and transparent share, and the number of viewpoints and
+of viewpoints over budget. The History tab SHALL chart these values like the other budgets and SHALL compare them
+when both points have them.
 
 #### Scenario: Progress of the worst place
 - **WHEN** the worst viewpoint had 1 450 draw calls at the first point and 900 at the next

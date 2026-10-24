@@ -38,6 +38,14 @@ namespace UnityTools.SceneOptimization
         public float avgFPS;
         public float avgCPUms;
         public float avgGPUms = -1f;
+        // Viewpoint estimate made since the previous point: the worst viewpoint and how many are over budget.
+        public bool hasViewpoints;
+        public string vpTime = "";
+        public int vpCount;
+        public int vpOver;
+        public long vpTris;
+        public int vpDrawCalls;
+        public float vpTransparent;
         public List<CheckCount> checks = new List<CheckCount>();
         // "C|checkId|location" (C, W, I by severity, A for acceptable); dropped on old points to keep the file small.
         public List<string> problems = new List<string>();
@@ -91,11 +99,17 @@ namespace UnityTools.SceneOptimization
 
         public static string FileFor(string[] scenePaths)
         {
+            return Path.Combine(Folder, FileNameFor(scenePaths));
+        }
+
+        // "<first scene>[+N]-<hash of the set>.json": one name per scene set, order does not matter. Viewpoints use it too.
+        public static string FileNameFor(string[] scenePaths)
+        {
             var sorted = scenePaths.Select(p => string.IsNullOrEmpty(p) ? "untitled" : p.Replace('\\', '/')).OrderBy(p => p, StringComparer.Ordinal).ToArray();
             var first = sorted.Length > 0 ? Path.GetFileNameWithoutExtension(sorted[0]) : "untitled";
             foreach (var ch in Path.GetInvalidFileNameChars()) first = first.Replace(ch, '_');
             if (sorted.Length > 1) first += "+" + (sorted.Length - 1);
-            return Path.Combine(Folder, first + "-" + Hash(string.Join("|", sorted)) + ".json");
+            return first + "-" + Hash(string.Join("|", sorted)) + ".json";
         }
 
         public static string[] Files()
@@ -203,7 +217,30 @@ namespace UnityTools.SceneOptimization
                 point.avgCPUms = snapshot.avgCPUms;
                 point.avgGPUms = snapshot.avgGPUms;
             }
+            AddViewpoints(point, result, previous);
             return point;
+        }
+
+        static void AddViewpoints(HistoryPoint point, AuditResult result, HistoryPoint previous)
+        {
+            var set = ViewpointSet.Load(result.scenePaths);
+            try
+            {
+                if (!set.HasEstimate || (previous != null && previous.vpTime == set.estimatedAt)) return;
+                var estimated = set.points.Where(p => p.Estimated).ToList();
+                var worst = estimated.OrderByDescending(p => p.Worst.drawCalls).ThenByDescending(p => p.Worst.tris).First();
+                point.hasViewpoints = true;
+                point.vpTime = set.estimatedAt;
+                point.vpCount = estimated.Count;
+                point.vpOver = estimated.Count(p => ViewpointEstimator.LevelOf(p.Worst, result.budgets) != null);
+                point.vpTris = worst.Worst.tris;
+                point.vpDrawCalls = worst.Worst.drawCalls;
+                point.vpTransparent = worst.Worst.transparentPercent;
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(set);
+            }
         }
 
         static string Letter(AuditIssue issue)

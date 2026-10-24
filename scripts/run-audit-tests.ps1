@@ -47,7 +47,10 @@ $steps = @(
     @("multi-select", "AuditTestsEditor.AuditTests.RunMultiSelect", @()),
     @("accepted", "AuditTestsEditor.AuditTests.RunAccepted", @()),
     @("history", "AuditTestsEditor.AuditTests.RunHistory", @()),
+    @("gpu", "AuditTestsEditor.AuditTestViewpoints.RunGpu", @()),
+    @("viewpoints", "AuditTestsEditor.AuditTestViewpoints.RunViewpoints", @()),
     @("steamvr-on", "AuditTestsEditor.AuditTests.EnableSteamVrStub", @()),
+    @("viewpoints-teleports", "AuditTestsEditor.AuditTestViewpoints.RunTeleports", @()),
     @("steamvr-not-in-scene", "AuditTestsEditor.AuditTests.Run", @("-auditVariant", "steamvr-not-in-scene")),
     @("steamvr-in-scene", "AuditTestsEditor.AuditTests.Run", @("-auditVariant", "steamvr-in-scene")),
     @("steamvr-off", "AuditTestsEditor.AuditTests.DisableSteamVrStub", @())

@@ -14,8 +14,9 @@ when the SteamVR types exist (found by type name), enabled scene cameras other t
 is neither a NavMesh nor teleports, a downward ray grid over the renderer bounds that keeps surfaces tilted up to
 45°. The user SHALL be able to add a manual viewpoint at the Scene view camera position and direction, move a
 viewpoint with a handle in the Scene view and remove viewpoints. Placing again SHALL replace only automatic
-viewpoints; a moved automatic viewpoint SHALL become manual. There SHALL be at most 500 viewpoints; when the grid
-would give more, the step SHALL grow and the summary SHALL say so. Viewpoints, placement settings and the last
+viewpoints and SHALL clear every estimate; a moved automatic viewpoint SHALL become manual. There SHALL be at most 500
+automatic viewpoints (manual ones do not count); when the grid would give more, the step SHALL grow and the summary
+SHALL say so. Viewpoints, placement settings and the last
 estimate SHALL be stored in `SceneAuditPoints/<scene>-<hash>.json` next to `Assets/`, keyed by the set of loaded
 scenes like the audit history. Placing, moving and estimating SHALL NOT change the scenes.
 
@@ -41,10 +42,10 @@ level Unity would pick from the group size and scale, the distance to its refere
 compute triangles of the visible meshes, draw calls (material slots, one per particle, line and sprite renderer,
 extra pixel light passes for Realtime and Mixed point and spot lights whose range touches the renderer, up to the
 Pixel Light Count, shadow passes of shadow casters within the shadow distance for directional lights and within the
-range for point and spot lights, doubled when the stereo mode is not Single Pass Instanced) and the share of the
+range for point and spot lights, doubled with VR in Multi Pass or Single Pass stereo) and the share of the
 screen covered by the bounds of transparent renderers (render queue 2501 and above) and particles, in percent. An
 optional "Account for walls" mode, off by default, SHALL hide a renderer when rays from the eye to its bounds centre
-and corners hit colliders of other objects first. The result of a viewpoint SHALL be its worst direction by draw
+and four top corners hit colliders of other objects first. The result of a viewpoint SHALL be its worst direction by draw
 calls, then by triangles; all directions SHALL be kept. Terrain SHALL NOT be counted. The estimate SHALL run from its
 own button with a cancelable progress bar and SHALL NOT be part of the audit run.
 
@@ -79,12 +80,14 @@ viewpoints" opening a panel under the button with the source checkboxes and what
 height, "Cancel" and "Place (≈ N)", "Add from here", "Save CSV", and on the right "Account for walls" and "Only over
 budget"; on a narrow window the toolbar SHALL wrap to two rows), an empty state before any viewpoint exists (what the
 tool does, that the scene is not changed, one large "Place viewpoints…" button and what was found), a summary line
-(number of viewpoints, how many are over budget, the worst viewpoint and its value) and a table sorted worst first
+(number of viewpoints, how many are over budget, the worst viewpoint and its value) and a table, 20 rows at first with
+"Show 20 more", sorted worst first
 with the columns viewpoint, triangles, draw calls, transparent and direction, values coloured by the thresholds and a
 side stripe on rows over budget. Clicking a row SHALL move the Scene view camera to the viewpoint looking in its
 worst direction without changing Scene view settings. The selected viewpoint SHALL show its directions (azimuth,
 triangles, draw calls, transparent; clicking one looks there) and "What is heavy here": the top 10 by triangles and
-by draw calls in the worst direction grouped by source prefab or model with the number of copies and the marks "far
+by draw calls in the shown direction (the worst one unless the user picked another; without shadow passes) grouped by
+source prefab or model with the number of copies and the marks "far
 but LOD0", "no LOD group", "small but casts shadows" and "large transparent"; clicking one selects its objects. Rows
 SHALL have checkboxes with "Estimate selected" and "Remove selected". The tab SHALL list what the estimate does not
 count: batching and instancing, Unity occlusion culling, objects spawned at runtime, shader and GPU cost.
@@ -104,7 +107,7 @@ count: batching and instancing, Unity occlusion culling, objects spawned at runt
 ### Requirement: Viewpoints in the Scene view
 While the Viewpoints tab is open the Scene view SHALL show every viewpoint as a sphere coloured green, yellow or red
 by its worst value against the thresholds, grey when not estimated, and for the selected viewpoint an arrow of the
-worst direction, the outline of its view frustum and a move handle.
+shown direction (the worst one unless the user picked another), the outline of its view frustum and a move handle.
 
 #### Scenario: Not estimated yet
 - **WHEN** viewpoints were placed and not estimated

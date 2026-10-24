@@ -14,8 +14,8 @@ GPU, or `Custom` when the thresholds differ from its set.
 
 ### Requirement: Viewpoints from the command line
 With `-auditViewpoints` the command-line export SHALL estimate the saved viewpoints of the scene, or place them from
-the NavMesh and teleports when no viewpoint file exists, put the estimate in the report and, with `-auditHistory`,
-in the history point.
+the NavMesh and teleports (downward rays when there are neither) when no viewpoint file exists, save them in the
+viewpoint file, put the estimate in the report and, with `-auditHistory`, in the history point.
 
 #### Scenario: Nightly run with viewpoints
 - **WHEN** the export runs with `-auditViewpoints -auditHistory` on a scene with saved viewpoints

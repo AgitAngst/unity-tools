@@ -4,19 +4,44 @@ using UnityEngine;
 
 namespace UnityTools.SceneOptimization
 {
-    // Thresholds of the audit. Defaults are starting values for HTC Vive Pro on a GTX 1070;
-    // projects override them in ProjectSettings/SceneOptimizationAuditor.json.
+    // Starting thresholds of one target GPU: only triangles and texture memory differ between GPUs.
+    public sealed class GpuPreset
+    {
+        public string id;
+        public string name;
+        public int memoryGB;
+        public int trisWarning;
+        public int trisCritical;
+        public int textureMemoryWarningMB;
+        public int textureMemoryCriticalMB;
+    }
+
+    // Thresholds of the audit. Defaults are starting values for HTC Vive Pro on the target GPU (RTX 3060 unless
+    // the project picks another); projects override them in ProjectSettings/SceneOptimizationAuditor.json.
     [Serializable]
     public sealed class VRBudgets
     {
+        // Texture memory takes the share of GPU memory the old GTX 1070 defaults took (19 % / 25 % of 8 GB),
+        // triangles follow the GPU speed against the GTX 1070 (2 / 4 million). Owner, 24.10.2026.
+        public static readonly GpuPreset[] Gpus =
+        {
+            new GpuPreset { id = "RTX2060", name = "RTX 2060", memoryGB = 6, trisWarning = 2500000, trisCritical = 5000000, textureMemoryWarningMB = 1152, textureMemoryCriticalMB = 1536 },
+            new GpuPreset { id = "RTX2070", name = "RTX 2070", memoryGB = 8, trisWarning = 3000000, trisCritical = 6000000, textureMemoryWarningMB = 1536, textureMemoryCriticalMB = 2048 },
+            new GpuPreset { id = "RTX2080", name = "RTX 2080", memoryGB = 8, trisWarning = 3500000, trisCritical = 7000000, textureMemoryWarningMB = 1536, textureMemoryCriticalMB = 2048 },
+            new GpuPreset { id = "RTX3060", name = "RTX 3060", memoryGB = 12, trisWarning = 3000000, trisCritical = 6000000, textureMemoryWarningMB = 2304, textureMemoryCriticalMB = 3072 },
+        };
+        public const string DefaultGpu = "RTX3060";
+
+        // Id of the target GPU; empty in a budget file saved before GPUs could be picked.
+        public string targetGpu = DefaultGpu;
         public int drawCallsWarning = 1000;
         public int drawCallsCritical = 2000;
-        public int sceneTrisWarning = 2000000;
-        public int sceneTrisCritical = 4000000;
+        public int sceneTrisWarning = 3000000;
+        public int sceneTrisCritical = 6000000;
         public int objectTrisWarning = 10000;
         public int objectTrisCritical = 25000;
-        public int textureMemoryWarningMB = 1536;
-        public int textureMemoryCriticalMB = 2048;
+        public int textureMemoryWarningMB = 2304;
+        public int textureMemoryCriticalMB = 3072;
         public int textureSizeWarning = 2048;
         public int textureSizeCritical = 4096;
         public int shadowLightsWarning = 1;
@@ -27,6 +52,50 @@ namespace UnityTools.SceneOptimization
         public int colliderTrisInfo = 5000;
         public float frameTimeWarningMs = 10f;
         public float frameTimeCriticalMs = 11.1f;
+        // Share of the screen under transparent objects in one view, percent; above 100 means layers of overdraw.
+        public int transparentWarningPercent = 100;
+        public int transparentCriticalPercent = 200;
+
+        public static GpuPreset FindGpu(string id)
+        {
+            foreach (var gpu in Gpus) if (gpu.id == id) return gpu;
+            return null;
+        }
+
+        public GpuPreset Gpu { get { return FindGpu(targetGpu); } }
+
+        // Thresholds edited by hand, or a file saved before GPUs could be picked.
+        public bool IsCustom
+        {
+            get
+            {
+                var gpu = Gpu;
+                return gpu == null || sceneTrisWarning != gpu.trisWarning || sceneTrisCritical != gpu.trisCritical ||
+                       textureMemoryWarningMB != gpu.textureMemoryWarningMB || textureMemoryCriticalMB != gpu.textureMemoryCriticalMB;
+            }
+        }
+
+        // Id written to reports: the GPU, or "Custom" when the thresholds differ from its set.
+        public string GpuReportName { get { return IsCustom ? "Custom" : targetGpu; } }
+
+        public void ApplyGpu(string id)
+        {
+            var gpu = FindGpu(id);
+            if (gpu == null) return;
+            targetGpu = gpu.id;
+            sceneTrisWarning = gpu.trisWarning;
+            sceneTrisCritical = gpu.trisCritical;
+            textureMemoryWarningMB = gpu.textureMemoryWarningMB;
+            textureMemoryCriticalMB = gpu.textureMemoryCriticalMB;
+        }
+
+        // The other thresholds back to defaults, triangles and texture memory to the set of the target GPU.
+        public static VRBudgets DefaultsFor(string id)
+        {
+            var budgets = new VRBudgets();
+            budgets.ApplyGpu(FindGpu(id) != null ? id : DefaultGpu);
+            return budgets;
+        }
 
         // Fixed limits, kept here so every number of the audit lives in one place.
         public const int TargetFps = 90;
@@ -76,6 +145,25 @@ namespace UnityTools.SceneOptimization
         public const int MinAntiAliasing = 4;
         public const float FpsWarning = 89f;
         public const float FpsCritical = 80f;
+        // Viewpoints: one view frustum for both eyes of the Vive Pro, placement grid and limits.
+        public const float ViewFieldOfView = 110f;
+        public const float ViewAspect = 0.9f;
+        public const float ViewNear = 0.05f;
+        public const float ViewFar = 1000f;
+        public const int ViewDirections = 8;
+        public const float EyeHeight = 1.7f;
+        public const float GridStep = 4f;
+        public const float GridStepMin = 1f;
+        public const float GridStepMax = 20f;
+        public const int MaxViewpoints = 500;
+        public const float GridStepGrowth = 1.25f;
+        public const float RayMaxSlope = 45f;
+        public const int HeavyTop = 10;
+        // Marks of "What is heavy here".
+        public const float FarLod0ScreenShare = 0.05f;
+        public const int FarLod0MinTris = 2000;
+        public const float SmallShadowMeters = 0.3f;
+        public const float LargeTransparentShare = 0.25f;
 
         public const string FileName = "SceneOptimizationAuditor.json";
 
@@ -96,7 +184,10 @@ namespace UnityTools.SceneOptimization
             if (!File.Exists(FilePath)) return budgets;
             try
             {
-                JsonUtility.FromJsonOverwrite(File.ReadAllText(FilePath), budgets);
+                var json = File.ReadAllText(FilePath);
+                JsonUtility.FromJsonOverwrite(json, budgets);
+                // A file from before GPUs could be picked keeps its thresholds as custom ones.
+                if (json.IndexOf("\"targetGpu\"", StringComparison.Ordinal) < 0) budgets.targetGpu = "";
             }
             catch (Exception e)
             {

@@ -18,6 +18,8 @@ namespace UnityTools.SceneOptimization
         public int shadowCascades;
         public AnisotropicFiltering anisotropicFiltering;
         public SkinWeights skinWeights;
+        public float lodBias = 1f;
+        public int maximumLODLevel;
 
         public static QualitySnapshot Capture()
         {
@@ -43,6 +45,8 @@ namespace UnityTools.SceneOptimization
                 snapshot.shadowCascades = QualitySettings.shadowCascades;
                 snapshot.anisotropicFiltering = QualitySettings.anisotropicFiltering;
                 snapshot.skinWeights = QualitySettings.skinWeights;
+                snapshot.lodBias = QualitySettings.lodBias;
+                snapshot.maximumLODLevel = QualitySettings.maximumLODLevel;
             }
             finally
             {

@@ -162,10 +162,10 @@ namespace UnityTools.SceneOptimization
             EditorGUIUtility.AddCursorRect(cells[1], MouseCursor.Link);
 
             Cell(cells[2], row.importer == null ? "—" : Strings.Get(row.GenerateOn ? "ui.lm.on" : "ui.lm.off"),
-                row.importer == null ? (Color?)null : row.GenerateOn ? OkColor : row.hasUv1 ? (Color?)null : CriticalColor);
-            Cell(cells[3], Strings.Get(row.hasUv1 ? "ui.lm.yes" : "ui.lm.no"), row.hasUv1 ? OkColor : CriticalColor);
-            Cell(cells[4], row.hasUv1 ? Percent(row.outsideShare) : "—", row.outsideShare > 0f ? WarningColor : (Color?)null);
-            Cell(cells[5], row.hasUv1 ? Percent(row.overlapShare) : "—", row.overlapShare > VRBudgets.LightmapUvOverlapMinShare ? WarningColor : (Color?)null);
+                row.importer == null ? (Color?)null : row.GenerateOn ? TextOk : row.hasUv1 ? (Color?)null : TextCritical);
+            Cell(cells[3], Strings.Get(row.hasUv1 ? "ui.lm.yes" : "ui.lm.no"), row.hasUv1 ? TextOk : TextCritical);
+            Cell(cells[4], row.hasUv1 ? Percent(row.outsideShare) : "—", row.outsideShare > 0f ? TextWarning : (Color?)null);
+            Cell(cells[5], row.hasUv1 ? Percent(row.overlapShare) : "—", row.overlapShare > VRBudgets.LightmapUvOverlapMinShare ? TextWarning : (Color?)null);
             Cell(cells[6], Strings.Format("ui.lm.objects", row.objects, row.bakedObjects), null);
             if (row.CanTurnOn && GUI.Button(new Rect(cells[7].x, cells[7].y + 2f, cells[7].width, 18f),
                     new GUIContent(Strings.Get("ui.lm.enable"), Strings.Get("ui.fix.tip")), EditorStyles.miniButton))

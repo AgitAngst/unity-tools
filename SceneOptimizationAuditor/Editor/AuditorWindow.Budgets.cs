@@ -57,6 +57,7 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(8f);
             EditorGUILayout.BeginVertical();
+            DrawGpuRow();
             var head = EditorGUILayout.GetControlRect();
             float column = (head.width - LabelColumn) / 2f;
             GUI.Label(new Rect(head.x + LabelColumn, head.y, column, head.height), Strings.Get("ui.budgets.warning"), EditorStyles.miniBoldLabel);
@@ -69,6 +70,7 @@ namespace UnityTools.SceneOptimization
             IntPair("ui.b.texSize", ref budgets.textureSizeWarning, ref budgets.textureSizeCritical);
             IntPair("ui.b.shadowLights", ref budgets.shadowLightsWarning, ref budgets.shadowLightsCritical);
             FloatPair("ui.b.frameTime", ref budgets.frameTimeWarningMs, ref budgets.frameTimeCriticalMs);
+            IntPair("ui.b.transparent", ref budgets.transparentWarningPercent, ref budgets.transparentCriticalPercent);
             IntSingle("ui.b.animators", ref budgets.animatorsWarning);
             IntSingle("ui.b.skinnedTris", ref budgets.skinnedTrisWarning);
             IntSingle("ui.b.audioSources", ref budgets.audioSourcesWarning);
@@ -78,7 +80,8 @@ namespace UnityTools.SceneOptimization
             GUILayout.Label(VRBudgets.FileExists ? Strings.Format("ui.budgets.file", VRBudgets.FilePath) : Strings.Get("ui.budgets.defaults.note"), wrapMini);
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button(Strings.Get("ui.budgets.reset"), GUILayout.Width(130f))) budgets = new VRBudgets();
+            if (GUILayout.Button(new GUIContent(Strings.Get("ui.budgets.reset"), Strings.Get("ui.budgets.reset.tip")), GUILayout.Width(130f)))
+                budgets = VRBudgets.DefaultsFor(budgets.targetGpu);
             if (GUILayout.Button(Strings.Get("ui.budgets.save"), GUILayout.Width(130f))) budgets.Save();
             EditorGUILayout.EndHorizontal();
             GUILayout.Label(Strings.Get("ui.budgets.rerun"), wrapMini);
@@ -87,6 +90,35 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(10f);
             DrawAcceptedSection();
+        }
+
+        // Target GPU: picking one fills triangles and texture memory with its starting values; the other thresholds
+        // are the same for every GPU.
+        void DrawGpuRow()
+        {
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.LabelField(new Rect(rect.x, rect.y, LabelColumn, rect.height), new GUIContent(Strings.Get("ui.gpu"), Strings.Get("ui.gpu.tip")));
+            var options = VRBudgets.Gpus.Select(g => Strings.Format("ui.gpu.item", g.name, g.memoryGB)).ToArray();
+            int index = System.Array.FindIndex(VRBudgets.Gpus, g => g.id == budgets.targetGpu);
+            float width = Mathf.Min(220f, rect.width - LabelColumn);
+            int chosen = EditorGUI.Popup(new Rect(rect.x + LabelColumn, rect.y, width, rect.height), index, options);
+            if (chosen != index && chosen >= 0) budgets.ApplyGpu(VRBudgets.Gpus[chosen].id);
+            if (budgets.IsCustom)
+                GUI.Label(new Rect(rect.x + LabelColumn + width + 8f, rect.y, rect.width - LabelColumn - width - 8f, rect.height),
+                    new GUIContent(Strings.Get("ui.gpu.custom"), Strings.Get("ui.gpu.custom.tip")), EditorStyles.miniLabel);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(LabelColumn);
+            GUILayout.Label(Strings.Get("ui.gpu.note"), wrapMini);
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(4f);
+        }
+
+        // "RTX 3060 (12 GB)" or "custom thresholds", for the context line.
+        static string GpuLine(VRBudgets b)
+        {
+            var gpu = b.Gpu;
+            if (gpu == null) return Strings.Get("ui.gpu.context.custom");
+            return Strings.Format(b.IsCustom ? "ui.gpu.context.edited" : "ui.gpu.context", gpu.name);
         }
 
         void DrawAcceptedSection()

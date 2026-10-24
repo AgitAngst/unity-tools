@@ -9,6 +9,12 @@ namespace UnityTools.SceneOptimization
 {
     public sealed partial class AuditorWindow : EditorWindow
     {
+        const int TabProblems = 0;
+        const int TabViewpoints = 1;
+        const int TabLightmap = 2;
+        const int TabBudgets = 3;
+        const int TabProfiler = 4;
+        const int TabHistory = 5;
         const int GroupPageSize = 100;
         const float LabelColumn = 210f;
         const string ShowPref = "UnityTools.SceneAudit.Show.";
@@ -17,6 +23,14 @@ namespace UnityTools.SceneOptimization
         public static readonly Color WarningColor = new Color(0.95f, 0.72f, 0.2f);
         public static readonly Color InfoColor = new Color(0.55f, 0.55f, 0.55f);
         public static readonly Color OkColor = new Color(0.3f, 0.7f, 0.35f);
+
+        // Text in a severity colour: a shade per editor skin that keeps 4.5:1 against the background; stripes, dots,
+        // backgrounds and icons keep the colours above (owner, 24.10.2026).
+        public static Color TextCritical { get { return EditorGUIUtility.isProSkin ? new Color32(0xFF, 0x8A, 0x8A, 0xFF) : new Color32(0x9E, 0x1C, 0x1C, 0xFF); } }
+        public static Color TextWarning { get { return EditorGUIUtility.isProSkin ? new Color32(0xF2, 0xB8, 0x33, 0xFF) : new Color32(0x6B, 0x47, 0x00, 0xFF); } }
+        public static Color TextOk { get { return EditorGUIUtility.isProSkin ? new Color32(0x5C, 0xC9, 0x68, 0xFF) : new Color32(0x18, 0x5A, 0x22, 0xFF); } }
+        // Background of a table row picked by a click: the editor selection colour.
+        static Color SelectionColor { get { return EditorGUIUtility.isProSkin ? new Color(0.17f, 0.36f, 0.53f, 0.8f) : new Color(0.23f, 0.45f, 0.69f, 0.32f); } }
 
         static readonly string[] LangLabels = { "EN", "RU" };
         static readonly Category[] Categories = (Category[])Enum.GetValues(typeof(Category));
@@ -61,6 +75,8 @@ namespace UnityTools.SceneOptimization
         GUIStyle wrapMini;
         GUIStyle hint;
         GUIStyle link;
+        // A link in a table cell: one line, cut at the cell (the full text is in the tooltip).
+        GUIStyle linkClipped;
         GUIStyle bigNumber;
         GUIStyle verdictStyle;
         GUIStyle emptyTitle;
@@ -90,11 +106,13 @@ namespace UnityTools.SceneOptimization
             for (int i = 0; i < Severities.Length; i++)
                 show[i] = EditorPrefs.GetBool(ShowPref + Severities[i], Severities[i] != Severity.Info);
             ProfilerCapture.Changed += Repaint;
+            ViewpointsEnable();
         }
 
         void OnDisable()
         {
             ProfilerCapture.Changed -= Repaint;
+            ViewpointsDisable();
         }
 
         void InitStyles()
@@ -105,6 +123,7 @@ namespace UnityTools.SceneOptimization
             hint = new GUIStyle(EditorStyles.helpBox) { wordWrap = true, fontSize = 11, padding = new RectOffset(8, 8, 6, 6) };
             link = new GUIStyle(EditorStyles.label) { wordWrap = true };
             link.normal.textColor = pro ? new Color(0.55f, 0.72f, 1f) : new Color(0.1f, 0.3f, 0.75f);
+            linkClipped = new GUIStyle(link) { wordWrap = false, clipping = TextClipping.Clip };
             bigNumber = new GUIStyle(EditorStyles.boldLabel) { fontSize = 18 };
             verdictStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 13, wordWrap = true, alignment = TextAnchor.MiddleLeft };
             emptyTitle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 16, alignment = TextAnchor.MiddleCenter, wordWrap = true };
@@ -128,20 +147,23 @@ namespace UnityTools.SceneOptimization
             DrawTabs();
             switch (tab)
             {
-                case 1:
+                case TabViewpoints:
+                    DrawViewpointsTab();
+                    break;
+                case TabLightmap:
                     DrawLightmapTab();
                     break;
-                case 2:
+                case TabBudgets:
                     pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
                     DrawBudgetsTab();
                     EditorGUILayout.EndScrollView();
                     break;
-                case 3:
+                case TabProfiler:
                     pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
                     DrawProfilerTab();
                     EditorGUILayout.EndScrollView();
                     break;
-                case 4:
+                case TabHistory:
                     pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
                     DrawHistoryTab();
                     EditorGUILayout.EndScrollView();
@@ -215,6 +237,13 @@ namespace UnityTools.SceneOptimization
             }
             EditorGUI.EndDisabledGroup();
 
+            // A narrow window gets the version and the language on a second row instead of cutting them.
+            if (position.width < 640f)
+            {
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            }
             GUILayout.FlexibleSpace();
             GUILayout.Label(new GUIContent(Strings.Format("ui.version", ToolVersion.Full), Strings.Get("ui.version.tip")), EditorStyles.miniLabel);
             var langs = new[] { new GUIContent(LangLabels[0], Strings.Get("ui.lang.tip")), new GUIContent(LangLabels[1], Strings.Get("ui.lang.tip")) };
@@ -229,14 +258,20 @@ namespace UnityTools.SceneOptimization
             var labels = new[]
             {
                 result != null ? Strings.Format("ui.tab.problems.n", result.ActiveCount) : Strings.Get("ui.tab.problems"),
+                Strings.Get("ui.tab.viewpoints"),
                 Strings.Get("ui.tab.lightmap"),
                 Strings.Get("ui.tab.budgets"),
                 Strings.Get("ui.tab.profiler"),
                 Strings.Get("ui.tab.history")
             };
+            // Equal tabs fill a wide window; when the longest label does not fit, every tab is as wide as its label.
+            float longest = labels.Max(l => GUI.skin.button.CalcSize(new GUIContent(l)).x);
+            var size = longest * labels.Length > position.width - 12f ? GUI.ToolbarButtonSize.FitToContents : GUI.ToolbarButtonSize.Fixed;
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(6f);
-            tab = GUILayout.Toolbar(tab, labels, GUILayout.Height(24f));
+            int was = tab;
+            tab = GUILayout.Toolbar(tab, labels, GUI.skin.button, size, GUILayout.Height(24f));
+            if (tab != was) OnTabChanged();
             GUILayout.Space(6f);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(4f);

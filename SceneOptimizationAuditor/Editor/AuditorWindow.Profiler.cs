@@ -89,7 +89,7 @@ namespace UnityTools.SceneOptimization
             {
                 bool better = higherIsBetter ? delta.Value > 0 : delta.Value < 0;
                 var style = new GUIStyle(EditorStyles.label);
-                style.normal.textColor = better ? OkColor : CriticalColor;
+                style.normal.textColor = better ? TextOk : TextCritical;
                 var arrow = delta.Value > 0 ? "↑ +" : "↓ ";
                 GUI.Label(new Rect(x + 190f, rect.y, rect.xMax - x - 190f, rect.height), arrow + FormatNumber(delta.Value), style);
             }
