@@ -41,11 +41,18 @@ $shots = @(
     @("light-lights-en-dark", "en", "dark", @("-shotTab", "3", "-shotLight", "lights")),
     @("light-probes-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "probes")),
     @("light-narrow-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "objects", "-shotWidth", "560")),
-    @("budgets-ru-dark", "ru", "dark", @("-shotTab", "4")),
-    @("budgets-en-dark", "en", "dark", @("-shotTab", "4")),
-    @("profiler-en-dark", "en", "dark", @("-shotTab", "5")),
-    @("history-ru-dark", "ru", "dark", @("-shotTab", "6", "-shotHistory")),
-    @("history-en-dark", "en", "dark", @("-shotTab", "6", "-shotHistory"))
+    # Copies of a prefab as one row, and the Heaviest tab on forty houses.
+    @("copies-ru-dark", "ru", "dark", @("-shotCopies")),
+    @("copies-en-dark", "en", "dark", @("-shotCopies")),
+    @("heavy-empty-ru-dark", "ru", "dark", @("-shotTab", "4")),
+    @("heavy-ru-dark", "ru", "dark", @("-shotTab", "4", "-shotHeavy", "tris")),
+    @("heavy-en-dark", "en", "dark", @("-shotTab", "4", "-shotHeavy", "dc")),
+    @("heavy-narrow-ru-dark", "ru", "dark", @("-shotTab", "4", "-shotHeavy", "tex", "-shotWidth", "560")),
+    @("budgets-ru-dark", "ru", "dark", @("-shotTab", "5")),
+    @("budgets-en-dark", "en", "dark", @("-shotTab", "5")),
+    @("profiler-en-dark", "en", "dark", @("-shotTab", "6")),
+    @("history-ru-dark", "ru", "dark", @("-shotTab", "7", "-shotHistory")),
+    @("history-en-dark", "en", "dark", @("-shotTab", "7", "-shotHistory"))
 )
 
 foreach ($shot in $shots) {

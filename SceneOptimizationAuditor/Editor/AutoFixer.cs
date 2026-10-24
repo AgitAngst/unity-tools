@@ -32,13 +32,45 @@ namespace UnityTools.SceneOptimization
         {
             var sceneFixes = new List<AuditIssue>();
             var assetFixes = new List<AuditIssue>();
+            var prefabFixes = new List<AuditIssue>();
             foreach (var issue in issues)
             {
                 if (!issue.AutoFixable) continue;
-                if (issue.fixTouchesAsset) assetFixes.Add(issue);
+                if (issue.inPrefab) prefabFixes.Add(issue);
+                else if (issue.fixTouchesAsset) assetFixes.Add(issue);
                 else sceneFixes.Add(issue);
             }
-            return ApplySceneFixes(sceneFixes) + ApplyAssetFixes(assetFixes);
+            return ApplySceneFixes(sceneFixes) + ApplyPrefabFixes(prefabFixes) + ApplyAssetFixes(assetFixes);
+        }
+
+        // Fixes in prefabs: outside the asset batch, so the copies see the changed prefab at once; copies fixed on
+        // themselves go into one Undo group.
+        static int ApplyPrefabFixes(List<AuditIssue> fixes)
+        {
+            if (fixes.Count == 0) return 0;
+            int applied = 0;
+            Undo.IncrementCurrentGroup();
+            int group = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(UndoName);
+            foreach (var issue in fixes)
+            {
+                if (!AuditContext.IsProjectAssetPath(issue.assetPath))
+                {
+                    Debug.LogWarning("[SceneAudit] Skipped " + issue.checkId + ": read-only prefab " + issue.assetPath);
+                    continue;
+                }
+                try
+                {
+                    issue.fixAction();
+                    applied++;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError("[SceneAudit] Fix " + issue.checkId + " failed in prefab " + issue.assetPath + ": " + e.Message);
+                }
+            }
+            Undo.CollapseUndoOperations(group);
+            return applied;
         }
 
         static int ApplySceneFixes(List<AuditIssue> fixes)

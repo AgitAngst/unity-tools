@@ -15,7 +15,7 @@ namespace AuditTestsEditor
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
-    //     [-shotLight atlases|objects|lights|probes]
+    //     [-shotLight atlases|objects|lights|probes] [-shotCopies] [-shotHeavy tris|dc|tex]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -49,7 +49,14 @@ namespace AuditTestsEditor
             var width = Arg("-shotWidth");
             window.position = new Rect(80, 80, width != null ? int.Parse(width) : 760, 860);
             if (HasArg("-shotHistory")) SeedHistory();
+            if (HasArg("-shotCopies")) AuditTestViewpoints.BuildCopiesScene();
             if (!HasArg("-shotEmpty")) Invoke("Run");
+            if (HasArg("-shotCopies")) Invoke("CopiesForShot", "ANIM_ALWAYS_ANIMATE");
+            if (HasArg("-shotHeavy"))
+            {
+                AuditTestViewpoints.BuildHousesScene();
+                Invoke("HeavyForShot", Arg("-shotHeavy") ?? "tris");
+            }
             if (HasArg("-shotViewpointsEmpty"))
             {
                 var file = ViewpointSet.FileFor(ViewpointSet.LoadedScenePaths());

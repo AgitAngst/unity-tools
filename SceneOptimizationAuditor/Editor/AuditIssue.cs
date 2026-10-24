@@ -39,6 +39,13 @@ namespace UnityTools.SceneOptimization
         public Object fixTarget;
         // True when the fix edits an asset or importer: project-wide and not covered by Undo.
         public bool fixTouchesAsset;
+        // A fix of copies made once in their prefab (PrefabFixes); fixScope names the prefab and the copies.
+        public bool inPrefab;
+        public string fixScope = "";
+
+        // The object in the nearest prefab or model asset the scene object is a copy of (PrefabFixes.SourceOf).
+        public Object source;
+        public bool sourceKnown;
 
         public string Message { get { return Strings.Format(messageKey, args); } }
 
@@ -56,7 +63,8 @@ namespace UnityTools.SceneOptimization
             get
             {
                 var key = messageKey + ".do";
-                return Strings.Has(key) ? Strings.Format(key, args) : Message;
+                var text = Strings.Has(key) ? Strings.Format(key, args) : Message;
+                return fixScope.Length > 0 ? text + " — " + fixScope : text;
             }
         }
 

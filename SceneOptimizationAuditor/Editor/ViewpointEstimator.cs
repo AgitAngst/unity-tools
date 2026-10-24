@@ -460,27 +460,9 @@ namespace UnityTools.SceneOptimization
         // Source of a renderer for grouping: its prefab or model asset, else its mesh asset, else the object name.
         static void Source(Renderer r, Mesh mesh, out string key, out string label)
         {
-            var root = PrefabUtility.GetNearestPrefabInstanceRoot(r.gameObject);
-            if (root != null)
-            {
-                var source = PrefabUtility.GetCorrespondingObjectFromOriginalSource(root);
-                var path = source != null ? AssetDatabase.GetAssetPath(source) : "";
-                if (!string.IsNullOrEmpty(path))
-                {
-                    key = path;
-                    label = Path.GetFileName(path);
-                    return;
-                }
-            }
-            var meshPath = mesh != null ? AssetDatabase.GetAssetPath(mesh) : "";
-            if (AuditContext.IsProjectAssetPath(meshPath))
-            {
-                key = meshPath + "|" + (mesh != null ? mesh.name : "");
-                label = AssetDatabase.IsMainAsset(mesh) ? Path.GetFileName(meshPath) : Path.GetFileName(meshPath) + " · " + mesh.name;
-                return;
-            }
-            key = "object|" + r.gameObject.name;
-            label = r.gameObject.name;
+            var source = HeavyReport.Identify(r, mesh);
+            key = source.key;
+            label = source.label;
         }
     }
 }

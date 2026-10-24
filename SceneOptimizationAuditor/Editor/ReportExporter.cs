@@ -133,6 +133,19 @@ namespace UnityTools.SceneOptimization
             public int outsideProbes;
         }
 
+        // One of the sources with the most triangles (Heaviest tab).
+        [Serializable]
+        public sealed class HeavyDto
+        {
+            public string name;
+            public string kind;
+            public string assetPath;
+            public int copies;
+            public long tris;
+            public int drawCalls;
+            public double textureMB;
+        }
+
         [Serializable]
         public sealed class ReportDto
         {
@@ -155,6 +168,7 @@ namespace UnityTools.SceneOptimization
             public TourDto viewpointTour;
             public bool hasLighting;
             public LightingDto lighting;
+            public HeavyDto[] heavy;
             public IssueDto[] issues;
         }
 
@@ -219,6 +233,16 @@ namespace UnityTools.SceneOptimization
                 viewpointTour = HasTour(viewpoints) ? TourOf(viewpoints, result.budgets) : new TourDto(),
                 hasLighting = result.lighting != null,
                 lighting = result.lighting != null ? LightingOf(result.lighting, result.budgets) : new LightingDto(),
+                heavy = result.heavy != null ? result.heavy.Sorted(0).Take(HeavyInReport).Select(s => new HeavyDto
+                {
+                    name = s.label,
+                    kind = s.kind.ToString(),
+                    assetPath = s.assetPath,
+                    copies = s.Copies,
+                    tris = s.tris,
+                    drawCalls = s.drawCalls,
+                    textureMB = Math.Round(s.TextureMB, 1)
+                }).ToArray() : new HeavyDto[0],
                 issues = new IssueDto[result.issues.Count]
             };
             for (int i = 0; i < result.issues.Count; i++)
@@ -266,6 +290,9 @@ namespace UnityTools.SceneOptimization
                 }).ToArray()
             };
         }
+
+        // Sources in the report: the ones with the most triangles.
+        const int HeavyInReport = 20;
 
         static LightingDto LightingOf(LightReport r, VRBudgets b)
         {

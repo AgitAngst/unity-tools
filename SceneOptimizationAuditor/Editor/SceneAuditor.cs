@@ -21,6 +21,8 @@ namespace UnityTools.SceneOptimization
         public double textureMemoryMB;
         // Lightmaps, the objects in them, the lights and the probes, as the lighting checks saw them.
         public LightReport lighting;
+        // Sources of the active renderers (Heaviest tab), for the report.
+        public HeavyReport heavy;
 
         // Counts leave accepted problems out.
         public int Count(Severity severity)
@@ -112,7 +114,8 @@ namespace UnityTools.SceneOptimization
                 sceneTris = ctx.sceneTris,
                 drawCallEstimate = ctx.drawCallEstimate,
                 textureMemoryMB = ctx.textureMemoryMB,
-                lighting = ctx.lighting
+                lighting = ctx.lighting,
+                heavy = HeavyReport.Build(ctx.roots, ctx.budgets.objectTrisWarning)
             };
             AcceptedList.Load().Apply(result.issues);
             return result;

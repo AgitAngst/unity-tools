@@ -24,12 +24,13 @@ namespace UnityTools.SceneOptimization
         public static Object[] SelectionOf(IEnumerable<AuditIssue> issues)
         {
             var result = new List<Object>();
+            var seen = new HashSet<Object>();
             foreach (var issue in issues)
             {
                 if (issue.target == null) continue;
                 var component = issue.target as Component;
                 Object item = component != null ? component.gameObject : issue.target;
-                if (!result.Contains(item)) result.Add(item);
+                if (seen.Add(item)) result.Add(item);
             }
             return result.ToArray();
         }

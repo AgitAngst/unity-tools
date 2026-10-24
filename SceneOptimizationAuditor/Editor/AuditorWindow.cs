@@ -13,9 +13,10 @@ namespace UnityTools.SceneOptimization
         const int TabViewpoints = 1;
         const int TabLightmap = 2;
         const int TabLight = 3;
-        const int TabBudgets = 4;
-        const int TabProfiler = 5;
-        const int TabHistory = 6;
+        const int TabHeavy = 4;
+        const int TabBudgets = 5;
+        const int TabProfiler = 6;
+        const int TabHistory = 7;
         const int GroupPageSize = 100;
         const float LabelColumn = 210f;
         const string ShowPref = "UnityTools.SceneAudit.Show.";
@@ -63,6 +64,33 @@ namespace UnityTools.SceneOptimization
         // Rows picked with their checkboxes, for actions on several at once.
         readonly HashSet<AuditIssue> picked = new HashSet<AuditIssue>();
         readonly HashSet<LightmapUvRow> lmPicked = new HashSet<LightmapUvRow>();
+        // Opened copies rows of the Problems list: group key and source id.
+        readonly HashSet<string> openCopies = new HashSet<string>();
+
+        // Rows of the open groups and the copy totals of the run, rebuilt when the list changes, not every frame.
+        readonly Dictionary<string, List<IssueRow>> rowCache = new Dictionary<string, List<IssueRow>>();
+        CopyTotals copyTotals;
+        AuditResult totalsFor;
+        int listVersion;
+        int pickedPlanCount = -1;
+        string pickedPlanKey = "";
+
+        // Copies of one prefab or model object as one row, fixed in the prefab; kept in EditorPrefs.
+        static bool? copiesTogether;
+        static bool CopiesTogether
+        {
+            get
+            {
+                if (!copiesTogether.HasValue) copiesTogether = EditorPrefs.GetBool("UnityTools.SceneAudit.CopiesTogether", true);
+                return copiesTogether.Value;
+            }
+            set
+            {
+                if (copiesTogether == value) return;
+                copiesTogether = value;
+                EditorPrefs.SetBool("UnityTools.SceneAudit.CopiesTogether", value);
+            }
+        }
 
         AuditResult result;
         List<IssueGroup> groups = new List<IssueGroup>();
@@ -157,6 +185,9 @@ namespace UnityTools.SceneOptimization
                 case TabLight:
                     DrawLightTab();
                     break;
+                case TabHeavy:
+                    DrawHeavyTab();
+                    break;
                 case TabBudgets:
                     pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
                     DrawBudgetsTab();
@@ -196,6 +227,10 @@ namespace UnityTools.SceneOptimization
                 ltReport = LightReport.Build();
                 ltPicked.Clear();
             }
+            // The run already collected the sources.
+            if (hvReport != null) hvReport = r.heavy;
+            openCopies.Clear();
+            ListChanged();
             expanded.Clear();
             limits.Clear();
             picked.Clear();
@@ -271,6 +306,7 @@ namespace UnityTools.SceneOptimization
                 Strings.Get("ui.tab.viewpoints"),
                 Strings.Get("ui.tab.lightmap"),
                 Strings.Get("ui.tab.light"),
+                Strings.Get("ui.tab.heavy"),
                 Strings.Get("ui.tab.budgets"),
                 Strings.Get("ui.tab.profiler"),
                 Strings.Get("ui.tab.history")

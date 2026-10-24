@@ -176,10 +176,25 @@ namespace UnityTools.SceneOptimization
             GUILayout.Space(8f);
             byCategory = GUILayout.Toggle(byCategory, new GUIContent(Strings.Get("ui.byCategory"), Strings.Get("ui.byCategory.tip")),
                 EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
+            CopiesTogether = GUILayout.Toggle(CopiesTogether, new GUIContent(Strings.Get("ui.copies"), Strings.Get("ui.copies.tip")),
+                EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
             if (GUILayout.Button(Strings.Get("ui.expandAll"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                 foreach (var g in groups) expanded[g.key] = true;
             if (GUILayout.Button(Strings.Get("ui.collapseAll"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                 expanded.Clear();
+            // The filter and "Select all" go on a second row when the first one is full.
+            float used = 330f + EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.byCategory"))).x +
+                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.copies"))).x +
+                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.expandAll"))).x +
+                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.collapseAll"))).x +
+                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Format("ui.acc.show", 0) + "000")).x +
+                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.sel.all"))).x;
+            if (used > position.width)
+            {
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            }
             GUILayout.FlexibleSpace();
             showAccepted = GUILayout.Toggle(showAccepted, new GUIContent(Strings.Format("ui.acc.show", result != null ? result.AcceptedCount : 0), Strings.Get("ui.acc.show.tip")),
                 EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
@@ -201,7 +216,14 @@ namespace UnityTools.SceneOptimization
         void DrawSelectionBar()
         {
             if (picked.Count == 0) return;
-            var fixable = MultiSelect.Fixable(picked);
+            // Counted again only when the pick or the list changes.
+            var planKey = picked.Count + "|" + listVersion + "|" + CopiesTogether;
+            if (planKey != pickedPlanKey)
+            {
+                pickedPlanKey = planKey;
+                pickedPlanCount = PrefabFixes.PlanCount(picked.ToList(), CopiesTogether, Totals());
+            }
+            int fixCount = pickedPlanCount;
             var objects = MultiSelect.SelectionOf(picked);
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
@@ -212,9 +234,12 @@ namespace UnityTools.SceneOptimization
             if (GUILayout.Button(Strings.Get("ui.sel.clear"), EditorStyles.miniButton, GUILayout.ExpandWidth(false))) picked.Clear();
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
-            EditorGUI.BeginDisabledGroup(fixable.Count == 0);
-            if (GUILayout.Button(new GUIContent(Strings.Format("ui.sel.fix", fixable.Count), Strings.Get("ui.fix.tip")), GUILayout.ExpandWidth(false)))
-                EditorApplication.delayCall += () => AutoFixer.Confirm(fixable, AfterFix);
+            EditorGUI.BeginDisabledGroup(fixCount == 0);
+            if (GUILayout.Button(new GUIContent(Strings.Format("ui.sel.fix", fixCount), Strings.Get(CopiesTogether ? "ui.fix.plan.tip" : "ui.fix.tip")), GUILayout.ExpandWidth(false)))
+            {
+                var plan = PrefabFixes.Plan(picked.ToList(), CopiesTogether, Totals());
+                EditorApplication.delayCall += () => AutoFixer.Confirm(plan, AfterFix);
+            }
             EditorGUI.EndDisabledGroup();
             EditorGUI.BeginDisabledGroup(objects.Length == 0);
             if (GUILayout.Button(new GUIContent(Strings.Format("ui.sel.select", objects.Length), Strings.Get("ui.sel.select.tip")), GUILayout.ExpandWidth(false)))
@@ -233,6 +258,7 @@ namespace UnityTools.SceneOptimization
             {
                 Accepted().Accept(toAccept);
                 picked.Clear();
+                ListChanged();
             }
             EditorGUI.EndDisabledGroup();
             EditorGUI.BeginDisabledGroup(toRelease.Count == 0);
@@ -240,6 +266,7 @@ namespace UnityTools.SceneOptimization
             {
                 Accepted().Release(toRelease);
                 picked.Clear();
+                ListChanged();
             }
             EditorGUI.EndDisabledGroup();
             if (GUILayout.Button(new GUIContent(Strings.Format("ui.acc.disable", checks.Count), Strings.Get("ui.acc.disable.tip")), GUILayout.ExpandWidth(false)))
@@ -251,6 +278,7 @@ namespace UnityTools.SceneOptimization
                     Accepted().Disable(checks);
                     Accepted().Apply(result.issues);
                     picked.Clear();
+                    ListChanged();
                 }
             }
             GUILayout.FlexibleSpace();
@@ -304,14 +332,18 @@ namespace UnityTools.SceneOptimization
             }
 
             float right = rect.xMax - 4f;
-            var fixable = visible.Where(i => i.AutoFixable && !i.accepted).ToList();
-            if (fixable.Count > 0)
+            // With copies together a copies row is fixed once in its prefab: the count is that of fix entries.
+            int fixCount = CopiesTogether ? PlanCountOf(GroupRows(g, visible)) : visible.Count(i => i.AutoFixable && !i.accepted);
+            if (fixCount > 0)
             {
-                var label = fixable.Count == 1 ? Strings.Get("ui.fix") : Strings.Format("ui.fixAll", fixable.Count);
+                var label = fixCount == 1 ? Strings.Get("ui.fix") : Strings.Format("ui.fixAll", fixCount);
                 var width = EditorStyles.miniButton.CalcSize(new GUIContent(label)).x + 8f;
                 var button = new Rect(right - width, rect.y + 4f, width, 18f);
-                if (GUI.Button(button, new GUIContent(label, Strings.Get("ui.fix.tip")), EditorStyles.miniButton))
-                    EditorApplication.delayCall += () => AutoFixer.Confirm(fixable, AfterFix);
+                if (GUI.Button(button, new GUIContent(label, Strings.Get(CopiesTogether ? "ui.fix.plan.tip" : "ui.fix.tip")), EditorStyles.miniButton))
+                {
+                    var plan = PrefabFixes.Plan(visible, CopiesTogether, Totals());
+                    EditorApplication.delayCall += () => AutoFixer.Confirm(plan, AfterFix);
+                }
                 right = button.x - 4f;
             }
             var settings = visible.Select(i => i.settingsPath).FirstOrDefault(p => !string.IsNullOrEmpty(p));
@@ -373,13 +405,19 @@ namespace UnityTools.SceneOptimization
             }
             int limit;
             if (!limits.TryGetValue(g.key, out limit)) limit = GroupPageSize;
-            int shown = Mathf.Min(limit, visible.Count);
-            for (int k = 0; k < shown; k++) DrawIssueRow(visible[k], visible.Count > 1);
-            if (visible.Count > shown)
+            // Rows: single issues and, with copies together, copies of one source as one row.
+            var rows = CopiesTogether ? GroupRows(g, visible) : visible.Select(i => new IssueRow { issue = i }).ToList();
+            int shown = Mathf.Min(limit, rows.Count);
+            for (int k = 0; k < shown; k++)
+            {
+                if (rows[k].copies != null) DrawCopyRow(g, rows[k].copies);
+                else DrawIssueRow(rows[k].issue, visible.Count > 1, 40f);
+            }
+            if (rows.Count > shown)
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.Space(40f);
-                if (GUILayout.Button(Strings.Format("ui.showMore", Mathf.Min(GroupPageSize, visible.Count - shown)), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                if (GUILayout.Button(Strings.Format("ui.showMore", Mathf.Min(GroupPageSize, rows.Count - shown)), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                     limits[g.key] = limit + GroupPageSize;
                 EditorGUILayout.EndHorizontal();
             }
@@ -387,10 +425,76 @@ namespace UnityTools.SceneOptimization
             return 1;
         }
 
-        void DrawIssueRow(AuditIssue issue, bool ownFix)
+        // Copies of one prefab or model object: one row with the source and the count, opened to the copies one by one.
+        void DrawCopyRow(IssueGroup g, CopyRow row)
+        {
+            var key = g.key + "|" + row.source.GetInstanceID();
+            bool open = openCopies.Contains(key);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(24f);
+            var arrow = GUILayoutUtility.GetRect(14f, 16f, GUILayout.Width(14f), GUILayout.Height(16f));
+            bool now = EditorGUI.Foldout(arrow, open, GUIContent.none, true);
+            GUILayout.Space(2f);
+            if (now != open)
+            {
+                if (now) openCopies.Add(key);
+                else openCopies.Remove(key);
+            }
+            var pickable = row.issues.Where(MultiSelect.CanPick).ToList();
+            bool all = pickable.Count > 0 && pickable.All(picked.Contains);
+            bool on = GUILayout.Toggle(all, new GUIContent("", Strings.Get("ui.copies.pick.tip")), GUILayout.Width(18f));
+            if (on != all)
+                foreach (var issue in pickable)
+                    if (on) picked.Add(issue);
+                    else picked.Remove(issue);
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.BeginHorizontal();
+            var label = new GUIContent(row.Label, row.assetPath + "\n" + Strings.Get("ui.copies.select.tip"));
+            if (GUILayout.Button(label, link, GUILayout.ExpandWidth(false))) MultiSelect.Select(MultiSelect.SelectionOf(row.issues));
+            EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+            GUILayout.Label(Strings.Format("ui.copies.count", row.Copies), EditorStyles.miniLabel, GUILayout.ExpandWidth(false));
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            var first = row.issues[0];
+            GUILayout.Label(new GUIContent(first.Message, first.Suggestion), wrapMini);
+            EditorGUILayout.EndVertical();
+            var fixable = row.Fixable;
+            if (row.CanFixInPrefab)
+            {
+                var tip = Strings.Format("ui.fix.inPrefab.scope", row.assetPath, row.Copies);
+                if (GUILayout.Button(new GUIContent(Strings.Get("ui.fix.inPrefab"), tip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                {
+                    var entry = PrefabFixes.PrefabFix(row);
+                    EditorApplication.delayCall += () => AutoFixer.Confirm(new List<AuditIssue> { entry }, AfterFix);
+                }
+            }
+            else if (fixable.Count > 0)
+            {
+                if (GUILayout.Button(new GUIContent(Strings.Format("ui.fix.copies", fixable.Count), Strings.Get("ui.fix.copies.tip")), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    EditorApplication.delayCall += () => AutoFixer.Confirm(fixable, AfterFix);
+            }
+            GUILayout.Space(8f);
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(2f);
+            if (!now) return;
+            int limit;
+            if (!limits.TryGetValue(key, out limit)) limit = GroupPageSize;
+            int shown = Mathf.Min(limit, row.issues.Count);
+            for (int k = 0; k < shown; k++) DrawIssueRow(row.issues[k], true, 62f);
+            if (row.issues.Count > shown)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(62f);
+                if (GUILayout.Button(Strings.Format("ui.showMore", Mathf.Min(GroupPageSize, row.issues.Count - shown)), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    limits[key] = limit + GroupPageSize;
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+
+        void DrawIssueRow(AuditIssue issue, bool ownFix, float indent)
         {
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(40f);
+            GUILayout.Space(indent);
             if (MultiSelect.CanPick(issue))
             {
                 bool on = picked.Contains(issue);
@@ -441,6 +545,60 @@ namespace UnityTools.SceneOptimization
             {
                 Selection.activeObject = issue.target;
                 EditorGUIUtility.PingObject(issue.target);
+            }
+        }
+
+        // The list changed (a run, acceptable marks): rows and plans are built again.
+        void ListChanged()
+        {
+            listVersion++;
+            rowCache.Clear();
+            pickedPlanKey = "";
+        }
+
+        CopyTotals Totals()
+        {
+            if (totalsFor != result)
+            {
+                totalsFor = result;
+                copyTotals = result != null ? CopyTotals.Of(result.issues) : new CopyTotals();
+            }
+            return copyTotals;
+        }
+
+        // Rows of a group with copies together, kept until the visible issues change.
+        List<IssueRow> GroupRows(IssueGroup g, List<AuditIssue> visible)
+        {
+            var key = g.key + "|" + visible.Count + "|" + listVersion + "|" + showAccepted + "|" + search;
+            List<IssueRow> rows;
+            if (!rowCache.TryGetValue(key, out rows))
+            {
+                rows = PrefabFixes.Rows(visible, Totals());
+                rowCache[key] = rows;
+            }
+            return rows;
+        }
+
+        static int PlanCountOf(List<IssueRow> rows)
+        {
+            int n = 0;
+            foreach (var r in rows)
+            {
+                if (r.copies == null) n += r.issue.AutoFixable && !r.issue.accepted ? 1 : 0;
+                else n += r.copies.CanFixInPrefab ? 1 : r.copies.Fixable.Count;
+            }
+            return n;
+        }
+
+        // Used by the screenshot test: only the group of a check open, with its first copies row opened too.
+        void CopiesForShot(string checkId)
+        {
+            expanded.Clear();
+            foreach (var g in groups.Where(g => g.checkId == checkId))
+            {
+                expanded[g.key] = true;
+                var row = GroupRows(g, Visible(g)).FirstOrDefault(r => r.copies != null);
+                if (row != null) openCopies.Add(g.key + "|" + row.copies.source.GetInstanceID());
             }
         }
 
