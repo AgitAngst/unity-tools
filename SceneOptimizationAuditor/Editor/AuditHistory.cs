@@ -54,6 +54,9 @@ namespace UnityTools.SceneOptimization
         public int tourCount;
         public int tourSlow;
         public float tourWorstMs;
+        // Memory of the lightmaps at the run; -1 on points from before 1.4.0.
+        public double lightmapMB = -1;
+        public int lightmapLimitMB;
         public List<CheckCount> checks = new List<CheckCount>();
         // "C|checkId|location" (C, W, I by severity, A for acceptable); dropped on old points to keep the file small.
         public List<string> problems = new List<string>();
@@ -204,7 +207,9 @@ namespace UnityTools.SceneOptimization
                 drawCalls = result.drawCallEstimate,
                 drawCallLimit = result.budgets.drawCallsWarning,
                 textureMemoryMB = Math.Round(result.textureMemoryMB, 1),
-                textureMemoryLimitMB = result.budgets.textureMemoryWarningMB
+                textureMemoryLimitMB = result.budgets.textureMemoryWarningMB,
+                lightmapMB = result.lighting != null ? Math.Round(result.lighting.MB, 1) : -1,
+                lightmapLimitMB = result.budgets.lightmapMemoryWarningMB
             };
             var counts = new Dictionary<string, int>();
             foreach (var issue in result.issues)

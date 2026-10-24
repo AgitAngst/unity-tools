@@ -34,11 +34,18 @@ $shots = @(
     @("lightmap-en-dark", "en", "dark", @("-shotTab", "2", "-shotScan")),
     @("picked-ru-dark", "ru", "dark", @("-shotExpand", "critical", "-shotPick")),
     @("lightmap-picked-ru-dark", "ru", "dark", @("-shotTab", "2", "-shotScan", "-shotPick")),
-    @("budgets-ru-dark", "ru", "dark", @("-shotTab", "3")),
-    @("budgets-en-dark", "en", "dark", @("-shotTab", "3")),
-    @("profiler-en-dark", "en", "dark", @("-shotTab", "4")),
-    @("history-ru-dark", "ru", "dark", @("-shotTab", "5", "-shotHistory")),
-    @("history-en-dark", "en", "dark", @("-shotTab", "5", "-shotHistory"))
+    # The Lighting tab on made-up lightmaps: every segment, narrow, and before the first check.
+    @("light-empty-ru-dark", "ru", "dark", @("-shotTab", "3")),
+    @("light-atlases-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "atlases")),
+    @("light-objects-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "objects")),
+    @("light-lights-en-dark", "en", "dark", @("-shotTab", "3", "-shotLight", "lights")),
+    @("light-probes-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "probes")),
+    @("light-narrow-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "objects", "-shotWidth", "560")),
+    @("budgets-ru-dark", "ru", "dark", @("-shotTab", "4")),
+    @("budgets-en-dark", "en", "dark", @("-shotTab", "4")),
+    @("profiler-en-dark", "en", "dark", @("-shotTab", "5")),
+    @("history-ru-dark", "ru", "dark", @("-shotTab", "6", "-shotHistory")),
+    @("history-en-dark", "en", "dark", @("-shotTab", "6", "-shotHistory"))
 )
 
 foreach ($shot in $shots) {

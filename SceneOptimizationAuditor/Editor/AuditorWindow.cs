@@ -12,9 +12,10 @@ namespace UnityTools.SceneOptimization
         const int TabProblems = 0;
         const int TabViewpoints = 1;
         const int TabLightmap = 2;
-        const int TabBudgets = 3;
-        const int TabProfiler = 4;
-        const int TabHistory = 5;
+        const int TabLight = 3;
+        const int TabBudgets = 4;
+        const int TabProfiler = 5;
+        const int TabHistory = 6;
         const int GroupPageSize = 100;
         const float LabelColumn = 210f;
         const string ShowPref = "UnityTools.SceneAudit.Show.";
@@ -153,6 +154,9 @@ namespace UnityTools.SceneOptimization
                 case TabLightmap:
                     DrawLightmapTab();
                     break;
+                case TabLight:
+                    DrawLightTab();
+                    break;
                 case TabBudgets:
                     pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
                     DrawBudgetsTab();
@@ -186,6 +190,12 @@ namespace UnityTools.SceneOptimization
             groups = IssueGroup.Build(r.issues);
             acceptedList = AcceptedList.Load();
             RecordHistory(r);
+            // A lighting check already on the tab follows the new run.
+            if (ltReport != null)
+            {
+                ltReport = LightReport.Build();
+                ltPicked.Clear();
+            }
             expanded.Clear();
             limits.Clear();
             picked.Clear();
@@ -260,21 +270,39 @@ namespace UnityTools.SceneOptimization
                 result != null ? Strings.Format("ui.tab.problems.n", result.ActiveCount) : Strings.Get("ui.tab.problems"),
                 Strings.Get("ui.tab.viewpoints"),
                 Strings.Get("ui.tab.lightmap"),
+                Strings.Get("ui.tab.light"),
                 Strings.Get("ui.tab.budgets"),
                 Strings.Get("ui.tab.profiler"),
                 Strings.Get("ui.tab.history")
             };
-            // Equal tabs fill a wide window; when the longest label does not fit, every tab is as wide as its label.
-            float longest = labels.Max(l => GUI.skin.button.CalcSize(new GUIContent(l)).x);
-            var size = longest * labels.Length > position.width - 12f ? GUI.ToolbarButtonSize.FitToContents : GUI.ToolbarButtonSize.Fixed;
+            // Equal tabs fill a wide window; when the longest label does not fit, every tab is as wide as its label;
+            // when even that does not fit, the tabs go on two rows.
+            float available = position.width - 12f;
+            var widths = labels.Select(l => GUI.skin.button.CalcSize(new GUIContent(l)).x).ToArray();
+            int was = tab;
+            if (widths.Max() * labels.Length <= available) TabRow(labels, 0, labels.Length, GUI.ToolbarButtonSize.Fixed);
+            else if (widths.Sum() <= available) TabRow(labels, 0, labels.Length, GUI.ToolbarButtonSize.FitToContents);
+            else
+            {
+                int first = labels.Length - labels.Length / 2;
+                TabRow(labels, 0, first, GUI.ToolbarButtonSize.FitToContents);
+                TabRow(labels, first, labels.Length - first, GUI.ToolbarButtonSize.FitToContents);
+            }
+            if (tab != was) OnTabChanged();
+            GUILayout.Space(4f);
+        }
+
+        // One row of tabs: labels[from .. from + count); a row without the current tab shows none pressed.
+        void TabRow(string[] labels, int from, int count, GUI.ToolbarButtonSize size)
+        {
+            var row = labels.Skip(from).Take(count).ToArray();
+            int selected = tab >= from && tab < from + count ? tab - from : -1;
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(6f);
-            int was = tab;
-            tab = GUILayout.Toolbar(tab, labels, GUI.skin.button, size, GUILayout.Height(24f));
-            if (tab != was) OnTabChanged();
+            int picked = GUILayout.Toolbar(selected, row, GUI.skin.button, size, GUILayout.Height(24f));
+            if (picked != selected && picked >= 0) tab = from + picked;
             GUILayout.Space(6f);
             EditorGUILayout.EndHorizontal();
-            GUILayout.Space(4f);
         }
 
         List<AuditIssue> SafeFixes()

@@ -16,6 +16,7 @@ namespace UnityTools.SceneOptimization
         public ShadowResolution shadowResolution;
         public float shadowDistance;
         public int shadowCascades;
+        public ShadowmaskMode shadowmaskMode;
         public AnisotropicFiltering anisotropicFiltering;
         public SkinWeights skinWeights;
         public float lodBias = 1f;
@@ -43,6 +44,7 @@ namespace UnityTools.SceneOptimization
                 snapshot.shadowResolution = QualitySettings.shadowResolution;
                 snapshot.shadowDistance = QualitySettings.shadowDistance;
                 snapshot.shadowCascades = QualitySettings.shadowCascades;
+                snapshot.shadowmaskMode = QualitySettings.shadowmaskMode;
                 snapshot.anisotropicFiltering = QualitySettings.anisotropicFiltering;
                 snapshot.skinWeights = QualitySettings.skinWeights;
                 snapshot.lodBias = QualitySettings.lodBias;

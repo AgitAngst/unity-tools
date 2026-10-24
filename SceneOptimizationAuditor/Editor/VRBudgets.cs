@@ -55,6 +55,9 @@ namespace UnityTools.SceneOptimization
         // Share of the screen under transparent objects in one view, percent; above 100 means layers of overdraw.
         public int transparentWarningPercent = 100;
         public int transparentCriticalPercent = 200;
+        // Memory of the lightmaps of the loaded scenes: color, direction and shadowmask textures.
+        public int lightmapMemoryWarningMB = 128;
+        public int lightmapMemoryCriticalMB = 256;
 
         public static GpuPreset FindGpu(string id)
         {
@@ -164,6 +167,13 @@ namespace UnityTools.SceneOptimization
         public const int FarLod0MinTris = 2000;
         public const float SmallShadowMeters = 0.3f;
         public const float LargeTransparentShare = 0.25f;
+        // Lighting tab: a lightmapped object smaller than this is cheaper and seamless on light probes.
+        public const float SmallLightmapMeters = 0.5f;
+        public const float LightmapShareWarning = 0.2f;
+        // A realtime point or spot light reaching more renderers than this costs a pass on each of them.
+        public const int WideLightRenderers = 50;
+        // The probe area is the box of all probes grown by this much on every side.
+        public const float ProbeAreaMargin = 1f;
 
         public const string FileName = "SceneOptimizationAuditor.json";
 

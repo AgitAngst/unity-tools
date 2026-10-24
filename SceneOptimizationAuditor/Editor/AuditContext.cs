@@ -49,6 +49,7 @@ namespace UnityTools.SceneOptimization
         public long sceneTris;
         public long drawCallEstimate;
         public double textureMemoryMB;
+        public LightReport lighting;
 
         readonly Dictionary<Type, object> componentCache = new Dictionary<Type, object>();
         readonly Dictionary<Material, List<KeyValuePair<Texture, bool>>> materialTextures =

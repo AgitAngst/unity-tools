@@ -117,6 +117,22 @@ namespace UnityTools.SceneOptimization
             public TourPointDto[] points = new TourPointDto[0];
         }
 
+        // Lightmaps, the objects in them and the light probes of the audited scenes.
+        [Serializable]
+        public sealed class LightingDto
+        {
+            public int lightmaps;
+            public double lightmapMB;
+            public int lightmapLimitMB;
+            public bool directional;
+            public bool compressed;
+            public int objectsInLightmaps;
+            public int withoutLightmap;
+            public int probes;
+            public int probeGroups;
+            public int outsideProbes;
+        }
+
         [Serializable]
         public sealed class ReportDto
         {
@@ -137,6 +153,8 @@ namespace UnityTools.SceneOptimization
             public ViewpointsDto viewpoints;
             public bool hasViewpointTour;
             public TourDto viewpointTour;
+            public bool hasLighting;
+            public LightingDto lighting;
             public IssueDto[] issues;
         }
 
@@ -199,6 +217,8 @@ namespace UnityTools.SceneOptimization
                 viewpoints = viewpoints != null && viewpoints.HasEstimate ? ViewpointsOf(viewpoints, result.budgets) : new ViewpointsDto(),
                 hasViewpointTour = HasTour(viewpoints),
                 viewpointTour = HasTour(viewpoints) ? TourOf(viewpoints, result.budgets) : new TourDto(),
+                hasLighting = result.lighting != null,
+                lighting = result.lighting != null ? LightingOf(result.lighting, result.budgets) : new LightingDto(),
                 issues = new IssueDto[result.issues.Count]
             };
             for (int i = 0; i < result.issues.Count; i++)
@@ -244,6 +264,23 @@ namespace UnityTools.SceneOptimization
                     transparentPercent = p.Worst.transparentPercent,
                     overBudget = ViewpointEstimator.LevelOf(p.Worst, b) != null
                 }).ToArray()
+            };
+        }
+
+        static LightingDto LightingOf(LightReport r, VRBudgets b)
+        {
+            return new LightingDto
+            {
+                lightmaps = r.atlases.Count,
+                lightmapMB = Math.Round(r.MB, 1),
+                lightmapLimitMB = b.lightmapMemoryWarningMB,
+                directional = r.directional,
+                compressed = r.compressed,
+                objectsInLightmaps = r.objects.Count,
+                withoutLightmap = r.NoLightmap,
+                probes = r.probes,
+                probeGroups = r.groups.Count,
+                outsideProbes = r.outside.Count
             };
         }
 

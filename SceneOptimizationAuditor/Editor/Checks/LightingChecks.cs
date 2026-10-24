@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -46,6 +48,65 @@ namespace UnityTools.SceneOptimization
             if (Lightmapping.realtimeGI)
                 ctx.Report("LIGHT_REALTIME_GI", Category.Lighting, Severity.Info, null);
 #pragma warning restore 0618
+
+            ctx.lighting = LightReport.Build(ctx.roots, q.pixelLightCount, q.shadowmaskMode);
+            AuditBakedLighting(ctx, ctx.lighting);
+        }
+
+        // Settings path that opens the Lighting window instead of a Project Settings page.
+        public const string LightingWindow = "Lighting";
+
+        // Lightmaps, the objects in them, the lights and the probes — the numbers of the Lighting tab.
+        static void AuditBakedLighting(AuditContext ctx, LightReport report)
+        {
+            var b = ctx.budgets;
+            var q = ctx.quality;
+            double mb = Math.Round(report.MB, 1);
+            // Compared as shown: rounded to 0.1 MB.
+            if (mb > b.lightmapMemoryCriticalMB)
+                ctx.Report("LIGHT_LIGHTMAP_MEMORY", Category.Lighting, Severity.Critical, null, mb, b.lightmapMemoryCriticalMB);
+            else if (mb > b.lightmapMemoryWarningMB)
+                ctx.Report("LIGHT_LIGHTMAP_MEMORY", Category.Lighting, Severity.Warning, null, mb, b.lightmapMemoryWarningMB);
+            if (report.atlases.Count > 0 && !report.compressed)
+                ctx.ReportSetting("LIGHT_LIGHTMAP_UNCOMPRESSED", Category.Lighting, Severity.Warning, LightingWindow, mb);
+            if (report.HasDirectionTextures)
+                ctx.ReportSetting("LIGHT_LIGHTMAP_DIRECTIONAL", Category.Lighting, Severity.Info, LightingWindow, Math.Round(report.DirectionMB, 1));
+
+            if (report.NoLightmap > 0 || report.NotBakedLights > 0)
+                ctx.ReportSetting("LIGHT_NOT_BAKED", Category.Lighting, Severity.Warning, LightingWindow, report.NoLightmap, report.NotBakedLights);
+
+            foreach (var o in report.objects)
+            {
+                if (o.small)
+                {
+                    var issue = ctx.Report("LIGHT_SMALL_IN_LIGHTMAP", Category.Lighting, Severity.Info, o.renderer.gameObject, Math.Round(o.size, 2));
+                    var target = o.renderer;
+                    issue.SetFix(FixKind.Review, target, false, () => target.receiveGI = ReceiveGI.LightProbes);
+                }
+                if (o.much)
+                    ctx.Report("LIGHT_LIGHTMAP_SHARE", Category.Lighting, Severity.Warning, o.renderer.gameObject,
+                        Math.Round(o.share * 100.0), o.atlas, Math.Round(o.scale, 2));
+            }
+
+            if (report.groups.Count == 0 && report.probeObjects > 0 && report.UsesBakedLighting)
+                ctx.Report("LIGHT_NO_PROBES", Category.Lighting, Severity.Warning, null, report.probeObjects);
+            foreach (var o in report.outside)
+                ctx.Report("LIGHT_OUTSIDE_PROBES", Category.Lighting, Severity.Info, o.renderer.gameObject, Math.Round(o.distance, 1));
+
+            if (q.shadowmaskMode == ShadowmaskMode.DistanceShadowmask && report.mixedMode == MixedLightingMode.Shadowmask && report.HasMixedLights)
+                ctx.ReportSetting("LIGHT_DISTANCE_SHADOWMASK", Category.Lighting, Severity.Warning, "Project/Quality");
+            bool realtimeSun = report.sources.Any(s => s.light.type == LightType.Directional && s.light.shadows != LightShadows.None &&
+                                                       s.light.lightmapBakeType != LightmapBakeType.Baked);
+            if (q.shadows != ShadowQuality.Disable && q.shadowCascades == 4 && realtimeSun)
+                ctx.ReportSetting("LIGHT_SHADOW_CASCADES", Category.Lighting, Severity.Warning, "Project/Quality");
+
+            foreach (var s in report.sources)
+            {
+                if (s.wide)
+                    ctx.Report("LIGHT_WIDE_REALTIME", Category.Lighting, Severity.Warning, s.light, s.light.type.ToString(), s.inRange, VRBudgets.WideLightRenderers);
+                if (s.important)
+                    ctx.Report("LIGHT_IMPORTANT", Category.Lighting, Severity.Warning, s.light, s.light.type.ToString());
+            }
         }
     }
 }

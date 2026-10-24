@@ -143,6 +143,15 @@ namespace UnityTools.SceneOptimization
                 last.drawCalls, last.drawCalls - first.drawCalls, false);
             Trend("ui.budget.texMem", points.Select(p => p.textureMemoryMB).ToList(), StateColor(last.textureMemoryMB, last.textureMemoryLimitMB),
                 last.textureMemoryLimitMB, last.textureMemoryMB, last.textureMemoryMB - first.textureMemoryMB, false);
+            if (points.Any(p => p.lightmapMB > 0))
+            {
+                var mb = points.Select(p => p.lightmapMB >= 0 ? p.lightmapMB : double.NaN).ToList();
+                var lastMap = points.Take(to + 1).LastOrDefault(p => p.lightmapMB >= 0);
+                var firstMap = points.Skip(from).Take(to - from + 1).FirstOrDefault(p => p.lightmapMB >= 0);
+                Trend("ui.h.lightmapMem", mb, lastMap != null ? StateColor(lastMap.lightmapMB, lastMap.lightmapLimitMB) : OkColor,
+                    lastMap != null ? lastMap.lightmapLimitMB : (double?)null, lastMap != null ? lastMap.lightmapMB : double.NaN,
+                    lastMap != null && firstMap != null ? lastMap.lightmapMB - firstMap.lightmapMB : 0, false);
+            }
             if (points.Any(p => p.hasProfiler))
             {
                 var fps = points.Select(p => p.hasProfiler ? (double)p.avgFPS : double.NaN).ToList();
@@ -332,6 +341,8 @@ namespace UnityTools.SceneOptimization
             CompareRow("ui.budget.tris", a.sceneTris, b.sceneTris, false);
             CompareRow("ui.budget.drawCalls", a.drawCalls, b.drawCalls, false);
             CompareRow("ui.budget.texMem", a.textureMemoryMB, b.textureMemoryMB, false);
+            if (a.lightmapMB >= 0 && b.lightmapMB >= 0 && (a.lightmapMB > 0 || b.lightmapMB > 0))
+                CompareRow("ui.h.lightmapMem", a.lightmapMB, b.lightmapMB, false);
             if (a.hasProfiler && b.hasProfiler)
             {
                 CompareRow("ui.m.fps", a.avgFPS, b.avgFPS, true);

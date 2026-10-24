@@ -130,15 +130,12 @@ namespace UnityTools.SceneOptimization
         // Segments "Estimate | Measured" with the summary next to them and its details below.
         void DrawSummaryRow(string summary, string sub)
         {
-            GUILayout.Space(6f);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(8f);
             var labels = new[]
             {
                 new GUIContent(Strings.Get("ui.vp.seg.estimate"), Strings.Get("ui.vp.seg.tip")),
                 new GUIContent(Strings.Get("ui.vp.seg.measured"), Strings.Get("ui.vp.seg.tip"))
             };
-            int now = GUILayout.Toolbar(vpMeasured ? 1 : 0, labels, EditorStyles.miniButton, GUILayout.ExpandWidth(false));
+            int now = SegmentRow(vpMeasured ? 1 : 0, labels, summary, sub);
             if ((now == 1) != vpMeasured)
             {
                 vpMeasured = now == 1;
@@ -146,16 +143,30 @@ namespace UnityTools.SceneOptimization
                 vpShown = VpPageSize;
                 SceneView.RepaintAll();
             }
+        }
+
+        // Segments with the summary of the shown one next to them and its details below; returns the picked segment.
+        int SegmentRow(int selected, GUIContent[] labels, string summary, string sub)
+        {
+            GUILayout.Space(6f);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(8f);
+            // Equal segments, each as wide as the longest label with the button's own padding.
+            float each = labels.Max(l => EditorStyles.miniButton.CalcSize(l).x);
+            int now = GUILayout.Toolbar(selected, labels, EditorStyles.miniButton, GUI.ToolbarButtonSize.Fixed, GUILayout.Width(each * labels.Length));
             GUILayout.Space(10f);
             GUILayout.Label(summary, new GUIStyle(EditorStyles.boldLabel) { wordWrap = true });
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
-            if (sub.Length == 0) return;
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(8f);
-            GUILayout.Label(sub, wrapMini);
-            GUILayout.Space(8f);
-            EditorGUILayout.EndHorizontal();
+            if (sub.Length > 0)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(8f);
+                GUILayout.Label(sub, wrapMini);
+                GUILayout.Space(8f);
+                EditorGUILayout.EndHorizontal();
+            }
+            return now;
         }
 
         void DrawTourSummary(ViewpointSet set, TourMeasure tour)

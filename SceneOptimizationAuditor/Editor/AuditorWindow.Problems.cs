@@ -315,12 +315,13 @@ namespace UnityTools.SceneOptimization
                 right = button.x - 4f;
             }
             var settings = visible.Select(i => i.settingsPath).FirstOrDefault(p => !string.IsNullOrEmpty(p));
+            // Lighting settings live in the Lighting window, the rest on Project Settings pages.
             if (settings != null)
             {
                 var label = Strings.Get("ui.openSettings");
                 var width = EditorStyles.miniButton.CalcSize(new GUIContent(label)).x + 8f;
                 var button = new Rect(right - width, rect.y + 4f, width, 18f);
-                if (GUI.Button(button, label, EditorStyles.miniButton)) SettingsService.OpenProjectSettings(settings);
+                if (GUI.Button(button, label, EditorStyles.miniButton)) OpenSettings(settings);
                 right = button.x - 4f;
             }
             if (!byCategory)
@@ -403,7 +404,7 @@ namespace UnityTools.SceneOptimization
             if (issue.users > 0) location += (location.Length > 0 ? "  ·  " : "") + Strings.Format("ui.users", issue.users);
             if (location.Length > 0)
             {
-                if (GUILayout.Button(new GUIContent(location, Strings.Get(issue.target != null ? "ui.select.tip" : "ui.settings.tip")), link)) Select(issue);
+                if (GUILayout.Button(new GUIContent(location, Strings.Get(issue.target != null ? "ui.select.tip" : issue.settingsPath == SceneAuditor.LightingWindow ? "ui.lighting.tip" : "ui.settings.tip")), link)) Select(issue);
                 EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             }
             var message = issue.accepted ? Strings.Get("ui.acc.tag") + "  ·  " + issue.Message : issue.Message;
@@ -426,7 +427,7 @@ namespace UnityTools.SceneOptimization
         {
             if (issue.target == null)
             {
-                if (!string.IsNullOrEmpty(issue.settingsPath)) SettingsService.OpenProjectSettings(issue.settingsPath);
+                if (!string.IsNullOrEmpty(issue.settingsPath)) OpenSettings(issue.settingsPath);
                 return;
             }
             var component = issue.target as Component;
@@ -441,6 +442,13 @@ namespace UnityTools.SceneOptimization
                 Selection.activeObject = issue.target;
                 EditorGUIUtility.PingObject(issue.target);
             }
+        }
+
+        internal static void OpenSettings(string path)
+        {
+            if (path != SceneAuditor.LightingWindow) SettingsService.OpenProjectSettings(path);
+            else if (!EditorApplication.ExecuteMenuItem("Window/Rendering/Lighting Settings"))
+                Debug.LogWarning("[SceneAudit] No Window/Rendering/Lighting Settings menu item in this editor.");
         }
     }
 }

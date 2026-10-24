@@ -83,6 +83,7 @@ namespace UnityTools.SceneOptimization
             AddAssets();
             AddTitles();
             AddViewpoints();
+            AddLight();
         }
     }
 }

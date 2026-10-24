@@ -71,6 +71,7 @@ namespace UnityTools.SceneOptimization
             IntPair("ui.b.shadowLights", ref budgets.shadowLightsWarning, ref budgets.shadowLightsCritical);
             FloatPair("ui.b.frameTime", ref budgets.frameTimeWarningMs, ref budgets.frameTimeCriticalMs);
             IntPair("ui.b.transparent", ref budgets.transparentWarningPercent, ref budgets.transparentCriticalPercent);
+            IntPair("ui.b.lightmapMem", ref budgets.lightmapMemoryWarningMB, ref budgets.lightmapMemoryCriticalMB);
             IntSingle("ui.b.animators", ref budgets.animatorsWarning);
             IntSingle("ui.b.skinnedTris", ref budgets.skinnedTrisWarning);
             IntSingle("ui.b.audioSources", ref budgets.audioSourcesWarning);

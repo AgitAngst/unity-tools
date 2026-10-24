@@ -19,6 +19,8 @@ namespace UnityTools.SceneOptimization
         public long sceneTris;
         public long drawCallEstimate;
         public double textureMemoryMB;
+        // Lightmaps, the objects in them, the lights and the probes, as the lighting checks saw them.
+        public LightReport lighting;
 
         // Counts leave accepted problems out.
         public int Count(Severity severity)
@@ -109,7 +111,8 @@ namespace UnityTools.SceneOptimization
                 time = DateTime.Now,
                 sceneTris = ctx.sceneTris,
                 drawCallEstimate = ctx.drawCallEstimate,
-                textureMemoryMB = ctx.textureMemoryMB
+                textureMemoryMB = ctx.textureMemoryMB,
+                lighting = ctx.lighting
             };
             AcceptedList.Load().Apply(result.issues);
             return result;
