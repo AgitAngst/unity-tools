@@ -10,9 +10,10 @@ using UnityTools.SceneOptimization;
 namespace AuditTestsEditor
 {
     // Opens the auditor window in the normal (not batch) editor for a screenshot taken from outside by
-    // scripts\window-shot.ps1 (PrintWindow). The window stays open until <out>.done appears.
+    // scripts\window-shot.ps1 (PrintWindow). The window stays open until <out>.done appears; then it closes:
+    // an editor started for one shot quits, the test server stays open for the next command.
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
-    //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab 0|1|2] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
+    //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -24,6 +25,7 @@ namespace AuditTestsEditor
         public static void Shot()
         {
             output = Arg("-shotOut") ?? @"E:\dev_personal\unity-tools-scratch\reports\shots\window.png";
+            originalSkin = -1;
             File.Delete(output + ".ready");
             File.Delete(output + ".done");
             AuditTestAssets.Prepare();
@@ -96,7 +98,9 @@ namespace AuditTestsEditor
             if (frames < 40 || (!done && EditorApplication.timeSinceStartup - started < 120)) return;
             EditorApplication.update -= Tick;
             if (originalSkin >= 0 && (originalSkin == 1) != EditorGUIUtility.isProSkin) SwitchSkin();
-            EditorApplication.Exit(0);
+            // The test server keeps the editor open for the next shot.
+            if (window != null) window.Close();
+            AuditTestServer.Exit(0);
         }
 
         // Not public in 2019.4: called by reflection.
@@ -126,12 +130,12 @@ namespace AuditTestsEditor
 
         static bool HasArg(string name)
         {
-            return Array.IndexOf(Environment.GetCommandLineArgs(), name) >= 0;
+            return Array.IndexOf(AuditTestServer.Args, name) >= 0;
         }
 
         static string Arg(string name)
         {
-            var a = Environment.GetCommandLineArgs();
+            var a = AuditTestServer.Args;
             for (int i = 0; i < a.Length - 1; i++) if (a[i] == name) return a[i + 1];
             return null;
         }

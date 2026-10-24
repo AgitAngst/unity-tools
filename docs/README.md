@@ -1,6 +1,6 @@
 # unity-tools — документация
 
-Версия программы: 1.1.0
+Версия программы: 1.1.1
 
 Это документация того, что есть сейчас. Правила для сессий — [CLAUDE.md](../CLAUDE.md); замысел и
 этапы — [SPEC.md](../SPEC.md); что осталось проверить — [TESTPLAN.md](../TESTPLAN.md).
@@ -16,7 +16,8 @@
 
 Этапы 1–4 из `SPEC.md` закрыты 22.10.2026 (автотесты зелёные, живую проверку владелец подтвердил) —
 0.5.0. Этап 5 — проверки развёртки под свет (lightmap UV) — 0.6.0; этап 6 — вкладка «Развёртка под свет» — 0.7.0;
-этап 7 — проверки 3D-ассетов — 0.8.0; этап 8 — выбор нескольких записей — 0.9.0; этап 9 — допустимые проблемы — 1.0.0; этап 10 — история прогонов — 1.1.0.
+этап 7 — проверки 3D-ассетов — 0.8.0; этап 8 — выбор нескольких записей — 0.9.0; этап 9 — допустимые проблемы — 1.0.0; этап 10 — история прогонов — 1.1.0;
+этап 11 — окно и тексты по файлам, без нового поведения, и тестовый сервер — 1.1.1.
 Выпуска и тега нет.
 
 ## Оглавление
@@ -31,16 +32,27 @@
   компилятором Roslyn из установленного Unity с его DLL и `-langversion:7.3`, без запуска Unity. Ловит
   возможности C# новее 7.3 и API новее версии Unity. Журнал — `unity-tools-scratch\reports\compile-check.log`;
   код выхода 0 — без ошибок, 1 — ошибки, 2 — не найден компилятор или исходники.
-- `scripts\run-audit-tests.ps1 [-Only base,quality] [-UnityVersion …] [-Project …] [-Reports …]` (имена шагов — в начале
-  скрипта) — автотесты SceneOptimizationAuditor (`tests/AuditTests/`) в
-  проверочном проекте `unity-tools-scratch\TestProject2019` (2019.4.41f2): по запуску Unity на шаг, итог —
-  таблица кодов выхода, отчёты — `unity-tools-scratch\reports\audit-tests\<шаг>.txt`; код выхода 0 — все шаги
-  прошли.
-- `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark]` — снимки окна SceneOptimizationAuditor в проверочном
-  проекте (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `budgets-ru-dark`, `profiler-en-dark`;
-  ещё `-UnityVersion`, `-Project`, `-Out`): пустое состояние, «Проблемы» RU/EN, «Бюджеты», «Профайлер» в тёмном скине (светлый в 2019.4 из кода
-  не переключить). Unity открывается с окном на время снимка.
-  Снимки — `unity-tools-scratch\reports\shots\`.
+- `scripts\audit-server.ps1` — тестовый сервер, подключается из других скриптов (`. scripts\audit-server.ps1`):
+  `Start-AuditServer` один раз открывает Unity 2019.4.41f2 с проверочным проектом `unity-tools-scratch\TestProject2019`
+  и ключом `-auditServer` — для тестов в batchmode, `Start-AuditServer -Gui` — видимый, для снимков окна; открытый уже
+  редактор того же режима переиспользуется, другого — закрывается и открывается нужный. `Invoke-AuditCommand
+  <Тип.Метод> <аргументы>` выполняет статический метод в этом редакторе и возвращает его код выхода;
+  `Stop-AuditServer` закрывает редактор. Команды и ответы — файлы `unity-tools-scratch\reports\server\`
+  (`<имя>.cmd`, `<имя>.result`, `alive` — процесс, режим и время последнего такта), журнал редактора — `editor.log` там
+  же. Перед каждой командой редактор подхватывает изменённый код. Редактор остаётся открытым (владелец, 24.10.2026:
+  «Один раз открой и тестируй там постоянно»). Тесты — только в batchmode: видимый редактор на вариантах с
+  встроенным VR сам добавляет пакет OpenVR и встаёт на модальных диалогах XR Plug-in Management. Если проект открыт
+  без `-auditServer`, сервер не стартует и пишет об этом.
+- `scripts\run-audit-tests.ps1 [-Only base,quality] [-Reports …]` (имена шагов — в начале скрипта) — автотесты
+  SceneOptimizationAuditor (`tests/AuditTests/`) в тестовом сервере, все шаги в одном редакторе; итог — таблица
+  кодов выхода, отчёты — `unity-tools-scratch\reports\audit-tests\<шаг>.txt`; код выхода 0 — все шаги прошли.
+  Шаги `cli-*` вызывают тот же экспорт, что `RunFromCommandLine`, через `ReportExporter.RunWithArgs` — без
+  выхода из редактора.
+- `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark] [-Out …]` — снимки окна SceneOptimizationAuditor в
+  тестовом сервере (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `lightmap-ru-dark`,
+  `lightmap-en-dark`, `picked-ru-dark`, `lightmap-picked-ru-dark`, `budgets-ru-dark`, `profiler-en-dark`,
+  `history-ru-dark`, `history-en-dark`) в тёмном скине (светлый в 2019.4 из кода не переключить): окно открывается
+  на время снимка и закрывается, редактор остаётся. Снимки — `unity-tools-scratch\reports\shots\`.
 - `scripts\stamp-version.ps1 [-Version X.Y.Z]` — перед каждым коммитом: пишет версию и номер сборки (число
   коммитов после коммита) в `SceneOptimizationAuditor/Editor/ToolVersion.cs` и в строку «Версия программы» выше.
 - `scripts\window-shot.ps1 -Title <часть заголовка> -Out <файл.png>` — снимок одного окна Windows через

@@ -170,12 +170,19 @@ namespace UnityTools.SceneOptimization
         //   [-auditHistory [-auditNote "text"]]
         public static void RunFromCommandLine()
         {
+            EditorApplication.Exit(RunWithArgs(Environment.GetCommandLineArgs()));
+        }
+
+        // The export behind RunFromCommandLine for callers inside a running editor: the same arguments,
+        // the exit code is returned instead of quitting the editor.
+        public static int RunWithArgs(string[] args)
+        {
             int code = 1;
             try
             {
-                var scene = Argument("-auditScene");
-                var report = Argument("-auditReport");
-                var lang = Argument("-auditLang");
+                var scene = Argument(args, "-auditScene");
+                var report = Argument(args, "-auditReport");
+                var lang = Argument(args, "-auditLang");
                 if (!string.IsNullOrEmpty(lang)) Strings.Current = lang.ToLowerInvariant() == "ru" ? Lang.Ru : Lang.En;
                 if (string.IsNullOrEmpty(scene) || string.IsNullOrEmpty(report))
                 {
@@ -189,9 +196,9 @@ namespace UnityTools.SceneOptimization
                     else
                     {
                         Save(result, report);
-                        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-auditHistory") >= 0)
+                        if (Array.IndexOf(args, "-auditHistory") >= 0)
                         {
-                            AuditHistory.Record(result, Argument("-auditNote"));
+                            AuditHistory.Record(result, Argument(args, "-auditNote"));
                             Debug.Log("[SceneAudit] History point saved: " + AuditHistory.FileFor(result.scenePaths));
                         }
                         code = 0;
@@ -202,12 +209,11 @@ namespace UnityTools.SceneOptimization
             {
                 Debug.LogError("[SceneAudit] Command-line export failed: " + e);
             }
-            EditorApplication.Exit(code);
+            return code;
         }
 
-        static string Argument(string name)
+        static string Argument(string[] args, string name)
         {
-            var args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length - 1; i++)
                 if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase)) return args[i + 1];
             return null;

@@ -4,8 +4,8 @@
 (HTC Vive Pro, SteamVR, 90 Гц) и показывает проблемы по уровням Critical / Warning / Info с подсказкой,
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 
-**Состояние:** код всех четырёх этапов написан. Автотесты в Unity 2019.4.41f2 зелёные (22.10.2026,
-`scripts\run-audit-tests.ps1`, 25 шагов, из них 4 — XR Plug-in Management): проверки, бюджеты, экспорт, исправления и Undo. Окно,
+**Состояние:** код всех четырёх этапов написан. Автотесты в Unity 2019.4.41f2 зелёные (24.10.2026,
+`scripts\run-audit-tests.ps1`, 29 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management): проверки, бюджеты, экспорт, исправления и Undo. Окно,
 исправления, снимок профайлера и прогон на настоящей сцене владелец проверил вживую 22.10.2026. Не проверен
 настоящий OpenVR XR Plugin (в тестах — заглушки) — см. [TESTPLAN.md](../TESTPLAN.md).
 
@@ -346,7 +346,8 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 Из командной строки: `-auditScene` (сцена в проекте) и `-auditReport` (файл; `.csv` — CSV, иначе JSON)
 обязательны, `-auditLang en|ru` — язык текстов (по умолчанию — как в окне), `-auditHistory` — записать точку
 истории (вкладка «История»), `-auditNote "<текст>"` — заметка к ней. Код выхода 0 — отчёт сохранён, 1 —
-нет аргументов или ошибка (строка `[SceneAudit] …` в журнале).
+нет аргументов или ошибка (строка `[SceneAudit] …` в журнале). Из кода в открытом редакторе — то же самое без выхода
+из Unity: `ReportExporter.RunWithArgs(string[] args)` возвращает этот код (так его вызывают тесты).
 
 ```
 Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine -auditScene Assets/Scenes/Main.unity -auditReport E:/reports/main.json -auditLang en
@@ -376,7 +377,9 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 
 | Файл | Что |
 |---|---|
-| `AuditorWindow.cs` | окно |
+| `AuditorWindow.cs` | окно: поля, стили, тулбар, вкладки, прогон, экспорт, общие помощники (`partial class`) |
+| `AuditorWindow.Problems.cs`, `.Lightmap.cs`, `.Budgets.cs`, `.History.cs`, `.Profiler.cs` | вкладки окна — по файлу на вкладку |
+| `IssueGroup.cs` | группа проблем списка «Проблем» |
 | `SceneAuditor.cs` | `RunFullAudit()`, `AuditResult` |
 | `Checks/*Checks.cs` | проверки по категориям (`partial class SceneAuditor`) |
 | `AuditContext.cs` | сбор сцен, объектов, ассетов и мест использования текстур |
@@ -384,7 +387,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `VRBudgets.cs` | пороги и константы, файл бюджетов |
 | `XrInfo.cs`, `QualitySnapshot.cs` | XR и уровень качества |
 | `TextureMemory.cs` | оценка памяти текстуры |
-| `Strings.cs` | все тексты RU/EN |
+| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок |
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |
 | `ReportExporter.cs` | JSON, CSV, командная строка |
 | `ProfilerCapture.cs` | снимок профайлера |
@@ -397,4 +400,5 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `ReflectionUtil.cs` | доступ к типам пакетов по имени |
 
 Новая проверка = блок в методе категории (`ctx.Report(...)`), тексты `<checkId>`, `<checkId>.title`, `<checkId>.fix` и
-для исправимой `<checkId>.do` в `Strings.cs`, строка в таблице выше и в `TESTPLAN.md`.
+для исправимой `<checkId>.do` в `Strings.Checks.cs`, строка в таблице выше и в `TESTPLAN.md`. Новая вкладка окна — свой
+файл `AuditorWindow.<Вкладка>.cs`, её тексты — в `Strings.Ui.cs`.

@@ -410,20 +410,24 @@ JSON читается обратно, в CSV столько строк, скол
 
 - `AuditorWindow` — `partial class` по файлам, код переносится как есть (без переименований и правки логики):
   - `AuditorWindow.cs` — поля, стили, `Open`, `OnEnable`/`OnDisable`, `OnGUI`, тулбар, вкладки, `Run`, экспорт
-    и общие помощники (цвета, `Tint`, `Padded`, `FormatNumber`, `SectionTitle`, `Cell`, `XrLine`);
+    и общие помощники (цвета, `Tint`, `Padded`, `FormatNumber`, `XrLine`);
   - `AuditorWindow.Problems.cs` — вкладка «Проблемы»: пустое состояние, вывод, карточки, контекст, панель списка,
     полоса выбора, группы, строки, `Select`;
   - `AuditorWindow.Lightmap.cs`, `AuditorWindow.Budgets.cs` (полосы бюджетов, вкладка, допустимые),
     `AuditorWindow.History.cs`, `AuditorWindow.Profiler.cs`;
   - `IssueGroup` — свой файл `IssueGroup.cs`.
-- `Strings` — `partial class` по разделам (общие и тулбар; тексты проверок; вкладки); таблица, ключи, `Get` и
-  `Format` не меняются.
+- `Strings` — `partial class` по разделам: `Strings.cs` (язык, `Get`, `Format`), `Strings.Ui.cs` (тексты окна),
+  `Strings.Checks.cs` (тексты проверок); таблица, ключи, `Get` и `Format` не меняются.
 - Каждый файл — до ~600 строк. `.meta` новых файлов создаёт импорт в проверочном проекте (junction), они
   коммитятся.
 
-**Готово, когда:** `compile-check` без ошибок и предупреждений; `run-audit-tests.ps1` — 25 из 25; снимки окна
-(`shoot-audit-window.ps1`) до и после совпадают попиксельно; раздел «Устройство»
-страницы утилиты, колонка «Где» в `docs/ui-guideline.md` и HANDOFF называют новые файлы.
+**Готово, когда:** `compile-check` без ошибок и предупреждений; `run-audit-tests.ps1` — 29 из 29; снимки окна
+(`shoot-audit-window.ps1`) до и после совпадают попиксельно; раздел «Устройство» страницы утилиты и HANDOFF
+называют новые файлы, ссылки колонки «Где» в `docs/ui-guideline.md` остаются верными.
+
+Сделано 24.10.2026, вместе с тестовым сервером (`scripts\audit-server.ps1`; владелец: «Один раз открой и тестируй
+там постоянно»): тесты и снимки — командами в одном открытом редакторе, `ReportExporter.RunWithArgs` — экспорт
+командной строки без выхода из редактора.
 
 ---
 

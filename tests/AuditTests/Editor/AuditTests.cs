@@ -11,8 +11,9 @@ using UnityTools.SceneOptimization;
 
 namespace AuditTestsEditor
 {
-    // Batch entry points. Each run regenerates the scene, applies one settings variant, runs the audit
-    // and checks expectations as (checkId, path) pairs that must or must not be present.
+    // Entry points for a batch editor or the test server (AuditTestServer). Each run regenerates the scene,
+    // applies one settings variant, runs the audit and checks expectations as (checkId, path) pairs that must
+    // or must not be present.
     public static class AuditTests
     {
         const string ReportDir = @"E:\dev_personal\unity-tools-scratch\reports\audit-tests";
@@ -62,21 +63,24 @@ namespace AuditTestsEditor
                 WriteReport(variant, "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
         }
 
         public static void EnableSteamVrStub()
         {
             AuditTestSettings.SetSteamVrStub(true);
             AssetDatabase.SaveAssets();
-            EditorApplication.Exit(0);
+            // An editor that stays open (the test server) does not recompile on a define change by itself.
+            UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+            AuditTestServer.Exit(0);
         }
 
         public static void DisableSteamVrStub()
         {
             AuditTestSettings.SetSteamVrStub(false);
             AssetDatabase.SaveAssets();
-            EditorApplication.Exit(0);
+            UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+            AuditTestServer.Exit(0);
         }
 
         public static void RunFixes()
@@ -92,7 +96,7 @@ namespace AuditTestsEditor
                 WriteReport("fixes", "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
         }
 
         public static void RunExportUnit()
@@ -108,7 +112,13 @@ namespace AuditTestsEditor
                 WriteReport("export-unit", "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
+        }
+
+        // The command-line export inside the test server: the same arguments, its exit code as the answer.
+        public static void RunCli()
+        {
+            AuditTestServer.Exit(ReportExporter.RunWithArgs(AuditTestServer.Args));
         }
 
         // ---- variants ----
@@ -737,7 +747,7 @@ namespace AuditTestsEditor
                 WriteReport("history", "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
         }
 
         static int HistoryTest()
@@ -827,7 +837,7 @@ namespace AuditTestsEditor
                 WriteReport("accepted", "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
         }
 
         static int AcceptedTest()
@@ -891,7 +901,7 @@ namespace AuditTestsEditor
                 WriteReport("multi-select", "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
         }
 
         static int MultiSelectTest()
@@ -950,7 +960,7 @@ namespace AuditTestsEditor
                 WriteReport("lightmap-report", "CRASH\n" + e);
                 code = 2;
             }
-            EditorApplication.Exit(code);
+            AuditTestServer.Exit(code);
         }
 
         static int LightmapReport()
@@ -1089,7 +1099,7 @@ namespace AuditTestsEditor
 
         static string Arg(string name)
         {
-            var args = Environment.GetCommandLineArgs();
+            var args = AuditTestServer.Args;
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == name) return args[i + 1];
             return null;
