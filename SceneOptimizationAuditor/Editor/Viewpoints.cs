@@ -91,6 +91,8 @@ namespace UnityTools.SceneOptimization
         public string estimateVersion = "";
         public float estimateSeconds;
         public bool estimateWalls;
+        // Last tour in Play Mode (ViewpointTour).
+        public TourMeasure tour = new TourMeasure();
 
         [NonSerialized] public string filePath = "";
 
@@ -143,6 +145,15 @@ namespace UnityTools.SceneOptimization
 
         public bool HasEstimate { get { return estimatedAt.Length > 0 && points.Any(p => p.Estimated); } }
 
+        public bool HasTour { get { return tour != null && tour.Exists; } }
+
+        // Measured viewpoints of the last tour that are still in the set, in the order they were measured.
+        public List<PointMeasure> MeasuredPoints()
+        {
+            if (tour == null) return new List<PointMeasure>();
+            return tour.points.Where(m => m.Worst != null && Find(m.id) != null).ToList();
+        }
+
         public int NextNumber(ViewpointKind kind)
         {
             int max = 0;
@@ -174,7 +185,7 @@ namespace UnityTools.SceneOptimization
             point.objectName = "";
         }
 
-        // New automatic viewpoints replace the old ones; manual ones stay. Every estimate is cleared.
+        // New automatic viewpoints replace the old ones; manual ones stay. Every estimate and the tour are cleared.
         public void ReplaceAuto(List<Viewpoint> auto, float step)
         {
             points.RemoveAll(p => p.IsAuto);
@@ -182,6 +193,7 @@ namespace UnityTools.SceneOptimization
             placedStep = step;
             foreach (var p in points) p.ClearEstimate();
             estimatedAt = "";
+            tour = new TourMeasure();
         }
 
         public Viewpoint Find(string id)

@@ -169,6 +169,17 @@ namespace UnityTools.SceneOptimization
                 var over = points.Select(p => p.hasViewpoints ? (double)p.vpOver : double.NaN).ToList();
                 Trend("ui.h.vp.over", over, WarningColor, null, lastVp != null ? lastVp.vpOver : double.NaN, both ? lastVp.vpOver - firstVp.vpOver : 0, false);
             }
+            if (points.Any(p => p.hasTour))
+            {
+                var lastTour = points.Take(to + 1).LastOrDefault(p => p.hasTour);
+                var firstTour = points.Skip(from).Take(to - from + 1).FirstOrDefault(p => p.hasTour);
+                bool both = lastTour != null && firstTour != null;
+                var worst = points.Select(p => p.hasTour ? (double)p.tourWorstMs : double.NaN).ToList();
+                Trend("ui.h.tour.worst", worst, lastTour != null ? StateColor(lastTour.tourWorstMs, budgets.frameTimeWarningMs) : OkColor, budgets.frameTimeWarningMs,
+                    lastTour != null ? lastTour.tourWorstMs : double.NaN, both ? lastTour.tourWorstMs - firstTour.tourWorstMs : 0, false);
+                var slow = points.Select(p => p.hasTour ? (double)p.tourSlow : double.NaN).ToList();
+                Trend("ui.h.tour.slow", slow, WarningColor, null, lastTour != null ? lastTour.tourSlow : double.NaN, both ? lastTour.tourSlow - firstTour.tourSlow : 0, false);
+            }
             GUILayout.Label(Strings.Get("ui.h.trend.note"), wrapMini);
         }
 
@@ -333,6 +344,12 @@ namespace UnityTools.SceneOptimization
                 CompareRow("ui.h.vp.tris", a.vpTris, b.vpTris, false);
                 CompareRow("ui.h.vp.transparent", a.vpTransparent, b.vpTransparent, false);
                 CompareRow("ui.h.vp.over", a.vpOver, b.vpOver, false);
+            }
+            // Times with and without the headset are not alike: compared only when both tours had it or both did not.
+            if (a.hasTour && b.hasTour && a.tourHeadset == b.tourHeadset)
+            {
+                CompareRow("ui.h.tour.worst", Math.Round(a.tourWorstMs, 1), Math.Round(b.tourWorstMs, 1), false);
+                CompareRow("ui.h.tour.slow", a.tourSlow, b.tourSlow, false);
             }
 
             GUILayout.Space(6f);

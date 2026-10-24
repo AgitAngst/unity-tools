@@ -48,22 +48,9 @@ namespace UnityTools.SceneOptimization
         public static event Action Changed;
 
         static int warmupLeft;
-        static int collected;
         static int lastFrame = -1;
         static bool hooked;
-        static double sumDt;
-        static float minDt;
-        static float maxDt;
-        static double sumCpu;
-        static float maxCpu;
-        static double sumGpu;
-        static float maxGpu;
-        static int gpuFrames;
-        static double sumDraw;
-        static double sumSetPass;
-        static double sumBatches;
-        static double sumTris;
-        static readonly FrameTiming[] timings = new FrameTiming[1];
+        static FrameSampler sampler = new FrameSampler();
 
         static ProfilerCapture()
         {
@@ -100,14 +87,14 @@ namespace UnityTools.SceneOptimization
             {
                 case Phase.EnteringPlay: return Strings.Get("ui.prof.entering");
                 case Phase.Warmup: return Strings.Get("ui.prof.warming");
-                case Phase.Collecting: return Strings.Format("ui.prof.running", collected, Frames);
+                case Phase.Collecting: return Strings.Format("ui.prof.running", sampler.frames, Frames);
                 default: return "";
             }
         }
 
         public static void Start()
         {
-            if (IsRunning) return;
+            if (IsRunning || ViewpointTour.IsRunning) return;
             SessionState.SetString(SceneKey, SceneManager.GetActiveScene().path);
             if (EditorApplication.isPlaying)
             {
@@ -172,20 +159,8 @@ namespace UnityTools.SceneOptimization
 
         static void ResetCounters()
         {
-            collected = 0;
             lastFrame = -1;
-            sumDt = 0;
-            minDt = float.MaxValue;
-            maxDt = 0f;
-            sumCpu = 0;
-            maxCpu = 0f;
-            sumGpu = 0;
-            maxGpu = 0f;
-            gpuFrames = 0;
-            sumDraw = 0;
-            sumSetPass = 0;
-            sumBatches = 0;
-            sumTris = 0;
+            sampler = new FrameSampler();
         }
 
         static void OnFrame()
@@ -203,63 +178,16 @@ namespace UnityTools.SceneOptimization
             }
             if (phase != Phase.Collecting) return;
 
-            Sample();
-            collected++;
-            if (collected % 10 == 0) Notify();
-            if (collected >= Frames) Finish();
-        }
-
-        static void Sample()
-        {
-            float dt = Time.unscaledDeltaTime;
-            sumDt += dt;
-            minDt = Mathf.Min(minDt, dt);
-            maxDt = Mathf.Max(maxDt, dt);
-
-            float cpu = UnityStats.frameTime * 1000f;
-            sumCpu += cpu;
-            maxCpu = Mathf.Max(maxCpu, cpu);
-
-            FrameTimingManager.CaptureFrameTimings();
-            if (FrameTimingManager.GetLatestTimings(1, timings) > 0 && timings[0].gpuFrameTime > 0)
-            {
-                float gpu = (float)timings[0].gpuFrameTime;
-                sumGpu += gpu;
-                maxGpu = Mathf.Max(maxGpu, gpu);
-                gpuFrames++;
-            }
-
-            sumDraw += UnityStats.drawCalls;
-            sumSetPass += UnityStats.setPassCalls;
-            sumBatches += UnityStats.batches;
-            sumTris += UnityStats.triangles;
+            sampler.Add(FrameSample.Current(false));
+            if (sampler.frames % 10 == 0) Notify();
+            if (sampler.frames >= Frames) Finish();
         }
 
         static void Finish()
         {
             Unhook();
             var scene = SessionState.GetString(SceneKey, SceneManager.GetActiveScene().path);
-            int n = Mathf.Max(1, collected);
-            var snapshot = new ProfilerSnapshot
-            {
-                scene = scene,
-                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
-                frames = collected,
-                avgFPS = sumDt > 0 ? (float)(collected / sumDt) : 0f,
-                minFPS = maxDt > 0f ? 1f / maxDt : 0f,
-                maxFPS = minDt > 0f && minDt < float.MaxValue ? 1f / minDt : 0f,
-                avgCPUms = (float)(sumCpu / n),
-                peakCPUms = maxCpu,
-                avgGPUms = gpuFrames > 0 ? (float)(sumGpu / gpuFrames) : -1f,
-                peakGPUms = gpuFrames > 0 ? maxGpu : -1f,
-                drawCalls = (int)Math.Round(sumDraw / n),
-                setPassCalls = (int)Math.Round(sumSetPass / n),
-                batches = (int)Math.Round(sumBatches / n),
-                trisPerFrame = (long)Math.Round(sumTris / n),
-                textureMemoryMB = (float)(Texture.currentTextureMemory / (1024.0 * 1024.0)),
-                meshMemoryMB = MeshMemoryMB(),
-                totalAllocatedMB = (float)(Profiler.GetTotalAllocatedMemoryLong() / (1024.0 * 1024.0))
-            };
+            var snapshot = SnapshotOf(sampler, scene, DateTime.Now);
             Store(scene, snapshot);
             CurrentPhase = Phase.Idle;
             Debug.Log(string.Format(CultureInfo.InvariantCulture,
@@ -267,6 +195,31 @@ namespace UnityTools.SceneOptimization
                 snapshot.frames, snapshot.avgFPS, snapshot.avgCPUms, snapshot.drawCalls));
             if (!SessionState.GetBool(StartedInPlayKey, true)) EditorApplication.isPlaying = false;
             Notify();
+        }
+
+        // The snapshot of the measured frames; memory is read at the moment of the call.
+        public static ProfilerSnapshot SnapshotOf(FrameSampler s, string scene, DateTime time)
+        {
+            return new ProfilerSnapshot
+            {
+                scene = scene,
+                timestamp = time.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                frames = s.frames,
+                avgFPS = s.AvgFps,
+                minFPS = s.MinFps,
+                maxFPS = s.MaxFps,
+                avgCPUms = s.AvgCpuMs,
+                peakCPUms = s.PeakCpuMs,
+                avgGPUms = s.AvgGpuMs,
+                peakGPUms = s.PeakGpuMs,
+                drawCalls = s.DrawCalls,
+                setPassCalls = s.SetPassCalls,
+                batches = s.Batches,
+                trisPerFrame = s.Tris,
+                textureMemoryMB = (float)(Texture.currentTextureMemory / (1024.0 * 1024.0)),
+                meshMemoryMB = MeshMemoryMB(),
+                totalAllocatedMB = (float)(Profiler.GetTotalAllocatedMemoryLong() / (1024.0 * 1024.0))
+            };
         }
 
         static float MeshMemoryMB()

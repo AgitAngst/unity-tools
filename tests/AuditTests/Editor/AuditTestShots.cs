@@ -14,7 +14,7 @@ namespace AuditTestsEditor
     // an editor started for one shot quits, the test server stays open for the next command.
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
-    //     [-shotWidth <px>] [-shotViewpoints | -shotViewpointsEmpty]
+    //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -55,6 +55,7 @@ namespace AuditTestsEditor
                 if (File.Exists(file)) File.Delete(file);
             }
             if (HasArg("-shotViewpoints")) Invoke("ViewpointsForShot");
+            if (HasArg("-shotTour")) Invoke("TourForShot", Arg("-shotTour") != "noheadset");
             var expand = Arg("-shotExpand");
             if (!string.IsNullOrEmpty(expand)) Invoke("ExpandForShot", expand);
             var tab = Arg("-shotTab");

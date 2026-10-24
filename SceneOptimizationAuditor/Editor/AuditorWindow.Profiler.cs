@@ -28,8 +28,11 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.BeginHorizontal();
             if (!running)
             {
+                // One Play Mode measurement at a time: the viewpoint tour holds Play Mode too.
+                EditorGUI.BeginDisabledGroup(ViewpointTour.IsRunning);
                 if (GUILayout.Button(new GUIContent(" " + Strings.Get("ui.prof.capture"), playIcon), GUILayout.Width(220f), GUILayout.Height(26f)))
                     EditorApplication.delayCall += ProfilerCapture.Start;
+                EditorGUI.EndDisabledGroup();
             }
             else if (GUILayout.Button(Strings.Get("ui.prof.cancel"), GUILayout.Width(220f), GUILayout.Height(26f)))
             {

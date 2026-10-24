@@ -34,8 +34,9 @@
 
 ## Impact
 
-- Код (новое): `ViewpointTour.cs` (ход замера, `[InitializeOnLoad]`). Правка: `AuditorWindow.Viewpoints.cs`
-  (кнопка, сегменты, колонки), `Viewpoints.cs` (результаты в файле), `AuditHistory.cs`, `ReportExporter.cs`,
-  `Strings*.cs`.
+- Код (новое): `ViewpointTour.cs` (ход замера, `[InitializeOnLoad]`), `FrameSampler.cs` (общий с профайлером счёт
+  кадров), `ViewpointTourPanel.cs` (панель), `AuditorWindow.Tour.cs` (полоса хода, сегменты, таблица и детали замера).
+  Правка: `AuditorWindow.Viewpoints.cs` (кнопка тулбара), `ProfilerCapture.cs`, `Viewpoints.cs` (результаты в файле),
+  `AuditHistory.cs`, `AuditorWindow.History.cs`, `ReportExporter.cs`, `Strings.Viewpoints.cs`.
 - Зависит от `add-viewpoints`. Общий с `ProfilerCapture` способ сэмплирования (`UnityStats`, `FrameTimingManager`).
 - Замер меняет только состояние Play Mode — сцена на диске не меняется.

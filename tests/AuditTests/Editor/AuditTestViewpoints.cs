@@ -13,7 +13,7 @@ using UnityTools.SceneOptimization;
 namespace AuditTestsEditor
 {
     // Viewpoints and target GPUs: small scenes built for each case, numbers checked against what the estimate must give.
-    public static class AuditTestViewpoints
+    public static partial class AuditTestViewpoints
     {
         const string ReportDir = @"E:\dev_personal\unity-tools-scratch\reports\audit-tests";
         const string SceneDir = AuditTestAssets.Root + "/Scenes";

@@ -46,6 +46,14 @@ namespace UnityTools.SceneOptimization
         public long vpTris;
         public int vpDrawCalls;
         public float vpTransparent;
+        // Viewpoint tour measured since the previous point: the worst time (with the headset the larger of CPU and GPU,
+        // else the frame time) and how many viewpoints are slow.
+        public bool hasTour;
+        public string tourTime = "";
+        public bool tourHeadset;
+        public int tourCount;
+        public int tourSlow;
+        public float tourWorstMs;
         public List<CheckCount> checks = new List<CheckCount>();
         // "C|checkId|location" (C, W, I by severity, A for acceptable); dropped on old points to keep the file small.
         public List<string> problems = new List<string>();
@@ -226,21 +234,40 @@ namespace UnityTools.SceneOptimization
             var set = ViewpointSet.Load(result.scenePaths);
             try
             {
-                if (!set.HasEstimate || (previous != null && previous.vpTime == set.estimatedAt)) return;
-                var estimated = set.points.Where(p => p.Estimated).ToList();
-                var worst = estimated.OrderByDescending(p => p.Worst.drawCalls).ThenByDescending(p => p.Worst.tris).First();
-                point.hasViewpoints = true;
-                point.vpTime = set.estimatedAt;
-                point.vpCount = estimated.Count;
-                point.vpOver = estimated.Count(p => ViewpointEstimator.LevelOf(p.Worst, result.budgets) != null);
-                point.vpTris = worst.Worst.tris;
-                point.vpDrawCalls = worst.Worst.drawCalls;
-                point.vpTransparent = worst.Worst.transparentPercent;
+                AddEstimate(point, set, result.budgets, previous);
+                AddTour(point, set, result.budgets, previous);
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(set);
             }
+        }
+
+        static void AddEstimate(HistoryPoint point, ViewpointSet set, VRBudgets b, HistoryPoint previous)
+        {
+            if (!set.HasEstimate || (previous != null && previous.vpTime == set.estimatedAt)) return;
+            var estimated = set.points.Where(p => p.Estimated).ToList();
+            var worst = estimated.OrderByDescending(p => p.Worst.drawCalls).ThenByDescending(p => p.Worst.tris).First();
+            point.hasViewpoints = true;
+            point.vpTime = set.estimatedAt;
+            point.vpCount = estimated.Count;
+            point.vpOver = estimated.Count(p => ViewpointEstimator.LevelOf(p.Worst, b) != null);
+            point.vpTris = worst.Worst.tris;
+            point.vpDrawCalls = worst.Worst.drawCalls;
+            point.vpTransparent = worst.Worst.transparentPercent;
+        }
+
+        static void AddTour(HistoryPoint point, ViewpointSet set, VRBudgets b, HistoryPoint previous)
+        {
+            var measured = set.MeasuredPoints();
+            if (!set.HasTour || measured.Count == 0 || (previous != null && previous.tourTime == set.tour.time)) return;
+            bool headset = set.tour.headset;
+            point.hasTour = true;
+            point.tourTime = set.tour.time;
+            point.tourHeadset = headset;
+            point.tourCount = measured.Count;
+            point.tourSlow = measured.Count(m => TourMath.IsSlow(m.Worst, headset, b));
+            point.tourWorstMs = measured.Max(m => TourMath.Cost(m.Worst, headset));
         }
 
         static string Letter(AuditIssue issue)

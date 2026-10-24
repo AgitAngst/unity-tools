@@ -38,12 +38,14 @@ namespace UnityTools.SceneOptimization
         {
             SceneView.duringSceneGui += OnViewpointsSceneGui;
             Undo.undoRedoPerformed += OnViewpointsUndo;
+            ViewpointTour.Changed += OnTourChanged;
         }
 
         void ViewpointsDisable()
         {
             SceneView.duringSceneGui -= OnViewpointsSceneGui;
             Undo.undoRedoPerformed -= OnViewpointsUndo;
+            ViewpointTour.Changed -= OnTourChanged;
             if (vpSet != null) DestroyImmediate(vpSet);
             vpSet = null;
         }
@@ -87,53 +89,96 @@ namespace UnityTools.SceneOptimization
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
             DrawViewpointsToolbar(set);
+            DrawTourBar();
             if (set.points.Count == 0)
             {
                 DrawViewpointsEmpty();
                 return;
             }
             pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
-            DrawViewpointsSummary(set);
-            DrawViewpointsSelectionBar(set);
-            DrawViewpointsTable(set);
-            DrawViewpointDetails(set);
+            if (vpMeasured)
+            {
+                var tour = TourOf(set);
+                DrawTourSummary(set, tour);
+                DrawViewpointsSelectionBar(set);
+                DrawTourTable(set, tour);
+                if (!ViewpointTour.IsRunning) DrawTourDetails(set, tour);
+            }
+            else
+            {
+                DrawViewpointsSummary(set);
+                DrawViewpointsSelectionBar(set);
+                DrawViewpointsTable(set);
+                DrawViewpointDetails(set);
+            }
             GUILayout.Space(6f);
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(8f);
-            GUILayout.Label(Strings.Get("ui.vp.footer"), wrapMini);
+            GUILayout.Label(Strings.Get(vpMeasured ? "ui.vp.tour.footer" : "ui.vp.footer"), wrapMini);
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(8f);
             EditorGUILayout.EndScrollView();
         }
 
-        // Actions on the left, switches on the right; a narrow window gets two rows instead of cut buttons.
+        // Actions on the left, switches on the right; when they do not fit, a second row instead of cut buttons.
+        // While a tour runs, estimating and placing wait for it.
         void DrawViewpointsToolbar(ViewpointSet set)
         {
-            bool narrow = position.width < VpNarrowWidth;
+            bool touring = ViewpointTour.IsRunning;
+            var estimate = new GUIContent(" " + Strings.Get("ui.vp.estimate"), playIcon, Strings.Get("ui.vp.estimate.tip"));
+            var place = new GUIContent(Strings.Get("ui.vp.place"), Strings.Get("ui.vp.place.tip"));
+            var measure = new GUIContent(Strings.Get("ui.vp.measure"), Strings.Get("ui.vp.measure.tip"));
+            var addHere = new GUIContent(Strings.Get("ui.vp.addHere"), Strings.Get("ui.vp.addHere.tip"));
+            var csv = new GUIContent(Strings.Get("ui.lm.csv"));
+            var walls = new GUIContent(Strings.Get("ui.vp.walls"), Strings.Get("ui.vp.walls.tip"));
+            var onlyOver = new GUIContent(Strings.Get("ui.vp.onlyOver"));
+            var button = EditorStyles.toolbarButton;
+            var dropDown = EditorStyles.toolbarDropDown;
+            float width = button.CalcSize(estimate).x + dropDown.CalcSize(place).x + dropDown.CalcSize(measure).x + button.CalcSize(addHere).x +
+                          button.CalcSize(csv).x + button.CalcSize(walls).x + button.CalcSize(onlyOver).x + 24f;
+            bool twoRows = width > position.width;
+
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            EditorGUI.BeginDisabledGroup(set.points.Count == 0);
-            if (GUILayout.Button(new GUIContent(" " + Strings.Get("ui.vp.estimate"), playIcon, Strings.Get("ui.vp.estimate.tip")), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
+            EditorGUI.BeginDisabledGroup(set.points.Count == 0 || touring);
+            if (GUILayout.Button(estimate, button, GUILayout.ExpandWidth(false)))
                 EditorApplication.delayCall += () => EstimateViewpoints(null);
             EditorGUI.EndDisabledGroup();
-            if (GUILayout.Button(new GUIContent(Strings.Get("ui.vp.place"), Strings.Get("ui.vp.place.tip")), EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(false)))
+            EditorGUI.BeginDisabledGroup(touring);
+            if (GUILayout.Button(place, dropDown, GUILayout.ExpandWidth(false)))
                 PopupWindow.Show(vpPlaceButton, new ViewpointPlacePanel(this, set.placement));
+            EditorGUI.EndDisabledGroup();
             if (Event.current.type == EventType.Repaint) vpPlaceButton = GUILayoutUtility.GetLastRect();
-            if (GUILayout.Button(new GUIContent(Strings.Get("ui.vp.addHere"), Strings.Get("ui.vp.addHere.tip")), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
-                AddViewpointHere();
-            if (narrow)
+            if (touring)
+            {
+                // Held down and greyed out until the tour ends.
+                EditorGUI.BeginDisabledGroup(true);
+                GUILayout.Toggle(true, measure, button, GUILayout.ExpandWidth(false));
+                EditorGUI.EndDisabledGroup();
+            }
+            else
+            {
+                EditorGUI.BeginDisabledGroup(set.points.Count == 0 || ProfilerCapture.IsRunning);
+                if (GUILayout.Button(measure, dropDown, GUILayout.ExpandWidth(false)))
+                    PopupWindow.Show(vpTourButton, new ViewpointTourPanel(this, vpPicked.Count, set.points.Count));
+                EditorGUI.EndDisabledGroup();
+                if (Event.current.type == EventType.Repaint) vpTourButton = GUILayoutUtility.GetLastRect();
+            }
+            if (twoRows)
             {
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             }
+            if (GUILayout.Button(addHere, button, GUILayout.ExpandWidth(false)))
+                AddViewpointHere();
             EditorGUI.BeginDisabledGroup(!set.HasEstimate);
-            if (GUILayout.Button(Strings.Get("ui.lm.csv"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(csv, button, GUILayout.ExpandWidth(false)))
                 EditorApplication.delayCall += SaveViewpointsCsv;
             EditorGUI.EndDisabledGroup();
             GUILayout.FlexibleSpace();
-            vpWalls = GUILayout.Toggle(vpWalls, new GUIContent(Strings.Get("ui.vp.walls"), Strings.Get("ui.vp.walls.tip")), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
-            vpOnlyOver = GUILayout.Toggle(vpOnlyOver, Strings.Get("ui.vp.onlyOver"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
+            vpWalls = GUILayout.Toggle(vpWalls, walls, button, GUILayout.ExpandWidth(false));
+            vpOnlyOver = GUILayout.Toggle(vpOnlyOver, onlyOver, button, GUILayout.ExpandWidth(false));
             EditorGUILayout.EndHorizontal();
         }
 
@@ -198,14 +243,7 @@ namespace UnityTools.SceneOptimization
                 parts.Add(Strings.Get(set.estimateWalls ? "ui.vp.walls.on" : "ui.vp.walls.off"));
             }
             if (set.placedStep > set.placement.step + 0.01f) parts.Add(Strings.Format("ui.vp.stepGrown", FormatNumber(Math.Round(set.placedStep, 1))));
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(8f);
-            EditorGUILayout.BeginVertical();
-            GUILayout.Label(summary, new GUIStyle(EditorStyles.boldLabel) { wordWrap = true });
-            GUILayout.Label(string.Join("  ·  ", parts.ToArray()), wrapMini);
-            EditorGUILayout.EndVertical();
-            GUILayout.Space(8f);
-            EditorGUILayout.EndHorizontal();
+            DrawSummaryRow(summary, string.Join("  ·  ", parts.ToArray()));
         }
 
         void DrawViewpointsSelectionBar(ViewpointSet set)
@@ -219,6 +257,8 @@ namespace UnityTools.SceneOptimization
             if (GUILayout.Button(Strings.Get("ui.sel.clear"), EditorStyles.miniButton, GUILayout.ExpandWidth(false))) vpPicked.Clear();
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
+            // An estimate in the middle of a tour would stall its frames.
+            EditorGUI.BeginDisabledGroup(ViewpointTour.IsRunning);
             if (GUILayout.Button(Strings.Format("ui.vp.sel.estimate", vpPicked.Count), GUILayout.ExpandWidth(false)))
             {
                 var only = set.points.Where(p => vpPicked.Contains(p.id)).ToList();
@@ -226,6 +266,7 @@ namespace UnityTools.SceneOptimization
             }
             if (GUILayout.Button(new GUIContent(Strings.Format("ui.vp.sel.remove", vpPicked.Count), Strings.Get("ui.vp.sel.remove.tip")), GUILayout.ExpandWidth(false)))
                 RemoveViewpoints(vpPicked.ToList());
+            EditorGUI.EndDisabledGroup();
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
@@ -387,11 +428,7 @@ namespace UnityTools.SceneOptimization
             if (vpSelectedId != p.id) vpDirection = -1;
             vpSelectedId = p.id;
             vpHeavy = null;
-            if (look)
-            {
-                int d = DirectionOf(p);
-                LookFrom(p.position, d >= 0 ? p.directions[d].yaw : p.hasYaw ? p.yaw : 0f);
-            }
+            if (look) LookFrom(p.position, ShownYaw(p));
             Repaint();
             SceneView.RepaintAll();
         }
@@ -422,8 +459,10 @@ namespace UnityTools.SceneOptimization
             Func<float, string> f = v => FormatNumber(Math.Round(v, 1));
             GUILayout.Label(Strings.Format("ui.vp.meta", Strings.Get("ui.vp.kind." + p.kind), f(p.position.x), f(p.position.y), f(p.position.z)), EditorStyles.miniLabel);
             GUILayout.FlexibleSpace();
+            EditorGUI.BeginDisabledGroup(ViewpointTour.IsRunning);
             if (GUILayout.Button(new GUIContent(Strings.Get("ui.vp.remove"), Strings.Get("ui.vp.sel.remove.tip")), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 RemoveViewpoints(new List<string> { p.id });
+            EditorGUI.EndDisabledGroup();
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
             if (!p.Estimated)
@@ -696,9 +735,7 @@ namespace UnityTools.SceneOptimization
 
         void DrawSelectedInScene(ViewpointSet set, Viewpoint p)
         {
-            int d = DirectionOf(p);
-            float yaw = d >= 0 ? p.directions[d].yaw : p.hasYaw ? p.yaw : 0f;
-            var rotation = Quaternion.Euler(0f, yaw, 0f);
+            var rotation = Quaternion.Euler(0f, ShownYaw(p), 0f);
             float handle = HandleUtility.GetHandleSize(p.position);
             if (Event.current.type == EventType.Repaint)
             {
@@ -712,14 +749,24 @@ namespace UnityTools.SceneOptimization
                     new Vector3(halfWidth, halfHeight, VpFrustumMeters), new Vector3(-halfWidth, halfHeight, VpFrustumMeters)
                 }.Select(c => p.position + rotation * c).ToArray();
                 var level = p.Estimated ? ViewpointEstimator.LevelOf(p.Worst, budgets) : null;
+                var w = p.Worst;
+                var text = w != null ? Strings.Format("ui.vp.label", p.Name, FormatNumber(w.drawCalls), DirectionLabel(w.yaw)) : p.Name;
+                // With "Measured" on, the colour and the label follow the measured direction shown.
+                var tour = vpMeasured ? TourOf(set) : null;
+                var m = tour != null ? tour.Find(p.id) : null;
+                int md = MeasuredDirectionOf(m);
+                if (md >= 0)
+                {
+                    var d = m.directions[md];
+                    level = TourMath.LevelOf(d, tour.headset, budgets);
+                    text = Strings.Format("ui.vp.label.tour", p.Name, Ms(TourMath.Cost(d, tour.headset)), DirectionLabel(d.yaw));
+                }
                 Handles.color = level.HasValue ? SeverityColor(level.Value) : OkColor;
                 for (int i = 0; i < 4; i++)
                 {
                     Handles.DrawLine(p.position, corners[i]);
                     Handles.DrawLine(corners[i], corners[(i + 1) % 4]);
                 }
-                var w = p.Worst;
-                var text = w != null ? Strings.Format("ui.vp.label", p.Name, FormatNumber(w.drawCalls), DirectionLabel(w.yaw)) : p.Name;
                 var style = new GUIStyle(EditorStyles.whiteMiniLabel) { normal = { background = Texture2D.blackTexture } };
                 Handles.Label(p.position + Vector3.up * handle * 0.4f + rotation * Vector3.right * handle * 0.4f, " " + text + " ", style);
             }
@@ -731,6 +778,8 @@ namespace UnityTools.SceneOptimization
                 p.position = moved;
                 set.MakeManual(p);
                 p.ClearEstimate();
+                // The tour of the old place says nothing about the new one.
+                set.tour.points.RemoveAll(m => m.id == p.id);
                 vpDirty = true;
             }
         }

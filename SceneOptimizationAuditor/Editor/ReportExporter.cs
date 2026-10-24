@@ -83,6 +83,40 @@ namespace UnityTools.SceneOptimization
             public ViewpointDto[] points = new ViewpointDto[0];
         }
 
+        // Worst direction of a viewpoint measured in Play Mode. Times in milliseconds; GPU and dropped frames -1 when unknown.
+        [Serializable]
+        public sealed class TourPointDto
+        {
+            public string name;
+            public float worstYaw;
+            public float frameMs;
+            public float peakFrameMs;
+            public float cpuMs;
+            public float gpuMs;
+            public int dropped;
+            public int drawCalls;
+            public int batches;
+            public int setPassCalls;
+            public long tris;
+            public bool slow;
+            public bool movedByGame;
+        }
+
+        [Serializable]
+        public sealed class TourDto
+        {
+            public string time = "";
+            public string toolVersion = "";
+            public bool interrupted;
+            public bool headset;
+            public int frames;
+            public int warmup;
+            public int directions;
+            public string mover = "";
+            public float frameTimeLimitMs;
+            public TourPointDto[] points = new TourPointDto[0];
+        }
+
         [Serializable]
         public sealed class ReportDto
         {
@@ -101,6 +135,8 @@ namespace UnityTools.SceneOptimization
             public ProfilerSnapshot profilerSnapshot;
             public bool hasViewpoints;
             public ViewpointsDto viewpoints;
+            public bool hasViewpointTour;
+            public TourDto viewpointTour;
             public IssueDto[] issues;
         }
 
@@ -112,13 +148,13 @@ namespace UnityTools.SceneOptimization
             Debug.Log("[SceneAudit] Scene audit report saved: " + path);
         }
 
-        // The last viewpoint estimate of the audited scenes goes into the report when there is one.
+        // The last viewpoint estimate and tour of the audited scenes go into the report when there are any.
         public static string ToJson(AuditResult result, ProfilerSnapshot snapshot)
         {
             var set = ViewpointSet.Load(result.scenePaths);
             try
             {
-                return ToJson(result, snapshot, set.HasEstimate ? set : null);
+                return ToJson(result, snapshot, set);
             }
             finally
             {
@@ -159,8 +195,10 @@ namespace UnityTools.SceneOptimization
                 // JsonUtility cannot write null for a nested class, hence the flag.
                 hasProfilerSnapshot = snapshot != null,
                 profilerSnapshot = snapshot ?? new ProfilerSnapshot(),
-                hasViewpoints = viewpoints != null,
-                viewpoints = viewpoints != null ? ViewpointsOf(viewpoints, result.budgets) : new ViewpointsDto(),
+                hasViewpoints = viewpoints != null && viewpoints.HasEstimate,
+                viewpoints = viewpoints != null && viewpoints.HasEstimate ? ViewpointsOf(viewpoints, result.budgets) : new ViewpointsDto(),
+                hasViewpointTour = HasTour(viewpoints),
+                viewpointTour = HasTour(viewpoints) ? TourOf(viewpoints, result.budgets) : new TourDto(),
                 issues = new IssueDto[result.issues.Count]
             };
             for (int i = 0; i < result.issues.Count; i++)
@@ -205,6 +243,45 @@ namespace UnityTools.SceneOptimization
                     drawCalls = p.Worst.drawCalls,
                     transparentPercent = p.Worst.transparentPercent,
                     overBudget = ViewpointEstimator.LevelOf(p.Worst, b) != null
+                }).ToArray()
+            };
+        }
+
+        // A tour whose viewpoints were all removed since is no tour.
+        static bool HasTour(ViewpointSet set)
+        {
+            return set != null && set.HasTour && set.MeasuredPoints().Count > 0;
+        }
+
+        static TourDto TourOf(ViewpointSet set, VRBudgets b)
+        {
+            var tour = set.tour;
+            return new TourDto
+            {
+                time = tour.time,
+                toolVersion = tour.toolVersion,
+                interrupted = tour.interrupted,
+                headset = tour.headset,
+                frames = tour.frames,
+                warmup = tour.warmup,
+                directions = tour.directions,
+                mover = tour.mover.ToString(),
+                frameTimeLimitMs = b.frameTimeCriticalMs,
+                points = set.MeasuredPoints().Select(m => new TourPointDto
+                {
+                    name = m.name,
+                    worstYaw = m.Worst.yaw,
+                    frameMs = m.Worst.frameMs,
+                    peakFrameMs = m.Worst.peakFrameMs,
+                    cpuMs = m.Worst.cpuMs,
+                    gpuMs = m.Worst.gpuMs,
+                    dropped = m.Worst.dropped,
+                    drawCalls = m.Worst.drawCalls,
+                    batches = m.Worst.batches,
+                    setPassCalls = m.Worst.setPassCalls,
+                    tris = m.Worst.tris,
+                    slow = TourMath.IsSlow(m.Worst, tour.headset, b),
+                    movedByGame = m.displaced > TourMath.MovedMetres
                 }).ToArray()
             };
         }

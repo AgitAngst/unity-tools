@@ -138,7 +138,94 @@ namespace UnityTools.SceneOptimization
                 "Ручные точки останутся: заменятся только авто-точки. Не больше 500 точек — иначе шаг вырастет сам. Ctrl+Z возвращает прежние точки.");
             Add("ui.vp.panel.place", "Place (≈ {0})", "Расставить (≈ {0})");
 
+            // Tour in Play Mode.
+            Add("ui.vp.measure", "Measure in Play Mode", "Замерить в Play Mode");
+            Add("ui.vp.measure.tip", "Enters Play Mode, puts the viewer at each viewpoint and measures the real frame time. Play Mode changes are gone when it ends.",
+                "Входит в Play Mode, ставит игрока в каждую точку и меряет настоящее время кадра. Изменения Play Mode пропадают при выходе.");
+            Add("ui.vp.seg.estimate", "Estimate", "Оценка");
+            Add("ui.vp.seg.measured", "Measured", "Замер");
+            Add("ui.vp.seg.tip", "What the table shows: the estimate in the editor or the tour in Play Mode.", "Что показывает таблица: оценку в редакторе или замер в Play Mode.");
+            Add("ui.vp.tour.entering", "Entering Play Mode for the tour…", "Вход в Play Mode для замера…");
+            Add("ui.vp.tour.running", "Measuring in Play Mode: viewpoint {0} of {1} · direction {2} of {3}", "Замер в Play Mode: точка {0} из {1} · направление {2} из {3}");
+            Add("ui.vp.tour.left", "About {0} left. Measured viewpoints are kept; \"Cancel\" or leaving Play Mode stops the tour.",
+                "Осталось ~{0}. Измеренные точки сохраняются; «Отмена» или выход из Play Mode остановят замер.");
+            Add("ui.vp.tour.summary", "Measured: slower than {0} ms or dropping frames — {1} of {2}", "Замер: дольше {0} мс или с пропусками — {1} из {2}");
+            Add("ui.vp.tour.summary.running", "Measuring: {0} of {1} viewpoints", "Замер идёт: {0} из {1} точек");
+            Add("ui.vp.tour.none", "No tour yet: press \"Measure in Play Mode\".", "Замера ещё нет: нажмите «Замерить в Play Mode».");
+            Add("ui.vp.tour.interrupted", "interrupted", "прерван");
+            Add("ui.vp.tour.headset", "with headset", "со шлемом");
+            Add("ui.vp.tour.noHeadset", "without headset", "без шлема");
+            Add("ui.vp.tour.params", "{0} frames · {1} warm-up · {2} directions", "кадров {0} · разогрев {1} · направлений {2}");
+            Add("ui.vp.tour.moved.Rig", "moved the VR rig", "двигался VR rig");
+            Add("ui.vp.tour.moved.Object", "moved {0}", "двигался объект {0}");
+            Add("ui.vp.tour.moved.Camera", "moved the camera", "двигалась камера");
+            Add("ui.vp.tour.moving.Rig", "moving the VR rig", "двигается VR rig");
+            Add("ui.vp.tour.moving.Object", "moving {0}", "двигается объект {0}");
+            Add("ui.vp.tour.moving.Camera", "moving the camera", "двигается камера");
+            Add("ui.vp.tour.meta", "{0} · worst direction {1}", "{0} · худшее направление {1}");
+            Add("ui.vp.tour.took", "in {0}", "за {0}");
+            Add("ui.vp.mover.Rig", "VR rig (auto)", "VR rig (авто)");
+            Add("ui.vp.mover.Object", "Object…", "Объект…");
+            Add("ui.vp.mover.Camera", "Camera", "Камера");
+            Add("ui.vp.col.frame", "Frame, ms", "Кадр, мс");
+            Add("ui.vp.col.frame.short", "Frame", "Кадр");
+            Add("ui.vp.col.frame.tip", "Average frame time from the unscaled delta time. With the headset it stays near 11.1 ms.",
+                "Среднее время кадра по unscaled delta time. Со шлемом держится около 11,1 мс.");
+            Add("ui.vp.col.peak", "Peak, ms", "Пик, мс");
+            Add("ui.vp.col.peak.tip", "Longest frame of the measured ones.", "Самый долгий кадр из измеренных.");
+            Add("ui.vp.col.cpu", "CPU", "CPU");
+            Add("ui.vp.col.cpu.tip", "Main thread time, ms (as in the Stats window; may include waiting for the GPU).", "Время главного потока, мс (как в окне Stats; может включать ожидание GPU).");
+            Add("ui.vp.col.gpu", "GPU", "GPU");
+            Add("ui.vp.col.gpu.tip", "GPU time, ms: from the XR runtime with the headset, else (or when it gives none) from frame timing; — when unknown.",
+                "Время GPU, мс: со шлемом — от XR-рантайма, без него (или если рантайм не дал) — из frame timing; «—», если неизвестно.");
+            Add("ui.vp.col.dropped", "Dropped", "Пропущено");
+            Add("ui.vp.col.dropped.short", "Drop.", "Проп.");
+            Add("ui.vp.col.dropped.tip", "Frames the compositor dropped while measuring (headset only).", "Кадры, которые композитор пропустил за замер (только со шлемом).");
+            Add("ui.vp.col.setpass", "SetPass", "SetPass");
+            Add("ui.vp.col.setpass.tip", "Average SetPass calls.", "Среднее число SetPass calls.");
+            Add("ui.vp.col.dc.short", "DC", "DC");
+            Add("ui.vp.movedByGame", "moved by the game", "сдвинуто игрой");
+            Add("ui.vp.movedByGame.tip", "At the end of the warm-up (without one — before the last measured frame) the head was more than 0.5 m from the viewpoint: the game moves the player.",
+                "К концу разогрева (без него — перед последним кадром замера) голова была дальше 0,5 м от точки: игра сдвигает игрока.");
+            Add("ui.vp.pending", "waiting", "ждёт замера");
+            Add("ui.vp.tour.allGood", "Every measured viewpoint fits the frame time.", "Все измеренные точки укладываются во время кадра.");
+            Add("ui.vp.label.tour", "{0} · {1} ms · {2}", "{0} · {1} мс · {2}");
+            Add("ui.vp.cmp", "Estimate ↔ measured · {0}", "Оценка ↔ замер · {0}");
+            Add("ui.vp.cmp.estimate", "Estimate", "Оценка");
+            Add("ui.vp.cmp.measured", "Measured", "Замер");
+            Add("ui.vp.cmp.tris", "Triangles", "Треугольники");
+            Add("ui.vp.cmp.note", "The measurement has batching, instancing and occlusion culling; the estimate is an upper bound without them.",
+                "Замер — с батчингом, instancing и occlusion culling; оценка — верхняя граница без них.");
+            Add("ui.vp.tour.footer",
+                "A measurement in the editor is a guide; final numbers come from the profiler on a Development Build. With the headset the frame stays at 11.1 ms, so the worst direction is picked by dropped frames, then by the larger of CPU and GPU.",
+                "Замер в редакторе — ориентир; итоговые цифры — профайлер на Development Build. Со шлемом кадр держится на 11,1 мс, поэтому худшее направление выбирается по пропущенным кадрам, затем по большему из CPU и GPU.");
+            Add("ui.vp.min", "{0} min", "{0} мин");
+            Add("ui.vp.minsec", "{0} min {1} s", "{0} мин {1} с");
+            Add("ui.vp.sec", "{0} s", "{0} с");
+
+            // Panel under "Measure in Play Mode".
+            Add("ui.vp.tour.title", "Measure in Play Mode", "Замер в Play Mode");
+            Add("ui.vp.tour.which", "Viewpoints", "Какие точки");
+            Add("ui.vp.tour.worst", "Worst by estimate", "Худшие по оценке");
+            Add("ui.vp.tour.selected", "Selected ({0})", "Выбранные ({0})");
+            Add("ui.vp.tour.all", "All ({0})", "Все ({0})");
+            Add("ui.vp.tour.count", "How many worst", "Сколько худших");
+            Add("ui.vp.tour.frames", "Frames per direction", "Кадров на направление");
+            Add("ui.vp.tour.warmup", "Warm-up, frames", "Разогрев, кадров");
+            Add("ui.vp.tour.dirs", "Directions", "Направлений");
+            Add("ui.vp.tour.move", "What to move", "Что двигать");
+            Add("ui.vp.tour.object", "Object", "Объект");
+            Add("ui.vp.tour.headsetNote", "With no active headset in the measured frames the tour is mono in the Game view and marked \"without headset\".",
+                "Если шлем не активен ни в одном кадре замера, замер идёт моно в Game view, с пометкой «без шлема».");
+            Add("ui.vp.tour.note",
+                "Lay the headset level; keep the Game view focused and the Scene view closed. While measuring, a Rigidbody on the moved object is kinematic and a CharacterController is off: Play Mode changes, gone when Play Mode ends.",
+                "Положите шлем ровно; Game view — в фокусе, Scene view лучше закрыть. На время замера у двигаемого Rigidbody — kinematic, CharacterController выключен: это изменения Play Mode, при выходе они пропадают.");
+            Add("ui.vp.tour.time", "{0} viewpoints · {1} directions × {2} frames ≈ {3}", "{0} точек · {1} направлений × {2} кадров ≈ {3}");
+            Add("ui.vp.tour.start", "Measure (~{0})", "Замерить (~{0})");
+
             // History of the worst viewpoint.
+            Add("ui.h.tour.worst", "Tour: worst time, ms", "Замер: худшее время, мс");
+            Add("ui.h.tour.slow", "Tour: slow viewpoints", "Замер: медленных точек");
             Add("ui.h.vp.dc", "Worst viewpoint: draw calls", "Худшая точка: draw calls");
             Add("ui.h.vp.tris", "Worst viewpoint: triangles", "Худшая точка: треугольники");
             Add("ui.h.vp.transparent", "Worst viewpoint: transparent, %", "Худшая точка: прозрачное, %");
