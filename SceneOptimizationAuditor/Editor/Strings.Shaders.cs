@@ -10,6 +10,7 @@ namespace UnityTools.SceneOptimization
                 "Шейдер {0} с ошибками или не поддерживается: его объекты рисуются розовым.");
             Add("SHADER_ERROR.fix", "Fix the errors listed in the shader's Inspector; a shader of another pipeline (URP, HDRP) needs a Built-in one instead.",
                 "Исправьте ошибки из Inspector шейдера; шейдер другого конвейера (URP, HDRP) замените шейдером Built-in.");
+            Add("SHADER_MISSING.title", "Material without a shader", "Материал без шейдера");
             Add("SHADER_MISSING", "Material {0} has no shader (deleted or not imported): its objects are drawn pink.",
                 "У материала {0} нет шейдера (удалён или не импортирован): его объекты рисуются розовым.");
             Add("SHADER_MISSING.fix", "Pick a shader on the material or bring the shader file back.", "Выберите шейдер в материале или верните файл шейдера.");

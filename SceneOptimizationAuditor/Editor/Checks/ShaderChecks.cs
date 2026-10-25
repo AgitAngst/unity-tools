@@ -53,8 +53,7 @@ namespace UnityTools.SceneOptimization
 
             foreach (var pair in missing)
             {
-                var issue = ctx.Report("SHADER_ERROR", Category.Shaders, Severity.Critical, pair.Key, pair.Key.name);
-                issue.messageKey = "SHADER_MISSING";
+                var issue = ctx.Report("SHADER_MISSING", Category.Shaders, Severity.Critical, pair.Key, pair.Key.name);
                 issue.users = pair.Value;
             }
             bool instanced = ctx.xr.stereoMode == StereoMode.SinglePassInstanced;

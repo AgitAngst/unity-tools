@@ -4,7 +4,7 @@
 
 Задание для сессий. Промпт одной сессии = **«Общая часть»** + раздел **одного** этапа. Этапы идут по
 порядку; каждый — своё изменение OpenSpec (`openspec/changes/<имя>`) и +1 ко второй цифре версии
-(сейчас 1.5.0); этап без нового поведения — третья цифра. Версию поднимает ведущая сессия, не исполнитель.
+(текущая — в `HANDOFF.md`); этап без нового поведения — третья цифра. Версию поднимает ведущая сессия, не исполнитель.
 
 | Этап | Что | Версия |
 |---|---|---|
@@ -744,16 +744,17 @@ Undo сцены; сбор «Тяжёлых» (копии, треугольник
 `.shader` в `Assets/` (и их `#include` из `Assets/`), у встроенных и пакетных — только то, что даёт API. Новая категория
 «Шейдеры» после «Материалов»; запись — на шейдер, с числом объектов. Исправлений нет — правится исходник.
 
-- `SHADER_ERROR` — ошибки, которые Unity уже знает (`ShaderUtil.ShaderHasError`), шейдер не поддерживается
-  (`isSupported`) или пропал (`Hidden/InternalErrorShader`, запись — на материал) → Critical: розовые объекты.
+- `SHADER_ERROR` — ошибки, которые Unity уже знает (`ShaderUtil.ShaderHasError`), или шейдер не поддерживается
+  (`isSupported`) → Critical: розовые объекты; `SHADER_MISSING` — у материала нет шейдера (`Hidden/InternalErrorShader`,
+  запись — на материал) → Critical.
 - `SHADER_GRABPASS` — в первом SubShader GrabPass без имени текстуры → Warning: копия экрана на каждый объект, в VR — для
   двух глаз; с именем (`GrabPass { "_Name" }`) → Info: копия раз за кадр.
 - `SHADER_MULTIPASS` — в первом SubShader больше одного прохода рисования → Warning: объект рисуется N раз. Считаются
-  проходы без LightMode или с Always, проходы ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме теней, Meta,
-  Deferred и ForwardAdd по имени) и один за surface-шейдер; ForwardAdd, ShadowCaster, Meta, Deferred, Prepass,
+  проходы без LightMode или с Always, проходы ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме теней по префиксу SHADOW
+  и имён META, DEFERRED, PREPASS*, FORWARD_DELTA, FORWARDADD, MOTIONVECTORS) и один за surface-шейдер; ForwardAdd, ShadowCaster, Meta, Deferred, Prepass,
   MotionVectors — нет.
 - `SHADER_NO_STEREO` — stereo-режим Single Pass Instanced, вершинная функция (`#pragma vertex`) определена в исходнике
-  проекта, а в нём нет `UNITY_VERTEX_OUTPUT_STEREO` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO` → Critical: объект
+  проекта, а в нём нет вызова `UNITY_SETUP_INSTANCE_ID` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO` → Critical: объект
   виден одним глазом. Так выглядит шаблон Unlit Shader из 2019.4. Surface-шейдеры и функции из встроенных `.cginc`
   (`vert_img`) — не в счёт.
 - `SHADER_VARIANTS` — у шейдера проекта вариантов больше 512 (`ShaderUtil.GetVariantCount` через reflection; нет
@@ -769,6 +770,10 @@ stereo, cutout без AlphaToMask и с ним, 1024 варианта, с оши
 Сделано 25.10.2026: тест `shaders` (разбор исходника на строках; 11 шейдеров, которые тест пишет в проект, Standard
 opaque и cutout, материал с удалённым шейдером; при Single Pass Instanced и MSAA 4x и без них), тексты RU/EN. Не
 проверено вживую: шейдеры уровня владельца и Single Pass Instanced в шлеме.
+
+Исправлено 1.7.1 (сверка судьёй): `SHADER_NO_STEREO` смотрит на вызовы макросов, а не на поля (своя функция в `v2f_img`
+больше не ложный Critical); UsePass исключается по точному имени (`METALLIC_OUTLINE` рисует); AlphaToMask на `Category`
+виден; пропавший шейдер — своя проверка `SHADER_MISSING`.
 
 ---
 

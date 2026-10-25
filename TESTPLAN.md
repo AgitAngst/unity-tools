@@ -6,7 +6,8 @@ Unity 2019.4.41f2, `scripts\run-audit-tests.ps1` в тестовом серве�
 запущенный один раз, все шаги — командами в нём; шаги `cli-*` — через `ReportExporter.RunWithArgs`, без выхода из
 редактора): **39 шагов из 39 зелёные**, версия 1.7.0. С 1.7.0 — шаг `shaders`: разбор исходника на строках (комментарии,
 Vertex / VertexLM / VertexLMRGBM как один проход, surface, UsePass тени и контура, Category, GrabPass с именем и без,
-AlphaToMask из свойства, шаблон Unlit, `vert_img`) и 11 шейдеров, которые тест пишет в проект (хороший, GrabPass с
+AlphaToMask из свойства и на Category, шаблон Unlit, `vert_img`, своя функция в `v2f_img` с вызовами, поле без вызовов,
+UsePass `METALLIC_OUTLINE`) и 11 шейдеров, которые тест пишет в проект (хороший, GrabPass с
 именем и без, контур вторым проходом, ForwardBase + ForwardAdd + ShadowCaster + UsePass, шаблон Unlit, вершинная функция
 из `.cginc` проекта, cutout с AlphaToMask и без, 1024 варианта, ошибка разбора), Standard opaque и cutout, материал с
 удалённым шейдером; при Single Pass Instanced и MSAA 4x — и без них. С 1.6.0 — шаг `particles`: системы частиц на каждую проверку (оценка частиц

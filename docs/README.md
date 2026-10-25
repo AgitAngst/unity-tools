@@ -1,6 +1,6 @@
 # unity-tools — документация
 
-Версия программы: 1.7.0
+Версия программы: 1.7.1
 
 Это документация того, что есть сейчас. Правила для сессий — [CLAUDE.md](../CLAUDE.md); замысел и
 этапы — [SPEC.md](../SPEC.md); что осталось проверить — [TESTPLAN.md](../TESTPLAN.md).
@@ -51,7 +51,8 @@
   выхода из редактора. `viewpoints-tour-start` начинает короткий замер по точкам в Play Mode и сразу отвечает; сервер
   ждёт конца Play Mode, и `viewpoints-tour-check` проверяет, что измерено. `light` — вкладка «Свет» и проверки света на
   подставленных атласах, без запекания. `heavy` — копии префаба и модели, «Исправить в префабе», «Тяжёлые» на
-  сделанных тестом префабах.
+  сделанных тестом префабах. `particles` — проверки частиц на системах, сделанных тестом. `shaders` — разбор исходника
+  и проверки шейдеров на шейдерах, которые тест пишет в проект.
 - `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark] [-Out …]` — снимки окна SceneOptimizationAuditor в
   тестовом сервере (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `viewpoints-empty-ru-dark`,
   `viewpoints-ru-dark`, `viewpoints-en-dark`, `viewpoints-narrow-ru-dark`, `tour-ru-dark`, `tour-en-dark`,

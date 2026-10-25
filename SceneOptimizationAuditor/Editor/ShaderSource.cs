@@ -32,8 +32,8 @@ namespace UnityTools.SceneOptimization
         public readonly List<string> vertexFunctions = new List<string>();
 
         static readonly string[] VertexModes = { "VERTEX", "VERTEXLM", "VERTEXLMRGBM" };
-        // Parts of a UsePass name of a pass that does not draw the object in forward rendering.
-        static readonly string[] NotDrawnNames = { "SHADOW", "META", "DEFERRED", "PREPASS", "FORWARD_DELTA", "FORWARDADD", "MOTION" };
+        // UsePass names of passes that do not draw the object in forward rendering; shadow passes go by the prefix SHADOW.
+        static readonly string[] NotDrawnNames = { "META", "DEFERRED", "PREPASSBASE", "PREPASSFINAL", "FORWARD_DELTA", "FORWARDADD", "MOTIONVECTORS" };
 
         static readonly Regex ProgramBlock = new Regex(@"\b(CGPROGRAM|CGINCLUDE|HLSLPROGRAM|HLSLINCLUDE)\b(.*?)\b(ENDCG|ENDHLSL)\b", RegexOptions.Singleline);
         static readonly Regex Include = new Regex("#include\\s+\"([^\"]+)\"");
@@ -83,6 +83,8 @@ namespace UnityTools.SceneOptimization
 
             var body = FirstSubShader(shaderLab);
             if (body != null) source.ReadSubShader(body, programs);
+            // Render state set on a Category applies to its SubShaders too.
+            source.alphaToMask = AlphaToMaskOn.IsMatch(shaderLab);
             return source;
         }
 
@@ -113,7 +115,8 @@ namespace UnityTools.SceneOptimization
             }
         }
 
-        // A vertex function written in the project's source without the stereo instancing macros.
+        // A vertex function written in the project's source that does not set up the stereo eye: the calls are what counts,
+        // since the output fields may come with a built-in struct (v2f_img).
         public bool VertexWithoutStereo
         {
             get
@@ -122,7 +125,7 @@ namespace UnityTools.SceneOptimization
                 foreach (var name in vertexFunctions)
                     if (Regex.IsMatch(code, @"\w\s+" + Regex.Escape(name) + @"\s*\(")) own = true;
                 if (!own) return false;
-                return !Regex.IsMatch(code, @"\bUNITY_VERTEX_OUTPUT_STEREO\b") || !Regex.IsMatch(code, @"\bUNITY_INITIALIZE_VERTEX_OUTPUT_STEREO\b");
+                return !Regex.IsMatch(code, @"\bUNITY_SETUP_INSTANCE_ID\s*\(") || !Regex.IsMatch(code, @"\bUNITY_INITIALIZE_VERTEX_OUTPUT_STEREO\s*\(");
             }
         }
 
@@ -138,14 +141,11 @@ namespace UnityTools.SceneOptimization
         {
             var slash = usePath.LastIndexOf('/');
             var name = (slash >= 0 ? usePath.Substring(slash + 1) : usePath).ToUpperInvariant();
-            foreach (var part in NotDrawnNames)
-                if (name.Contains(part)) return true;
-            return false;
+            return name.StartsWith("SHADOW", StringComparison.Ordinal) || Array.IndexOf(NotDrawnNames, name) >= 0;
         }
 
         void ReadSubShader(string body, List<string> programs)
         {
-            alphaToMask = AlphaToMaskOn.IsMatch(body);
             int i = 0;
             while (i < body.Length)
             {

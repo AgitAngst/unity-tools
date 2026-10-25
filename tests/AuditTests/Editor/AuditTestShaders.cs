@@ -15,7 +15,7 @@ namespace AuditTestsEditor
 
         static readonly string[] ShaderChecks =
         {
-            "SHADER_ERROR", "SHADER_GRABPASS", "SHADER_MULTIPASS", "SHADER_NO_STEREO", "SHADER_VARIANTS", "SHADER_ALPHA_TEST_MSAA"
+            "SHADER_ERROR", "SHADER_MISSING", "SHADER_GRABPASS", "SHADER_MULTIPASS", "SHADER_NO_STEREO", "SHADER_VARIANTS", "SHADER_ALPHA_TEST_MSAA"
         };
 
         public static void RunShaders()
@@ -130,6 +130,16 @@ namespace AuditTestsEditor
             Check(!stereo.VertexWithoutStereo, "a pass with the stereo macros");
             var img = ShaderSource.Parse("Shader \"A\" { SubShader { Pass { CGPROGRAM\n#pragma vertex vert_img\n#pragma fragment frag\n#include \"UnityCG.cginc\"\nfixed4 frag (v2f_img i) : SV_Target { return 1; }\nENDCG } } }", null);
             Check(!img.VertexWithoutStereo, "vert_img of UnityCG.cginc is not the project's own vertex function");
+            var ownImg = ShaderSource.Parse("Shader \"A\" { SubShader { Pass { CGPROGRAM\n#pragma vertex vert\n#include \"UnityCG.cginc\"\n" +
+                "v2f_img vert (appdata_img v) { v2f_img o; UNITY_SETUP_INSTANCE_ID(v); UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o); return o; }\nENDCG } } }", null);
+            var noCall = ShaderSource.Parse("Shader \"A\" { SubShader { Pass { CGPROGRAM\n#pragma vertex vert\n" +
+                "struct v2f { float4 pos : SV_POSITION; UNITY_VERTEX_OUTPUT_STEREO };\nv2f vert (appdata_full v) { v2f o; return o; }\nENDCG } } }", null);
+            Check(!ownImg.VertexWithoutStereo && noCall.VertexWithoutStereo,
+                "the calls count: an own vertex function into v2f_img with them is fine, a struct with the field but no calls is not");
+            var metallic = ShaderSource.Parse("Shader \"A\" { SubShader { Pass { } UsePass \"X/METALLIC_OUTLINE\" UsePass \"X/SHADOWCASTER\" UsePass \"X/META\" } }", null);
+            Check(metallic.DrawPasses == 2, "UsePass METALLIC_OUTLINE draws; SHADOWCASTER and META do not (" + metallic.DrawPasses + ")");
+            var onCategory = ShaderSource.Parse("Shader \"A\" { Category { AlphaToMask On SubShader { Pass { } } } }", null);
+            Check(onCategory.alphaToMask, "AlphaToMask on a Category");
         }
 
         static void ShaderIssues()
@@ -222,11 +232,11 @@ namespace AuditTestsEditor
             var variants = of("SHADER_VARIANTS", "Variants");
             Check(variants.Count == 1 && (long)variants[0].args[1] >= 1024, "10 multi_compile: 1024 variants or more (" +
                 (variants.Count > 0 ? variants[0].args[1] : "—") + ")");
-            var broken = issues.Where(i => i.checkId == "SHADER_ERROR").ToList();
+            var broken = issues.Where(i => i.checkId == "SHADER_ERROR" || i.checkId == "SHADER_MISSING").ToList();
             var parse = broken.FirstOrDefault(i => i.target == shaders["Broken"]);
             Check(parse != null && broken.All(i => i.severity == Severity.Critical) && ((string)parse.args[0]).Length > 0,
                 "a shader with a parse error: SHADER_ERROR, Critical, named (" + (parse != null ? parse.args[0] : "—") + ")");
-            var missing = broken.Where(i => i.messageKey == "SHADER_MISSING").ToList();
+            var missing = broken.Where(i => i.checkId == "SHADER_MISSING").ToList();
             Check(missing.Count == 1 && missing[0].target == orphan && missing[0].assetPath == orphanPath, "a material whose shader is deleted: SHADER_MISSING on the material");
 
             // Not Single Pass Instanced, MSAA off: no stereo and no alpha-test issues.
@@ -245,8 +255,8 @@ namespace AuditTestsEditor
             foreach (var language in new[] { Lang.En, Lang.Ru })
             {
                 Strings.Current = language;
-                foreach (var id in ShaderChecks.Concat(new[] { "SHADER_MISSING", "SHADER_GRABPASS_NAMED" }))
-                    foreach (var key in id.Contains("MISSING") || id.Contains("NAMED") ? new[] { id, id + ".fix" } : new[] { id, id + ".title", id + ".fix" })
+                foreach (var id in ShaderChecks.Concat(new[] { "SHADER_GRABPASS_NAMED" }))
+                    foreach (var key in id.Contains("NAMED") ? new[] { id, id + ".fix" } : new[] { id, id + ".title", id + ".fix" })
                         if (!Strings.Has(key) || Strings.Get(key).Length == 0) missing.Add(language + " " + key);
             }
             Strings.Current = lang;

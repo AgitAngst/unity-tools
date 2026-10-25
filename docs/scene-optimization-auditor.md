@@ -24,7 +24,7 @@
 Вид — по [ui-guideline.md](ui-guideline.md); снимки — `scripts\shoot-audit-window.ps1`.
 
 - **Тулбар:** «Запустить аудит» («Запустить снова» после прогона), «Исправить безопасное (N)»,
-  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v1.7.0.29` (X.Y.Z и номер сборки — число коммитов
+  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v1.7.1.30` (X.Y.Z и номер сборки — число коммитов
   репозитория) и `EN | RU` (хранится в `EditorPrefs`). Версия видна и на экране до первого прогона. На окне уже 640
   версия и `EN | RU` уходят во вторую строку тулбара.
 - **Вкладки:** «Проблемы (N)», «Точки обзора», «Развёртка под свет», «Свет», «Тяжёлые», «Бюджеты», «Профайлер», «История». На широком окне
@@ -292,8 +292,8 @@ Critical / Warning / Info / допустимых, треугольники и п
   Standalone и его загрузчики; режим stereo OpenVR — из ассета `OpenVRSettings` (только читается).
 - Шейдеры: материалы включённых рендереров (с частицами), запись — на шейдер с числом объектов. Исходник читается у
   `.shader` в `Assets/` — без комментариев, первый SubShader (и внутри `Category`), проходы и их LightMode, UsePass,
-  GrabPass, AlphaToMask, `#pragma vertex` и `#include` из `Assets/` (до 8 уровней, путь от папки шейдера или от
-  `Assets/`); встроенные `.cginc` не читаются. Встроенные и пакетные шейдеры — только ошибки и alpha-test.
+  GrabPass, AlphaToMask, `#pragma vertex` и `#include` из `Assets/` (до 8 уровней, путь — от папки включающего
+  файла или от `Assets/`); встроенные `.cginc` не читаются. Встроенные и пакетные шейдеры — только ошибки и alpha-test.
 - Ассеты вне `Assets/` (пакеты, встроенные) и меши без импортёра — без проверок импорта и без
   исправлений.
 
@@ -434,12 +434,13 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `MAT_SIMPLE_STANDARD` | I | число материалов Standard только с альбедо (одна запись) | — |
 | `MAT_DEFAULT` | W | объект рисуется встроенным Default-Material | — |
 | **Shaders** | | | |
-| `SHADER_ERROR` | C | шейдер материала с ошибками, которые Unity уже знает (`ShaderUtil.ShaderHasError`), или не поддерживается (`isSupported`); у материала без шейдера (удалён — `Hidden/InternalErrorShader`) — запись на материал | — |
+| `SHADER_ERROR` | C | шейдер материала с ошибками, которые Unity уже знает (`ShaderUtil.ShaderHasError`), или не поддерживается (`isSupported`); у шейдера без имени (не разобран) — имя файла | — |
+| `SHADER_MISSING` | C | у материала нет шейдера (удалён — `Hidden/InternalErrorShader`); запись на материал | — |
 | `SHADER_GRABPASS` | W / I | в первом SubShader исходника GrabPass без имени текстуры (W: копия экрана на каждый объект) или с именем (I: раз за кадр) | — |
-| `SHADER_MULTIPASS` | W | в первом SubShader больше одного прохода рисования: без LightMode или Always, ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме имён с SHADOW, META, DEFERRED, PREPASS, FORWARD_DELTA, FORWARDADD, MOTION) и один за surface-шейдер | — |
-| `SHADER_NO_STEREO` | C | stereo-режим Single Pass Instanced, функция `#pragma vertex` определена в исходнике или его `#include` из `Assets/`, а в нём нет `UNITY_VERTEX_OUTPUT_STEREO` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO` | — |
+| `SHADER_MULTIPASS` | W | в первом SubShader больше одного прохода рисования: без LightMode или Always, ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме имён на SHADOW и META, DEFERRED, PREPASSBASE, PREPASSFINAL, FORWARD_DELTA, FORWARDADD, MOTIONVECTORS) и один за surface-шейдер | — |
+| `SHADER_NO_STEREO` | C | stereo-режим Single Pass Instanced, функция `#pragma vertex` определена в исходнике или его `#include` из `Assets/`, а в нём нет вызова `UNITY_SETUP_INSTANCE_ID(…)` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(…)` (поля могут прийти со встроенной структурой, например `v2f_img`) | — |
 | `SHADER_VARIANTS` | I | у шейдера из `Assets/` больше 512 вариантов (`ShaderUtil.GetVariantCount` через reflection; нет метода — молчит) | — |
-| `SHADER_ALPHA_TEST_MSAA` | I | MSAA в Quality больше 1x, у материала RenderType = TransparentCutout, в первом SubShader нет `AlphaToMask On` (или `AlphaToMask [свойство]`); у встроенных и пакетных шейдеров — считается, что нет; число — объектов с такими материалами | — |
+| `SHADER_ALPHA_TEST_MSAA` | I | MSAA в Quality больше 1x, у материала RenderType = TransparentCutout, в шейдере (SubShader или Category) нет `AlphaToMask On` (или `AlphaToMask [свойство]`); у встроенных и пакетных шейдеров — считается, что нет; число — объектов с такими материалами | — |
 | **Lighting** | | | |
 | `LIGHT_REALTIME` | W | Point/Spot в Realtime | — |
 | `LIGHT_SHADOWED` | W / C | Realtime/Mixed источников с тенями больше порога | — |
