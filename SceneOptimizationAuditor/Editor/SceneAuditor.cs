@@ -57,6 +57,7 @@ namespace UnityTools.SceneOptimization
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Textures, AuditTextures),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Materials, AuditMaterials),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Lighting, AuditLighting),
+                new KeyValuePair<Category, Action<AuditContext>>(Category.Particles, AuditParticles),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Physics, AuditPhysics),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Animators, AuditAnimators),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Audio, AuditAudio),

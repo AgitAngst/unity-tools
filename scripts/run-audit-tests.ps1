@@ -55,6 +55,7 @@ $steps = @(
     @("viewpoints-tour-check", "AuditTestsEditor.AuditTestViewpoints.RunTourCheck", @()),
     @("light", "AuditTestsEditor.AuditTestViewpoints.RunLight", @()),
     @("heavy", "AuditTestsEditor.AuditTestViewpoints.RunHeavy", @()),
+    @("particles", "AuditTestsEditor.AuditTestViewpoints.RunParticles", @()),
     @("steamvr-on", "AuditTestsEditor.AuditTests.EnableSteamVrStub", @()),
     @("viewpoints-teleports", "AuditTestsEditor.AuditTestViewpoints.RunTeleports", @()),
     @("steamvr-not-in-scene", "AuditTestsEditor.AuditTests.Run", @("-auditVariant", "steamvr-not-in-scene")),

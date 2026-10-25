@@ -4,11 +4,11 @@
 (HTC Vive Pro, SteamVR, 90 Гц) и показывает проблемы по уровням Critical / Warning / Info с подсказкой,
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 
-**Состояние:** код этапов 1–15 из `SPEC.md` написан (версия 1.5.0). Автотесты в Unity 2019.4.41f2 зелёные (24.10.2026,
-`scripts\run-audit-tests.ps1`, 37 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
-замер в Play Mode): проверки, бюджеты, экспорт, исправления и Undo, точки обзора, замер, свет, копии префабов и
-«Тяжёлые». Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
-22.10.2026; этапы 5–15 вживую не смотрены.
+**Состояние:** код этапов 1–16 из `SPEC.md` написан (версия 1.6.0). Автотесты в Unity 2019.4.41f2 зелёные (25.10.2026,
+`scripts\run-audit-tests.ps1`, 38 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
+замер в Play Mode): проверки, бюджеты, экспорт, исправления и Undo, точки обзора, замер, свет, копии префабов,
+«Тяжёлые» и частицы. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
+22.10.2026; этапы 5–16 вживую не смотрены.
 Не проверены настоящий OpenVR XR Plugin (в тестах — заглушки) и замер со шлемом — см. [TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
@@ -24,7 +24,7 @@
 Вид — по [ui-guideline.md](ui-guideline.md); снимки — `scripts\shoot-audit-window.ps1`.
 
 - **Тулбар:** «Запустить аудит» («Запустить снова» после прогона), «Исправить безопасное (N)»,
-  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v1.5.0.27` (X.Y.Z и номер сборки — число коммитов
+  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v1.6.0.28` (X.Y.Z и номер сборки — число коммитов
   репозитория) и `EN | RU` (хранится в `EditorPrefs`). Версия видна и на экране до первого прогона. На окне уже 640
   версия и `EN | RU` уходят во вторую строку тулбара.
 - **Вкладки:** «Проблемы (N)», «Точки обзора», «Развёртка под свет», «Свет», «Тяжёлые», «Бюджеты», «Профайлер», «История». На широком окне
@@ -302,6 +302,11 @@ Critical / Warning / Info / допустимых, треугольники и п
   отсечения и доп. проходов pixel lights.
 - **Память текстур:** формат × размер × все уровни mip × грани cubemap; Read/Write удваивает. Каждый
   ассет — один раз.
+- **Частиц одновременно** (проверки частиц): Max Particles, но не больше Rate over Time × Start Lifetime (у
+  незацикленной — не дольше Duration) плюс Bursts (повторяющиеся — столько, сколько живут одновременно); у кривых —
+  наибольший ключ × множитель. У систем с Rate over Distance, с выключенной Emission (`Emit` из скрипта) и у
+  суб-эмиттеров — Max Particles. Размер — Start Size (у 3D — наибольший из X и Y) × Size over Lifetime × масштаб:
+  Scaling Mode Hierarchy — мировой, Local — свой, Shape — без масштаба.
 - **Точки обзора** (вкладка «Точки обзора», по точке): 8 направлений через 45° (у ручных точек и камер ещё своё),
   наклон 0, одна пирамида на оба глаза — 110° по вертикали, соотношение 0,9, near 0,05, far, маска слоёв и
   `layerCullDistances` — у камеры игрока, иначе far 1000. Видимые — активные рендереры, чьи границы пересекают пирамиду;
@@ -357,7 +362,8 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 статичных рендереров, глубина иерархии больше 10, FPS: зелёный от 89, жёлтый от 80; допуск Fixed Timestep
 0.0002 с; развёртка под свет — допуск 0–1 0.001, наложения от 1 % на сетке 256 × 256; исправление Load Type — Streaming для клипов от 60 с;
 свет — «мелкий» в lightmap меньше 0,5 м, «много атласа» больше 20 %, широкий реалтайм-источник — больше 50 объектов в
-зоне, область проб — коробка всех проб + 1 м.
+зоне, область проб — коробка всех проб + 1 м; частицы — больше 1000 / 5000 одновременно в системе и 20 000 в сцене,
+крупная прозрачная частица — от 1 м и от 20 одновременно.
 
 ## Проверки
 
@@ -445,6 +451,15 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `LIGHT_SHADOW_CASCADES` | W | 4 каскада при directional с тенями в реальном времени (не Baked) | — |
 | `LIGHT_WIDE_REALTIME` | W | point / spot не Baked, в зоне больше 50 объектов | — |
 | `LIGHT_IMPORTANT` | W | point / spot не Baked с Render Mode Important | — |
+| **Particles** | | | |
+| `PART_MAX_PARTICLES` | W / C | частиц одновременно больше 1000 / 5000 (оценка — в «Оценках») | — |
+| `PART_TOTAL` | W | оценки всех систем вместе больше 20 000 (одна запись на прогон) | — |
+| `PART_LARGE_TRANSPARENT` | W | рендерер включён, Billboard / Stretch / Horizontal / Vertical, материал прозрачный (render queue от 2501), наибольший размер от 1 м, частиц одновременно от 20; в подсказке — Max Particle Size рендерера | — |
+| `PART_LIGHTS` | W | модуль Lights включён и в нём задан Light (исправление — выключить модуль) | R |
+| `PART_COLLISION_WORLD` | W | Collision: World и Quality High (исправление — Medium: сталкивается только со статичными коллайдерами) | R |
+| `PART_SHADOWS` | W | включённый рендерер частиц с Cast Shadows не Off (исправление — Off) | R |
+| `PART_MESH_NO_INSTANCING` | I | рендерер включён, Render Mode = Mesh, меш задан, Enable GPU Instancing выключен (исправление — включить) | R |
+| `PART_NOISE_HIGH` | I | модуль Noise с Quality High | — |
 | **Physics** | | | |
 | `PHYS_CONCAVE_DYNAMIC` | C | невыпуклый MeshCollider под не-kinematic Rigidbody (и у предков) | — |
 | `PHYS_CONCAVE_KINEMATIC` | I | то же, Rigidbody kinematic | — |
@@ -558,7 +573,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
   `message`, `suggestion`, `autoFixable`, `accepted`). `summary` — `critical`, `warning`, `info` (без допустимых),
   `accepted` (число допустимых); `sceneBudgets` —
   `isEstimate`, `totalTris`, `trisLimit`, `estimatedDrawCalls`, `drawCallLimit`, `textureMemoryMB`,
-  `textureMemoryLimitMB`; `category` — `DrawCalls`, `Meshes`, `Textures`, `Materials`, `Lighting`, `Physics`, `Animators`,
+  `textureMemoryLimitMB`; `category` — `DrawCalls`, `Meshes`, `Textures`, `Materials`, `Lighting`, `Particles`, `Physics`, `Animators`,
   `Audio`, `VRSpecific`, `General`; поля `profilerSnapshot` — в разделе о снимке ниже.
 - **CSV** (UTF-8 с BOM, RFC 4180): `CheckId, Category, Severity, Scene, ObjectPath, AssetPath, Message,
   Suggestion, AutoFixable, Accepted`.
@@ -693,7 +708,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `VRBudgets.cs` | пороги и константы, файл бюджетов |
 | `XrInfo.cs`, `QualitySnapshot.cs` | XR и уровень качества |
 | `TextureMemory.cs` | оценка памяти текстуры |
-| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые» |
+| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs`, `Strings.Particles.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые»; проверки частиц |
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |
 | `ReportExporter.cs` | JSON, CSV, командная строка |
 | `ProfilerCapture.cs` | снимок профайлера |
@@ -706,5 +721,5 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `ReflectionUtil.cs` | доступ к типам пакетов по имени |
 
 Новая проверка = блок в методе категории (`ctx.Report(...)`), тексты `<checkId>`, `<checkId>.title`, `<checkId>.fix` и
-для исправимой `<checkId>.do` в `Strings.Checks.cs`, строка в таблице выше и в `TESTPLAN.md`. Новая вкладка окна — свой
+для исправимой `<checkId>.do` в `Strings.Checks.cs` (или в `Strings.<Раздел>.cs` категории, как `Strings.Particles.cs`), строка в таблице выше и в `TESTPLAN.md`. Новая вкладка окна — свой
 файл `AuditorWindow.<Вкладка>.cs`, её тексты — в `Strings.Ui.cs` или в своём `Strings.<Раздел>.cs` (как `Strings.Viewpoints.cs`).

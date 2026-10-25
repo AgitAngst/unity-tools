@@ -174,6 +174,12 @@ namespace UnityTools.SceneOptimization
         public const int WideLightRenderers = 50;
         // The probe area is the box of all probes grown by this much on every side.
         public const float ProbeAreaMargin = 1f;
+        // Particles: alive at once per system and in the scene, and the size of a large transparent particle.
+        public const int ParticlesWarning = 1000;
+        public const int ParticlesCritical = 5000;
+        public const int ParticlesTotalWarning = 20000;
+        public const float LargeParticleMeters = 1f;
+        public const int LargeParticleMinCount = 20;
 
         public const string FileName = "SceneOptimizationAuditor.json";
 

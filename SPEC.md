@@ -23,6 +23,9 @@
 | 13 | Точки обзора: замер по точкам в Play Mode (владелец, 24.10.2026) — `add-viewpoint-tour` | 1.3.0 |
 | 14 | Вкладка «Свет»: атласы lightmap, объекты в них, источники, пробы; 12 проверок света (владелец, 24.10.2026: «Вкладка «Свет»») — `add-light-tab` | 1.4.0 |
 | 15 | Исходники: копии префаба в списке вместе, «Исправить в префабе», вкладка «Тяжёлые» (владелец, 24.10.2026: «Префабы и «Тяжёлые»») — `add-heavy-sources` | 1.5.0 |
+| 16 | Частицы: лимиты, крупные прозрачные, модули Lights и Collision, тени, instancing мешей (владелец, 25.10.2026: «делай частицы и шейдер и reflection probe») — `add-particle-checks` | 1.6.0 |
+| 17 | Шейдеры: ошибки, GrabPass, лишние проходы, stereo instancing при Single Pass Instanced, варианты, alpha-test без alpha-to-coverage (там же) — `add-shader-checks` | 1.7.0 |
+| 18 | Reflection probes: разрешение, память, не запечены, без box projection, дубликаты, объекты вне проб; раздел «Отражения» на вкладке «Свет» (там же) — `add-reflection-probes` | 1.8.0 |
 
 Terrain не проверяется и в планах его нет (владелец, 24.10.2026).
 
@@ -699,3 +702,88 @@ Undo сцены; сбор «Тяжёлых» (копии, треугольник
 модели без «в префабе»; «Тяжёлые» на 40 копиях, свободных мешах и LODGroup; CSV и JSON), снимки
 (копии RU/EN, «Тяжёлые» до сбора, RU, EN, ширина 560). Не проверено вживую: уровень владельца, вложенные префабы и
 варианты, светлый скин. Доски «Копии» и «Тяжёлые» владелец принял 24.10.2026 («Доски «Копии» и «Тяжёлые» подходят»).
+
+---
+
+### Этап 16 — частицы (1.6.0)
+
+Изменение OpenSpec `add-particle-checks`. Владелец 25.10.2026: «делай частицы и шейдер и reflection probe». Частицы в VR —
+перерисовка (overdraw) крупными прозрачными спрайтами на весь экран, реалтайм-свет модуля Lights, коллизии с миром и
+тени; сейчас аудитор их не видит. Новая категория «Частицы».
+
+- Включённые ParticleSystem загруженных сцен (неактивные — нет):
+  - частиц одновременно — оценка: Max Particles, но не больше Rate over Time × Start Lifetime (у незацикленной — не
+    дольше Duration) + Bursts; у систем с Rate over Distance, с выключенной Emission и у суб-эмиттеров — Max Particles;
+    большой лимит при слабой эмиссии не шумит;
+  - `PART_MAX_PARTICLES` — оценка больше 1000 → Warning, больше 5000 → Critical;
+  - `PART_TOTAL` — сумма оценок всех систем больше 20 000 → Warning (на сцену);
+  - `PART_LARGE_TRANSPARENT` — прозрачный материал (render queue от 2501), Billboard / Stretch / Horizontal / Vertical, наибольший размер (Start Size × Size over Lifetime × масштаб) от 1 м,
+    частиц одновременно от 20 → Warning: перерисовка; в тексте — размер и Max Particle Size рендерера;
+  - `PART_LIGHTS` — модуль Lights включён и в нём задан Light → Warning, исправление «выключить модуль Lights»;
+  - `PART_COLLISION_WORLD` — модуль Collision с миром (World) и качеством High → Warning, исправление «качество
+    Medium» (Medium и Low сталкиваются только со статичными коллайдерами — в тексте исправления);
+  - `PART_SHADOWS` — рендерер частиц отбрасывает тени → Warning, исправление «Cast Shadows = Off»;
+  - `PART_MESH_NO_INSTANCING` — частицы-меши без GPU Instancing → Info, исправление «включить GPU Instancing»;
+  - `PART_NOISE_HIGH` — модуль Noise с качеством High → Info.
+- Исправления — по строке после просмотра (Review), Undo; для копий префаба работают «Копии вместе» и «Исправить в
+  префабе».
+- Пороги — константы `VRBudgets` (1000 / 5000, 20 000, 1 м, 20).
+
+**Готово, когда:** тест на сцене с системами частиц — каждая проверка срабатывает на своей системе и молчит на
+обычной, исправления и Undo; `run-audit-tests.ps1` зелёный; страница утилиты, TESTPLAN, HANDOFF; версия 1.6.0.
+
+Сделано 25.10.2026: тест `particles` (каждая проверка на своей системе, тишина на обычной и неактивной, оценка частиц по
+эмиссии, Bursts, суб-эмиттерам и Duration, размер с Size over Lifetime и масштабом; четыре исправления и Undo; пять копий
+префаба — одно исправление в префабе), тексты RU/EN. Не проверено вживую: эффекты уровня владельца.
+
+---
+
+### Этап 17 — шейдеры (1.7.0)
+
+Изменение OpenSpec `add-shader-checks`. Шейдеры материалов включённых рендереров загруженных сцен; исходник читается у
+`.shader` в `Assets/` (и их `#include` из `Assets/`), у встроенных и пакетных — только то, что даёт API. Новая категория
+«Шейдеры» после «Материалов»; запись — на шейдер, с числом объектов. Исправлений нет — правится исходник.
+
+- `SHADER_ERROR` — ошибки, которые Unity уже знает (`ShaderUtil.ShaderHasError`), шейдер не поддерживается
+  (`isSupported`) или пропал (`Hidden/InternalErrorShader`) → Critical: розовые объекты.
+- `SHADER_GRABPASS` — в исходнике есть GrabPass → Warning: копия экрана на каждый объект, в VR — для двух глаз.
+- `SHADER_MULTIPASS` — в первом SubShader больше одного прохода рисования → Warning: объект рисуется N раз. Считаются
+  проходы без LightMode или с Always, проходы ForwardBase (нет их — Vertex, VertexLM), UsePass (кроме теней, Meta,
+  Deferred и ForwardAdd по имени) и один за surface-шейдер; ForwardAdd, ShadowCaster, Meta, Deferred, Prepass,
+  MotionVectors — нет.
+- `SHADER_NO_STEREO` — stereo-режим Single Pass Instanced, вершинная функция (`#pragma vertex`) определена в исходнике
+  проекта, а в нём нет `UNITY_VERTEX_OUTPUT_STEREO` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO` → Critical: объект
+  виден одним глазом. Так выглядит шаблон Unlit Shader из 2019.4. Surface-шейдеры и функции из встроенных `.cginc`
+  (`vert_img`) — не в счёт.
+- `SHADER_VARIANTS` — у шейдера проекта вариантов больше 512 (`ShaderUtil.GetVariantCount` через reflection; нет
+  метода — молчит) → Info: дольше сборка и загрузка.
+- `SHADER_ALPHA_TEST_MSAA` — MSAA включён, материал alpha-test (RenderType = TransparentCutout), в шейдере нет
+  `AlphaToMask On` (у встроенных — считается, что нет) → Info: края листвы мерцают; alpha-to-coverage сглаживает их
+  при MSAA.
+
+**Готово, когда:** тест на шейдерах, которые тест пишет в проект (GrabPass, контур вторым проходом, шаблон Unlit без
+stereo, cutout без AlphaToMask и с ним, 1024 варианта, с ошибкой разбора), и на Standard — проверки срабатывают и
+молчат; `run-audit-tests.ps1` зелёный; страница утилиты, TESTPLAN, HANDOFF; версия 1.7.0.
+
+---
+
+### Этап 18 — reflection probes (1.8.0)
+
+Изменение OpenSpec `add-reflection-probes`. Reflection probes — кубические текстуры: память и швы отражений. Сейчас
+есть только `VR_PROBE_REALTIME` и `VR_PROBE_EVERY_FRAME`.
+
+- Проверки (категория «Освещение»):
+  - `REFL_RESOLUTION` — разрешение больше 256 → Warning, от 1024 → Critical;
+  - `REFL_MEMORY` — память всех проб больше 64 МБ → Warning;
+  - `REFL_NOT_BAKED` — проба Baked без запечённой текстуры → Warning;
+  - `REFL_NO_BOX` — без box projection при размере пробы до 30 м (комната) → Info, исправление «включить Box
+    Projection»;
+  - `REFL_DUPLICATE` — две пробы перекрываются больше чем на 80 % объёма меньшей → Warning;
+  - `REFL_OUTSIDE` — объекты с Reflection Probes ≠ Off вне всех проб, когда пробы есть → Info (на сцену): отражают небо.
+- **Раздел «Отражения»** на вкладке «Свет» (пятый сегмент): сводка «Проб: N · M МБ · без box projection: K · не
+  запечено: L · объектов вне проб: P»; таблица «Проба» (ссылка), «Режим», «Разрешение», «HDR», «МБ», «Box», «Размер, м»,
+  «Объектов» (внутри); метки «дубликат», «не запечена».
+- JSON — в `lighting`: `reflectionProbes`, `reflectionMB`, `outsideReflection`.
+
+**Готово, когда:** доска раздела «Отражения» на холсте; тест на пробах — проверки, исправление, раздел, JSON;
+`run-audit-tests.ps1` зелёный; страница утилиты, гайдлайн, TESTPLAN, HANDOFF; версия 1.8.0.
