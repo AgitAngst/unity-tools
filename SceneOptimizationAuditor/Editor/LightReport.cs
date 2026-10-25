@@ -73,9 +73,9 @@ namespace UnityTools.SceneOptimization
         public float distance;
     }
 
-    // Lightmaps, the objects in them, the lights and the light probes of the loaded scenes. Built by the Lighting tab
+    // Lightmaps, the objects in them, the lights, the light probes and the reflection probes of the loaded scenes. Built by the Lighting tab
     // and by the lighting checks, so that both show the same numbers.
-    public sealed class LightReport
+    public sealed partial class LightReport
     {
         public readonly List<LightAtlas> atlases = new List<LightAtlas>();
         public readonly List<LightObject> objects = new List<LightObject>();
@@ -137,6 +137,7 @@ namespace UnityTools.SceneOptimization
             report.CollectObjects(renderers);
             report.CollectSources(roots, renderers);
             report.CollectProbes(roots, renderers);
+            report.CollectReflections(roots, renderers);
             return report;
         }
 

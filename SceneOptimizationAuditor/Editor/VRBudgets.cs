@@ -180,6 +180,12 @@ namespace UnityTools.SceneOptimization
         public const int ParticlesTotalWarning = 20000;
         public const float LargeParticleMeters = 1f;
         public const int LargeParticleMinCount = 20;
+        // Reflection probes: face resolution, memory of all probes, a room-sized probe and the overlap of a duplicate.
+        public const int ReflectionResolutionWarning = 256;
+        public const int ReflectionResolutionCritical = 1024;
+        public const int ReflectionMemoryWarningMB = 64;
+        public const float RoomProbeMeters = 30f;
+        public const float ReflectionDuplicateShare = 0.8f;
         // A shader of the project with more variants than this builds and loads slowly.
         public const int ShaderVariantsInfo = 512;
 

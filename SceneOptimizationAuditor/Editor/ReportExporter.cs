@@ -131,6 +131,9 @@ namespace UnityTools.SceneOptimization
             public int probes;
             public int probeGroups;
             public int outsideProbes;
+            public int reflectionProbes;
+            public double reflectionMB;
+            public int outsideReflection;
         }
 
         // One of the sources with the most triangles (Heaviest tab).
@@ -307,7 +310,10 @@ namespace UnityTools.SceneOptimization
                 withoutLightmap = r.NoLightmap,
                 probes = r.probes,
                 probeGroups = r.groups.Count,
-                outsideProbes = r.outside.Count
+                outsideProbes = r.outside.Count,
+                reflectionProbes = r.reflections.Count,
+                reflectionMB = Math.Round(r.ReflectionMB, 1),
+                outsideReflection = r.outsideReflection.Count
             };
         }
 

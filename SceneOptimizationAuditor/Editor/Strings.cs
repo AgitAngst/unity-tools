@@ -87,6 +87,7 @@ namespace UnityTools.SceneOptimization
             AddHeavy();
             AddParticles();
             AddShaders();
+            AddReflections();
         }
     }
 }

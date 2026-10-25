@@ -63,19 +63,19 @@ namespace UnityTools.SceneOptimization
             // Lighting tab.
             Add("ui.tab.light", "Lighting", "Свет");
             Add("ui.lt.intro",
-                "How much memory lightmaps take and who takes it, what is not baked, where objects lack light probes, which realtime lights reach many objects. The scene is not changed.",
-                "Сколько памяти занимают lightmaps и кто их занимает, что не запечено, где объектам не хватает проб, какие источники в реальном времени светят на много объектов. Сцена не меняется.");
+                "How much memory lightmaps take and who takes it, what is not baked, where objects lack light probes, which realtime lights reach many objects, what the reflection probes take. The scene is not changed.",
+                "Сколько памяти занимают lightmaps и кто их занимает, что не запечено, где объектам не хватает проб, какие источники в реальном времени светят на много объектов, сколько берут reflection probes. Сцена не меняется.");
             Add("ui.lt.check", "Check Lighting", "Проверить свет");
-            Add("ui.lt.check.tip", "Collects the lightmaps, the objects in them, the lights and the probes of the loaded scenes. Nothing is changed.",
-                "Собирает атласы lightmap, объекты в них, источники и пробы загруженных сцен. Ничего не меняет.");
+            Add("ui.lt.check.tip", "Collects the lightmaps, the objects in them, the lights, the light and reflection probes of the loaded scenes. Nothing is changed.",
+                "Собирает атласы lightmap, объекты в них, источники, пробы света и reflection probes загруженных сцен. Ничего не меняет.");
             Add("ui.lt.toProbesAll", "Small Ones to Probes ({0})", "Перевести мелкие на пробы ({0})");
             Add("ui.lt.openLighting", "Open Lighting", "Открыть Lighting");
             Add("ui.lighting.tip", "Open the Lighting Settings window", "Открыть окно Lighting Settings");
             Add("ui.lt.openLighting.tip", "The Lighting Settings window: bake settings and Generate Lighting.", "Окно Lighting Settings: настройки и запекание (Generate Lighting).");
             Add("ui.lt.onlyMarked", "Only marked", "Только с пометками");
             Add("ui.lt.emptyTitle", "Lighting not checked yet", "Свет ещё не проверен");
-            Add("ui.lt.emptyText", "The tool collects the lightmap atlases, the objects in them, the lights and the probes of the loaded scenes. Nothing is changed.",
-                "Утилита соберёт атласы lightmap, объекты в них, источники и пробы загруженных сцен. Ничего не меняет.");
+            Add("ui.lt.emptyText", "The tool collects the lightmap atlases, the objects in them, the lights, the light and reflection probes of the loaded scenes. Nothing is changed.",
+                "Утилита соберёт атласы lightmap, объекты в них, источники, пробы света и reflection probes загруженных сцен. Ничего не меняет.");
             Add("ui.lt.seg.atlases", "Atlases", "Атласы");
             Add("ui.lt.seg.objects", "Objects", "Объекты");
             Add("ui.lt.seg.lights", "Lights", "Источники");

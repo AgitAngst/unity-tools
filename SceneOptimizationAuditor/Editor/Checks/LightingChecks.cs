@@ -51,6 +51,7 @@ namespace UnityTools.SceneOptimization
 
             ctx.lighting = LightReport.Build(ctx.roots, q.pixelLightCount, q.shadowmaskMode);
             AuditBakedLighting(ctx, ctx.lighting);
+            AuditReflections(ctx, ctx.lighting);
         }
 
         // Settings path that opens the Lighting window instead of a Project Settings page.

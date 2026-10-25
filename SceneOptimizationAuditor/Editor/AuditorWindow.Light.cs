@@ -15,6 +15,7 @@ namespace UnityTools.SceneOptimization
         const int LtObjects = 1;
         const int LtLights = 2;
         const int LtProbes = 3;
+        const int LtReflections = 4;
         const int LtPageSize = 20;
 
         [SerializeField] int ltSeg;
@@ -23,6 +24,7 @@ namespace UnityTools.SceneOptimization
         readonly HashSet<LightObject> ltPicked = new HashSet<LightObject>();
         int ltShown = LtPageSize;
         int ltOutsideShown = LtPageSize;
+        int ltReflOutsideShown = LtPageSize;
 
         void ScanLight()
         {
@@ -30,6 +32,7 @@ namespace UnityTools.SceneOptimization
             ltPicked.Clear();
             ltShown = LtPageSize;
             ltOutsideShown = LtPageSize;
+            ltReflOutsideShown = LtPageSize;
             Repaint();
         }
 
@@ -54,7 +57,7 @@ namespace UnityTools.SceneOptimization
                 return;
             }
             pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
-            var labels = new[] { "ui.lt.seg.atlases", "ui.lt.seg.objects", "ui.lt.seg.lights", "ui.lt.seg.probes" }
+            var labels = new[] { "ui.lt.seg.atlases", "ui.lt.seg.objects", "ui.lt.seg.lights", "ui.lt.seg.probes", "ui.lt.seg.reflections" }
                 .Select(k => new GUIContent(Strings.Get(k), Strings.Get("ui.lt.seg.tip"))).ToArray();
             string summary, sub, footer;
             LightTexts(out summary, out sub, out footer);
@@ -70,6 +73,7 @@ namespace UnityTools.SceneOptimization
                 case LtObjects: DrawLightObjects(); break;
                 case LtLights: DrawLightSources(); break;
                 case LtProbes: DrawLightProbes(); break;
+                case LtReflections: DrawLightReflections(); break;
                 default: DrawLightAtlases(); break;
             }
             GUILayout.Space(8f);
@@ -159,6 +163,14 @@ namespace UnityTools.SceneOptimization
                     summary = Strings.Format("ui.lt.probes.summary", FormatNumber(r.probes), r.groups.Count, r.probeObjects, r.outside.Count);
                     sub = Strings.Format("ui.lt.probes.sub", FormatNumber(VRBudgets.ProbeAreaMargin));
                     footer = Strings.Get("ui.lt.probes.footer");
+                    return;
+                case LtReflections:
+                    var probes = r.reflections.Where(p => p.probe != null).ToList();
+                    summary = probes.Count == 0 ? Strings.Get("ui.lt.refl.none")
+                        : Strings.Format("ui.lt.refl.summary", probes.Count, FormatNumber(Math.Round(r.ReflectionMB, 1)), probes.Count(p => p.noBox && !p.probe.boxProjection),
+                            probes.Count(p => p.notBaked), r.outsideReflection.Count);
+                    sub = Strings.Format("ui.lt.refl.sub", FormatNumber(VRBudgets.RoomProbeMeters));
+                    footer = Strings.Get("ui.lt.refl.footer");
                     return;
                 default:
                     summary = r.atlases.Count == 0 ? Strings.Get("ui.lt.atlases.none")
@@ -518,6 +530,104 @@ namespace UnityTools.SceneOptimization
             ShowMore(ref ltOutsideShown, r.outside.Count);
         }
 
+        // ---- reflections ----
+
+        void DrawLightReflections()
+        {
+            var r = ltReport;
+            if (r.reflections.Count == 0)
+            {
+                CenteredNote("ui.lt.refl.empty");
+                return;
+            }
+            var rows = ltOnlyMarked ? r.reflections.Where(p => p.Marked).ToList() : r.reflections;
+            // The last column holds "Box On": as wide as its label. The full table needs room for the names too.
+            float action = EditorStyles.miniButton.CalcSize(new GUIContent(Strings.Get("ui.lt.boxOn"))).x + 8f;
+            var full = new[] { 64f, 78f, 40f, 50f, 40f, 96f, 66f, action };
+            bool narrow = position.width < VpNarrowWidth || position.width - 40f < full.Sum() + 120f;
+            var widths = narrow ? new[] { 64f, 48f, 46f, 40f, 58f, action } : full;
+            var keys = narrow
+                ? new[] { "ui.lt.col.mode", "ui.lt.col.resolution.short|ui.lt.col.resolution", "ui.lt.col.mb|ui.lt.col.reflMb", "ui.lt.col.boxProjection",
+                    "ui.lt.col.objects.short|ui.lt.col.objects", "" }
+                : new[] { "ui.lt.col.mode", "ui.lt.col.resolution", "ui.lt.col.hdr", "ui.lt.col.mb|ui.lt.col.reflMb", "ui.lt.col.boxProjection",
+                    "ui.lt.col.meters|ui.lt.col.reflSize", "ui.lt.col.objects", "" };
+            var right = narrow ? new[] { false, true, true, false, true, false } : new[] { false, true, false, true, false, true, true, false };
+            var head = Padded(GUILayoutUtility.GetRect(0f, 20f, GUILayout.ExpandWidth(true)));
+            var headCells = LightColumns(head, widths, 0f);
+            LightHeader(headCells, 1, new[] { "ui.lt.col.probe" }.Concat(keys).ToArray(), new[] { false }.Concat(right).ToArray());
+            int shown = Math.Min(rows.Count, ltShown);
+            for (int i = 0; i < shown; i++) DrawReflectionRow(rows[i], i, narrow, widths, right);
+            ShowMore(ref ltShown, rows.Count);
+            if (rows.Count == 0) CenteredNote("ui.lt.refl.allGood");
+
+            GUILayout.Space(10f);
+            SubTitle("ui.lt.reflOutside");
+            if (r.outsideReflection.Count == 0)
+            {
+                CenteredNote("ui.lt.reflOutside.none");
+                return;
+            }
+            var outWidths = new[] { narrow ? 150f : 170f, 110f };
+            head = Padded(GUILayoutUtility.GetRect(0f, 20f, GUILayout.ExpandWidth(true)));
+            headCells = LightColumns(head, outWidths, 0f);
+            LightHeader(headCells, 1, new[] { "ui.lt.col.object", "ui.lt.col.reflUsage", "ui.lt.col.nearest" }, new[] { false, true, true });
+            int outShown = Math.Min(r.outsideReflection.Count, ltReflOutsideShown);
+            for (int i = 0; i < outShown; i++)
+            {
+                var o = r.outsideReflection[i];
+                if (o.renderer == null) continue;
+                var rect = LightRow(i, false, InfoColor, 20f);
+                var cells = LightColumns(rect, outWidths, 0f);
+                ObjectLink(new Rect(cells[1].x, cells[1].y - 1f, cells[1].width, cells[1].height), o.renderer.gameObject, o.renderer.name, AuditContext.PathOf(o.renderer.transform), 0f);
+                RightCell(new Rect(cells[2].x, cells[2].y - 1f, cells[2].width, cells[2].height), LightReport.Spaced(o.renderer.reflectionProbeUsage.ToString()), null);
+                RightCell(new Rect(cells[3].x, cells[3].y - 1f, cells[3].width, cells[3].height), FormatNumber(Math.Round(o.distance, 1)), null);
+            }
+            ShowMore(ref ltReflOutsideShown, r.outsideReflection.Count);
+        }
+
+        void DrawReflectionRow(ReflectionRow row, int index, bool narrow, float[] widths, bool[] right)
+        {
+            var probe = row.probe;
+            if (probe == null) return;
+            // Box projection may have been turned on since the check.
+            bool noBox = row.noBox && !probe.boxProjection;
+            bool critical = row.resolution >= VRBudgets.ReflectionResolutionCritical;
+            var stripe = critical ? CriticalColor : row.Large || row.notBaked || row.Duplicate ? WarningColor : noBox ? InfoColor : (Color?)null;
+            var rect = LightRow(index, false, stripe, 22f);
+            var cells = LightColumns(rect, widths, 0f);
+            var marks = new List<string>();
+            if (row.Duplicate) marks.Add(Strings.Get("ui.lt.mark.duplicate"));
+            if (noBox) marks.Add(Strings.Get("ui.lt.mark.noBox"));
+            if (row.notBaked) marks.Add(Strings.Get("ui.lt.mark.probeNotBaked"));
+            float x = ObjectLink(cells[1], probe.gameObject, probe.name, AuditContext.PathOf(probe.transform), MarksWidth(marks));
+            foreach (var m in marks) x = Chip(x, rect.y + 4f, m, null);
+
+            var size = row.bounds.size;
+            var mb = (row.estimated ? "≈" : "") + FormatNumber(Math.Round(row.MB, 1));
+            var box = Strings.Get(probe.boxProjection ? "ui.lt.yes" : "ui.lt.no");
+            var all = new[]
+            {
+                row.mode.ToString(), row.resolution.ToString(), Strings.Get(row.hdr ? "ui.lt.yes" : "ui.lt.no"), mb, box,
+                FormatNumber(Math.Round(size.x, 1)) + " × " + FormatNumber(Math.Round(size.y, 1)) + " × " + FormatNumber(Math.Round(size.z, 1)),
+                FormatNumber(row.objects)
+            };
+            var values = narrow ? new[] { all[0], all[1], all[3], all[4], all[6] } : all;
+            int boxColumn = narrow ? 3 : 4;
+            for (int c = 0; c < values.Length; c++)
+            {
+                Color? color = c == 1 && critical ? TextCritical : c == 1 && row.Large ? TextWarning : c == boxColumn && noBox ? TextWarning : (Color?)null;
+                if (right[c]) RightCell(cells[c + 2], values[c], color);
+                else Cell(cells[c + 2], values[c], color);
+            }
+
+            var action = cells[cells.Length - 1];
+            if (noBox && GUI.Button(new Rect(action.x, action.y + 2f, action.width, 18f), new GUIContent(Strings.Get("ui.lt.boxOn"), Strings.Get("ui.lt.boxOn.tip")), EditorStyles.miniButton))
+            {
+                var fixes = LightReport.BoxFixes(new[] { row });
+                EditorApplication.delayCall += () => AutoFixer.Confirm(fixes, () => EditorApplication.delayCall += ScanLight);
+            }
+        }
+
         void SubTitle(string key)
         {
             EditorGUILayout.BeginHorizontal();
@@ -530,7 +640,7 @@ namespace UnityTools.SceneOptimization
         void LightForShot(string segment)
         {
             ScanLight();
-            int index = Array.IndexOf(new[] { "atlases", "objects", "lights", "probes" }, segment);
+            int index = Array.IndexOf(new[] { "atlases", "objects", "lights", "probes", "reflections" }, segment);
             ltSeg = index >= 0 ? index : 0;
             if (ltSeg == LtObjects) foreach (var o in LightObjectRows().Where(o => o.small).Take(3)) ltPicked.Add(o);
         }

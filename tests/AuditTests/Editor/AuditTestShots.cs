@@ -15,7 +15,7 @@ namespace AuditTestsEditor
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
-    //     [-shotLight atlases|objects|lights|probes] [-shotCopies] [-shotHeavy tris|dc|tex]
+    //     [-shotLight atlases|objects|lights|probes|reflections] [-shotCopies] [-shotHeavy tris|dc|tex]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -66,7 +66,8 @@ namespace AuditTestsEditor
             if (HasArg("-shotTour")) Invoke("TourForShot", Arg("-shotTour") != "noheadset");
             if (HasArg("-shotLight"))
             {
-                AuditTestViewpoints.BuildLightScene();
+                if (Arg("-shotLight") == "reflections") AuditTestViewpoints.BuildReflectionsScene();
+                else AuditTestViewpoints.BuildLightScene();
                 Invoke("LightForShot", Arg("-shotLight") ?? "atlases");
             }
             var expand = Arg("-shotExpand");
