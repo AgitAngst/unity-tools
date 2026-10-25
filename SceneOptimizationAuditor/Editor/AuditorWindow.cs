@@ -201,6 +201,7 @@ namespace UnityTools.SceneOptimization
         void OnGUI()
         {
             InitStyles();
+            InitHelpStyles();
             titleContent = new GUIContent(Strings.Get("ui.title"));
             DrawToolbar();
             DrawTabs();
@@ -253,6 +254,7 @@ namespace UnityTools.SceneOptimization
         void Show(AuditResult r, bool openOnly)
         {
             result = r;
+            startShown = false;
             xrPreview = r.xr;
             groups = IssueGroup.Build(r.issues);
             acceptedList = AcceptedList.Load();
@@ -314,22 +316,28 @@ namespace UnityTools.SceneOptimization
                 EditorApplication.delayCall += Run;
             ScopeButton();
 
-            // A narrow window gets the fixes, the report, the version and the language on a second row.
-            if (position.width < 640f)
+            var safe = SafeFixes();
+            var fix = new GUIContent(Strings.Format("ui.autoFix", safe.Count), Strings.Get("ui.autoFix.tip"));
+            var export = new GUIContent(Strings.Get("ui.export"), Strings.Get("ui.export.tip"));
+            var version = new GUIContent(Strings.Format("ui.version", ToolVersion.Full), Strings.Get("ui.version.tip"));
+            // A narrow window, or a row that does not fit, gets the fixes, the report, the help, the version and the
+            // language on a second row.
+            float row = 170f + ScopeWidth() + EditorStyles.toolbarButton.CalcSize(fix).x + EditorStyles.toolbarDropDown.CalcSize(export).x +
+                        EditorStyles.toolbarDropDown.CalcSize(HelpContent()).x + EditorStyles.miniLabel.CalcSize(version).x + 70f + 12f;
+            if (position.width < 640f || row > position.width)
             {
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             }
 
-            var safe = SafeFixes();
             EditorGUI.BeginDisabledGroup(safe.Count == 0);
-            if (GUILayout.Button(new GUIContent(Strings.Format("ui.autoFix", safe.Count), Strings.Get("ui.autoFix.tip")), EditorStyles.toolbarButton))
+            if (GUILayout.Button(fix, EditorStyles.toolbarButton))
                 EditorApplication.delayCall += () => AutoFixer.Confirm(safe, AfterFix);
             EditorGUI.EndDisabledGroup();
 
             EditorGUI.BeginDisabledGroup(result == null);
-            if (GUILayout.Button(new GUIContent(Strings.Get("ui.export"), Strings.Get("ui.export.tip")), EditorStyles.toolbarDropDown))
+            if (GUILayout.Button(export, EditorStyles.toolbarDropDown))
             {
                 var menu = new GenericMenu();
                 menu.AddItem(new GUIContent("JSON…"), false, () => Export("json"));
@@ -339,7 +347,8 @@ namespace UnityTools.SceneOptimization
             EditorGUI.EndDisabledGroup();
 
             GUILayout.FlexibleSpace();
-            GUILayout.Label(new GUIContent(Strings.Format("ui.version", ToolVersion.Full), Strings.Get("ui.version.tip")), EditorStyles.miniLabel);
+            HelpButton();
+            GUILayout.Label(version, EditorStyles.miniLabel);
             var langs = new[] { new GUIContent(LangLabels[0], Strings.Get("ui.lang.tip")), new GUIContent(LangLabels[1], Strings.Get("ui.lang.tip")) };
             int lang = GUILayout.Toolbar((int)Strings.Current, langs, EditorStyles.toolbarButton, GUILayout.Width(70f));
             if (lang != (int)Strings.Current) Strings.Current = (Lang)lang;

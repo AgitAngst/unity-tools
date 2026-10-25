@@ -18,6 +18,13 @@ Start-AuditServer -Gui
 # name, language, skin, extra arguments
 $shots = @(
     @("empty-ru-dark", "ru", "dark", @("-shotEmpty")),
+    # Help: getting started (before a run, narrow, from the menu over a result) and the card of a check.
+    @("empty-en-dark", "en", "dark", @("-shotEmpty")),
+    @("empty-narrow-ru-dark", "ru", "dark", @("-shotEmpty", "-shotWidth", "560")),
+    @("start-result-ru-dark", "ru", "dark", @("-shotStart")),
+    @("help-check-ru-dark", "ru", "dark", @("-shotGain", "off", "-shotHelp", "TEX_SIZE")),
+    @("help-check-en-dark", "en", "dark", @("-shotGain", "off", "-shotHelp", "TEX_SIZE")),
+    @("help-check-narrow-ru-dark", "ru", "dark", @("-shotGain", "off", "-shotHelp", "TEX_SIZE", "-shotWidth", "560")),
     @("problems-ru-dark", "ru", "dark", @("-shotExpand", "critical")),
     @("problems-en-dark", "en", "dark", @("-shotExpand", "critical")),
     # Light skin: Unity 2019.4 has no API to switch skins from code, check it by hand.

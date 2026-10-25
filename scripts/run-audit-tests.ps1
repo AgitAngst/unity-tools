@@ -60,6 +60,7 @@ $steps = @(
     @("reflections", "AuditTestsEditor.AuditTestViewpoints.RunReflections", @()),
     @("scope", "AuditTestsEditor.AuditTestViewpoints.RunScope", @()),
     @("gain", "AuditTestsEditor.AuditTestViewpoints.RunGain", @()),
+    @("help", "AuditTestsEditor.AuditTestViewpoints.RunHelp", @("-helpDocs", (Join-Path (Split-Path $PSScriptRoot) "docs"))),
     @("steamvr-on", "AuditTestsEditor.AuditTests.EnableSteamVrStub", @()),
     @("viewpoints-teleports", "AuditTestsEditor.AuditTestViewpoints.RunTeleports", @()),
     @("steamvr-not-in-scene", "AuditTestsEditor.AuditTests.Run", @("-auditVariant", "steamvr-not-in-scene")),

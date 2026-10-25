@@ -34,7 +34,8 @@ namespace UnityTools.SceneOptimization
             if (ctx.xr.DoublesDrawCalls) estimate *= 2;
             ctx.drawCallEstimate = estimate;
             Budget(ctx, "DC_BUDGET", Category.DrawCalls, estimate, b.drawCallsWarning, b.drawCallsCritical);
-            if (casters > 0) ctx.Report("DC_SHADOW_CASTERS", Category.DrawCalls, Severity.Info, null, casters, shadowPasses);
+            // Without shadow passes (shadows off, no shadowed realtime light) the casters cost nothing.
+            if (casters > 0 && shadowPasses > 0) ctx.Report("DC_SHADOW_CASTERS", Category.DrawCalls, Severity.Info, null, casters, shadowPasses);
 
             var instancingGroups = new Dictionary<Material, Dictionary<Mesh, int>>();
             foreach (var renderer in ctx.All<MeshRenderer>())

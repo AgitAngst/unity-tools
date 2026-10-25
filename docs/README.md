@@ -1,6 +1,6 @@
 # unity-tools — документация
 
-Версия программы: 2.0.0
+Версия программы: 2.1.0
 
 Это документация того, что есть сейчас. Правила для сессий — [CLAUDE.md](../CLAUDE.md); замысел и
 этапы — [SPEC.md](../SPEC.md); что осталось проверить — [TESTPLAN.md](../TESTPLAN.md).
@@ -12,13 +12,13 @@
 
 | Утилита | Что делает | Состояние |
 |---|---|---|
-| [SceneOptimizationAuditor](scene-optimization-auditor.md) | аудит загруженных сцен под PC VR (HTC Vive Pro, 90 Гц): проверки, бюджеты под целевую видеокарту, точки обзора (оценка и замер в Play Mode), свет (атласы lightmap, объекты, источники, пробы), тяжёлые исходники, копии префабов и исправление в префабе, частицы, шейдеры, reflection probes, охват (выделенное, сцены сборки, папка), оценка выигрыша, отчёт, исправления, снимок профайлера, история | автотесты в Unity 2019.4 зелёные; живая проверка владельца — этапы 1–4 (22.10.2026), этапы 5–20 ещё не смотрены |
+| [SceneOptimizationAuditor](scene-optimization-auditor.md) | аудит загруженных сцен под PC VR (HTC Vive Pro, 90 Гц): проверки, бюджеты под целевую видеокарту, точки обзора (оценка и замер в Play Mode), свет (атласы lightmap, объекты, источники, пробы), тяжёлые исходники, копии префабов и исправление в префабе, частицы, шейдеры, reflection probes, охват (выделенное, сцены сборки, папка), оценка выигрыша, справка в окне, отчёт, исправления, снимок профайлера, история | автотесты в Unity 2019.4 зелёные; живая проверка владельца — этапы 1–4 (22.10.2026), этапы 5–21 ещё не смотрены |
 
 Этапы 1–4 из `SPEC.md` закрыты 22.10.2026 (автотесты зелёные, живую проверку владелец подтвердил) —
 0.5.0. Этап 5 — проверки развёртки под свет (lightmap UV) — 0.6.0; этап 6 — вкладка «Развёртка под свет» — 0.7.0;
 этап 7 — проверки 3D-ассетов — 0.8.0; этап 8 — выбор нескольких записей — 0.9.0; этап 9 — допустимые проблемы — 1.0.0; этап 10 — история прогонов — 1.1.0;
 этап 11 — окно и тексты по файлам, без нового поведения, и тестовый сервер — 1.1.1; этап 12 — точки обзора (оценка в
-редакторе) и выбор целевой видеокарты — 1.2.0; этап 13 — замер по точкам обзора в Play Mode — 1.3.0; этап 14 — вкладка «Свет» — 1.4.0; этап 15 — копии префабов вместе, «Исправить в префабе», вкладка «Тяжёлые» — 1.5.0; этап 16 — проверки частиц — 1.6.0; этап 17 — проверки шейдеров — 1.7.0; этап 18 — reflection probes и «Отражения» на «Свете» — 1.8.0; этап 19 — охват проверки — 1.9.0; этап 20 — оценка выигрыша — 2.0.0.
+редакторе) и выбор целевой видеокарты — 1.2.0; этап 13 — замер по точкам обзора в Play Mode — 1.3.0; этап 14 — вкладка «Свет» — 1.4.0; этап 15 — копии префабов вместе, «Исправить в префабе», вкладка «Тяжёлые» — 1.5.0; этап 16 — проверки частиц — 1.6.0; этап 17 — проверки шейдеров — 1.7.0; этап 18 — reflection probes и «Отражения» на «Свете» — 1.8.0; этап 19 — охват проверки — 1.9.0; этап 20 — оценка выигрыша — 2.0.0; этап 21 — справка в окне — 2.1.0.
 Выпуска и тега нет.
 
 ## Оглавление
@@ -58,14 +58,16 @@
   и проверки шейдеров на шейдерах, которые тест пишет в проект. `reflections` — reflection probes: данные «Отражений»,
   проверки, «Включить box» на пробах, которые ставит тест. `scope` — охват: выделенное, три сцены сборки (возврат
   сцен, слияние, обновление после исправления), командная строка с несколькими сценами, сборкой и папкой, папка ассетов. `gain` — выигрыш исправлений на
-  известных ассетах, порядок «По выигрышу», итог, JSON и CSV.
+  известных ассетах, порядок «По выигрышу», итог, JSON и CSV. `help` — справка: тексты 30 проверок на двух языках,
+  меню «Справка» и якоря руководства (шаг читает `docs\` репозитория, `-helpDocs`), действия «С чего начать».
 - `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark] [-Out …]` — снимки окна SceneOptimizationAuditor в
   тестовом сервере (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `viewpoints-empty-ru-dark`,
   `viewpoints-ru-dark`, `viewpoints-en-dark`, `viewpoints-narrow-ru-dark`, `tour-ru-dark`, `tour-en-dark`,
   `tour-noheadset-ru-dark`, `tour-narrow-ru-dark`, `lightmap-ru-dark`, `lightmap-en-dark`, `light-empty-ru-dark`,
   `light-atlases-ru-dark`, `light-objects-ru-dark`, `light-lights-en-dark`, `light-probes-ru-dark`, `light-narrow-ru-dark`,
   `light-refl-ru-dark`, `light-refl-en-dark`, `light-refl-narrow-ru-dark`, `scope-build-ru-dark`, `scope-build-en-dark`,
-  `scope-folder-ru-dark`, `scope-selection-ru-dark`, `scope-narrow-ru-dark`, `gain-ru-dark`, `gain-en-dark`, `gain-off-ru-dark`,
+  `empty-en-dark`, `empty-narrow-ru-dark`, `start-result-ru-dark`, `help-check-ru-dark`, `help-check-en-dark`,
+  `help-check-narrow-ru-dark`, `scope-folder-ru-dark`, `scope-selection-ru-dark`, `scope-narrow-ru-dark`, `gain-ru-dark`, `gain-en-dark`, `gain-off-ru-dark`,
   `gain-narrow-ru-dark`,
   `copies-ru-dark`, `copies-en-dark`, `heavy-empty-ru-dark`, `heavy-ru-dark`, `heavy-en-dark`, `heavy-narrow-ru-dark`,
   `picked-ru-dark`, `lightmap-picked-ru-dark`, `budgets-ru-dark`, `budgets-en-dark`, `profiler-en-dark`,

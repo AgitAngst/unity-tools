@@ -42,6 +42,11 @@ namespace UnityTools.SceneOptimization
             if (GUILayout.Button(content, EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(false))) ScopeMenu();
         }
 
+        static float ScopeWidth()
+        {
+            return EditorStyles.toolbarDropDown.CalcSize(new GUIContent(Strings.Format("ui.scope.button", ScopeLabel()))).x;
+        }
+
         // A check at the current scope; a scope with nothing to check is greyed out.
         void ScopeMenu()
         {

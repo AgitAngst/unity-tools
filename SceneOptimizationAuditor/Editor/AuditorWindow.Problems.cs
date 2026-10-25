@@ -13,9 +13,9 @@ namespace UnityTools.SceneOptimization
 
         void DrawProblemsTab()
         {
-            if (result == null)
+            if (result == null || startShown)
             {
-                DrawEmptyState();
+                DrawStart();
                 return;
             }
             DrawVerdict();
@@ -50,31 +50,6 @@ namespace UnityTools.SceneOptimization
             if (drawn == 0) DrawNothing();
             GUILayout.Space(8f);
             EditorGUILayout.EndScrollView();
-        }
-
-        void DrawEmptyState()
-        {
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(30f);
-            EditorGUILayout.BeginVertical();
-            GUILayout.Label(Strings.Get("ui.empty.title"), emptyTitle);
-            GUILayout.Space(6f);
-            GUILayout.Label(Strings.Get("ui.empty.text"), emptyText);
-            GUILayout.Space(14f);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(new GUIContent(" " + Strings.Get("ui.run"), playIcon), GUILayout.Width(240f), GUILayout.Height(36f)))
-                EditorApplication.delayCall += Run;
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-            GUILayout.Space(10f);
-            if (xrPreview != null) GUILayout.Label(XrLine(xrPreview) + "  ·  " + StereoLine(xrPreview), centeredMini);
-            GUILayout.Label(Strings.Format("ui.version", ToolVersion.Full), centeredMini);
-            EditorGUILayout.EndVertical();
-            GUILayout.Space(30f);
-            EditorGUILayout.EndHorizontal();
-            GUILayout.FlexibleSpace();
         }
 
         void DrawVerdict()
@@ -408,15 +383,7 @@ namespace UnityTools.SceneOptimization
             expanded[g.key] = open;
             if (!open) return 1;
 
-            var advice = visible[0].Suggestion;
-            if (advice.Length > 0)
-            {
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(40f);
-                GUILayout.Label(Strings.Format("ui.howToFix", advice), hint);
-                GUILayout.Space(8f);
-                EditorGUILayout.EndHorizontal();
-            }
+            DrawAdvice(g, visible);
             int limit;
             if (!limits.TryGetValue(g.key, out limit)) limit = GroupPageSize;
             // Rows: single issues and, with copies together, copies of one source as one row.

@@ -17,6 +17,7 @@ namespace AuditTestsEditor
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     //     [-shotLight atlases|objects|lights|probes|reflections] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
+    //     [-shotHelp <checkId>] [-shotStart]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -88,6 +89,8 @@ namespace AuditTestsEditor
                 Invoke("ScanLightmapUvs");
             }
             if (HasArg("-shotPick")) Invoke("PickForShot");
+            if (HasArg("-shotHelp")) Invoke("HelpForShot", Arg("-shotHelp"));
+            if (HasArg("-shotStart")) Invoke("ShowStart");
             if (HasArg("-shotHistory")) SetField("histFixedOpen", true);
             frames = 0;
             started = EditorApplication.timeSinceStartup;
