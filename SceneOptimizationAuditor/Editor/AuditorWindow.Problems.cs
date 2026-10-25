@@ -21,7 +21,7 @@ namespace UnityTools.SceneOptimization
             DrawVerdict();
             DrawSeverityCards();
             DrawContext();
-            DrawBudgetBars(false);
+            DrawScopeBudgets();
             DrawListToolbar();
 
             listScroll = EditorGUILayout.BeginScrollView(listScroll);
@@ -145,7 +145,7 @@ namespace UnityTools.SceneOptimization
                 XrLine(result.xr), StereoLine(result.xr),
                 Strings.Format(q.isStandaloneDefault ? "ui.quality.default" : "ui.quality.current", q.name),
                 GpuLine(result.budgets),
-                Strings.Format("ui.scenes", string.Join(", ", result.sceneNames), result.time.ToString("HH:mm", CultureInfo.InvariantCulture))
+                ScopeContext()
             };
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(8f);
@@ -504,11 +504,16 @@ namespace UnityTools.SceneOptimization
             }
             else GUILayout.Space(22f);
             EditorGUILayout.BeginVertical();
-            var location = issue.Location;
+            var location = RowLocation(issue);
             if (issue.users > 0) location += (location.Length > 0 ? "  ·  " : "") + Strings.Format("ui.users", issue.users);
+            if (issue.inScenes > 1) location += "  ·  " + Strings.Format("ui.scope.inScenes", issue.inScenes);
+            bool closed = IsClosed(issue);
+            if (closed) location += "  ·  " + Strings.Get("ui.scope.closed");
             if (location.Length > 0)
             {
-                if (GUILayout.Button(new GUIContent(location, Strings.Get(issue.target != null ? "ui.select.tip" : issue.settingsPath == SceneAuditor.LightingWindow ? "ui.lighting.tip" : "ui.settings.tip")), link)) Select(issue);
+                var tip = closed ? "ui.scope.openScene.tip" : !ReferenceEquals(issue.target, null) ? "ui.select.tip"
+                    : issue.settingsPath == SceneAuditor.LightingWindow ? "ui.lighting.tip" : "ui.settings.tip";
+                if (GUILayout.Button(new GUIContent(location, Strings.Get(tip)), link)) SelectOrOpen(issue);
                 EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             }
             var message = issue.accepted ? Strings.Get("ui.acc.tag") + "  ·  " + issue.Message : issue.Message;
@@ -520,6 +525,15 @@ namespace UnityTools.SceneOptimization
                 {
                     var one = issue;
                     EditorApplication.delayCall += () => AutoFixer.Confirm(new List<AuditIssue> { one }, AfterFix);
+                }
+            }
+            else if (closed)
+            {
+                if (GUILayout.Button(new GUIContent(Strings.Get("ui.scope.openScene"), Strings.Get("ui.scope.openScene.tip")), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                {
+                    var scenePath = issue.scenePath;
+                    var objectPath = issue.objectPath;
+                    EditorApplication.delayCall += () => OpenSceneOf(scenePath, objectPath);
                 }
             }
             GUILayout.Space(8f);
@@ -551,6 +565,8 @@ namespace UnityTools.SceneOptimization
         // The list changed (a run, acceptable marks): rows and plans are built again.
         void ListChanged()
         {
+            // The table of scenes counts without the acceptable rows.
+            if (result != null && result.parts != null) AuditScope.Summarize(result);
             listVersion++;
             rowCache.Clear();
             pickedPlanKey = "";
@@ -561,7 +577,7 @@ namespace UnityTools.SceneOptimization
             if (totalsFor != result)
             {
                 totalsFor = result;
-                copyTotals = result != null ? CopyTotals.Of(result.issues) : new CopyTotals();
+                copyTotals = result != null ? CopyTotals.Of(result.allIssues ?? result.issues) : new CopyTotals();
             }
             return copyTotals;
         }

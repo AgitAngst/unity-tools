@@ -51,6 +51,12 @@ $shots = @(
     @("heavy-ru-dark", "ru", "dark", @("-shotTab", "4", "-shotHeavy", "tris")),
     @("heavy-en-dark", "en", "dark", @("-shotTab", "4", "-shotHeavy", "dc")),
     @("heavy-narrow-ru-dark", "ru", "dark", @("-shotTab", "4", "-shotHeavy", "tex", "-shotWidth", "560")),
+    # Scopes: the build scenes one by one, a folder of assets, a selection.
+    @("scope-build-ru-dark", "ru", "dark", @("-shotScope", "build", "-shotExpand", "all")),
+    @("scope-build-en-dark", "en", "dark", @("-shotScope", "build", "-shotExpand", "all")),
+    @("scope-folder-ru-dark", "ru", "dark", @("-shotScope", "folder", "-shotExpand", "all")),
+    @("scope-selection-ru-dark", "ru", "dark", @("-shotScope", "selection", "-shotExpand", "all")),
+    @("scope-narrow-ru-dark", "ru", "dark", @("-shotScope", "build", "-shotWidth", "560")),
     @("budgets-ru-dark", "ru", "dark", @("-shotTab", "5")),
     @("budgets-en-dark", "en", "dark", @("-shotTab", "5")),
     @("profiler-en-dark", "en", "dark", @("-shotTab", "6")),

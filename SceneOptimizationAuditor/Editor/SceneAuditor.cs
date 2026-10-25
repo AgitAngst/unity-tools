@@ -24,6 +24,25 @@ namespace UnityTools.SceneOptimization
         // Sources of the active renderers (Heaviest tab), for the report.
         public HeavyReport heavy;
 
+        // What was checked (AuditScope): the open scenes, a selection, scenes one by one or a folder.
+        public ScopeKind scope = ScopeKind.Loaded;
+        public string folder = "";
+        // Scenes checked one by one: a row each, and the runs themselves (history points, refresh after fixes).
+        public List<SceneSummary> scenes = new List<SceneSummary>();
+        public List<AuditResult> parts;
+        // This part is the run of the scenes open in the editor.
+        public bool open;
+        // Selection: the selected objects (checked again after fixes) and all of them with their children.
+        public UnityEngine.GameObject[] selection;
+        public int selected;
+        public int selectedWithChildren;
+        public FolderCounts folderCounts;
+        // Scenes one by one, cancelled: how many were to be checked.
+        public bool incomplete;
+        public int planned;
+        // Every issue of the run before the selection filter, so that copies of a prefab count all copies.
+        public List<AuditIssue> allIssues;
+
         // Counts leave accepted problems out.
         public int Count(Severity severity)
         {
@@ -50,6 +69,12 @@ namespace UnityTools.SceneOptimization
         // Returns null when the user cancels the progress bar.
         public static AuditResult RunFullAudit(VRBudgets budgets, bool showProgress)
         {
+            return RunFullAudit(budgets, showProgress, null, null);
+        }
+
+        // only: the scenes to check (null: every loaded scene); extraAssets: loose assets to check too.
+        public static AuditResult RunFullAudit(VRBudgets budgets, bool showProgress, IList<Scene> only, IList<UnityEngine.Object> extraAssets)
+        {
             var steps = new KeyValuePair<Category, Action<AuditContext>>[]
             {
                 new KeyValuePair<Category, Action<AuditContext>>(Category.DrawCalls, AuditDrawCalls),
@@ -72,7 +97,7 @@ namespace UnityTools.SceneOptimization
                 // Slow steps are named in the log line, so a heavy scene shows where the time goes.
                 var watch = System.Diagnostics.Stopwatch.StartNew();
                 var slow = new List<string>();
-                var ctx = new AuditContext(budgets);
+                var ctx = new AuditContext(budgets, only, extraAssets);
                 ctx.Collect();
                 if (watch.Elapsed.TotalSeconds > 0.5) slow.Add("collect " + watch.Elapsed.TotalSeconds.ToString("F1") + " s");
                 for (int i = 0; i < steps.Length; i++)

@@ -62,6 +62,7 @@ namespace UnityTools.SceneOptimization
                 try
                 {
                     issue.fixAction();
+                    issue.applied = true;
                     applied++;
                 }
                 catch (Exception e)
@@ -91,6 +92,7 @@ namespace UnityTools.SceneOptimization
                     var go = GameObjectOf(issue.fixTarget);
                     if (go != null) EditorSceneManager.MarkSceneDirty(go.scene);
                     Debug.Log("[SceneAudit] Fixed " + issue.checkId + ": " + issue.Location);
+                    issue.applied = true;
                     applied++;
                 }
                 catch (Exception e)
@@ -127,6 +129,7 @@ namespace UnityTools.SceneOptimization
                             materials = true;
                         }
                         Debug.Log("[SceneAudit] Fixed " + issue.checkId + ": " + path);
+                        issue.applied = true;
                         applied++;
                     }
                     catch (Exception e)

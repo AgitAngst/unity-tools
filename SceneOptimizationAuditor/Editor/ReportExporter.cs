@@ -48,12 +48,26 @@ namespace UnityTools.SceneOptimization
             public string category;
             public string severity;
             public string scene;
+            public string scenePath;
             public string objectPath;
             public string assetPath;
             public string message;
             public string suggestion;
             public bool autoFixable;
             public bool accepted;
+        }
+
+        // One scene of a check of several scenes; budgets are -1 for scenes checked together with other open scenes.
+        [Serializable]
+        public sealed class SceneDto
+        {
+            public string path;
+            public int critical;
+            public int warning;
+            public int info;
+            public long tris;
+            public long drawCalls;
+            public double textureMB;
         }
 
         [Serializable]
@@ -172,6 +186,11 @@ namespace UnityTools.SceneOptimization
             public bool hasLighting;
             public LightingDto lighting;
             public HeavyDto[] heavy;
+            // What was checked: loaded, selection, buildScenes, scenes or folder; the folder; every scene of a check of
+            // several scenes (sceneBudgets then hold the worst scene).
+            public string scope;
+            public string folder;
+            public SceneDto[] sceneDetails;
             public IssueDto[] issues;
         }
 
@@ -246,6 +265,18 @@ namespace UnityTools.SceneOptimization
                     drawCalls = s.drawCalls,
                     textureMB = Math.Round(s.TextureMB, 1)
                 }).ToArray() : new HeavyDto[0],
+                scope = ScopeName(result.scope),
+                folder = result.folder,
+                sceneDetails = result.scenes.Select(s => new SceneDto
+                {
+                    path = s.path,
+                    critical = s.critical,
+                    warning = s.warning,
+                    info = s.info,
+                    tris = s.tris,
+                    drawCalls = s.drawCalls,
+                    textureMB = s.textureMB < 0 ? -1 : Math.Round(s.textureMB, 1)
+                }).ToArray(),
                 issues = new IssueDto[result.issues.Count]
             };
             for (int i = 0; i < result.issues.Count; i++)
@@ -257,6 +288,7 @@ namespace UnityTools.SceneOptimization
                     category = issue.category.ToString(),
                     severity = issue.severity.ToString(),
                     scene = issue.scene,
+                    scenePath = issue.scenePath,
                     objectPath = issue.objectPath,
                     assetPath = !string.IsNullOrEmpty(issue.assetPath) ? issue.assetPath : issue.settingsPath,
                     message = issue.Message,
@@ -266,6 +298,18 @@ namespace UnityTools.SceneOptimization
                 };
             }
             return JsonUtility.ToJson(report, true);
+        }
+
+        static string ScopeName(ScopeKind kind)
+        {
+            switch (kind)
+            {
+                case ScopeKind.Selection: return "selection";
+                case ScopeKind.BuildScenes: return "buildScenes";
+                case ScopeKind.Scenes: return "scenes";
+                case ScopeKind.Folder: return "folder";
+                default: return "loaded";
+            }
         }
 
         static ViewpointsDto ViewpointsOf(ViewpointSet set, VRBudgets b)
@@ -359,7 +403,7 @@ namespace UnityTools.SceneOptimization
         public static string ToCsv(AuditResult result)
         {
             var sb = new StringBuilder();
-            sb.Append("CheckId,Category,Severity,Scene,ObjectPath,AssetPath,Message,Suggestion,AutoFixable,Accepted\r\n");
+            sb.Append("CheckId,Category,Severity,Scene,ObjectPath,AssetPath,Message,Suggestion,AutoFixable,Accepted,ScenePath\r\n");
             foreach (var issue in result.issues)
             {
                 var assetPath = !string.IsNullOrEmpty(issue.assetPath) ? issue.assetPath : issue.settingsPath;
@@ -372,7 +416,8 @@ namespace UnityTools.SceneOptimization
                   .Append(Csv(issue.Message)).Append(',')
                   .Append(Csv(issue.Suggestion)).Append(',')
                   .Append(issue.AutoFixable ? "true" : "false").Append(',')
-                  .Append(issue.accepted ? "true" : "false").Append("\r\n");
+                  .Append(issue.accepted ? "true" : "false").Append(',')
+                  .Append(Csv(issue.scenePath)).Append("\r\n");
             }
             return sb.ToString();
         }
@@ -388,8 +433,9 @@ namespace UnityTools.SceneOptimization
 
         // Unity.exe -batchmode -quit -projectPath <project> -executeMethod
         //   UnityTools.SceneOptimization.ReportExporter.RunFromCommandLine
-        //   -auditScene Assets/Scenes/Main.unity -auditReport E:/reports/main.json [-auditLang en|ru]
-        //   [-auditHistory [-auditNote "text"]] [-auditViewpoints]
+        //   -auditScene Assets/Scenes/Main.unity[,Assets/Scenes/Other.unity…] | -auditBuildScenes | -auditFolder Assets/Art
+        //   -auditReport E:/reports/main.json [-auditLang en|ru] [-auditHistory [-auditNote "text"]] [-auditViewpoints]
+        // -auditScene may repeat; several scenes are checked one by one into one report.
         public static void RunFromCommandLine()
         {
             EditorApplication.Exit(RunWithArgs(Environment.GetCommandLineArgs()));
@@ -402,28 +448,43 @@ namespace UnityTools.SceneOptimization
             int code = 1;
             try
             {
-                var scene = Argument(args, "-auditScene");
+                var scenes = Arguments(args, "-auditScene").SelectMany(a => a.Split(',', ';')).Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+                bool build = Array.IndexOf(args, "-auditBuildScenes") >= 0;
+                var folder = Argument(args, "-auditFolder");
                 var report = Argument(args, "-auditReport");
                 var lang = Argument(args, "-auditLang");
                 if (!string.IsNullOrEmpty(lang)) Strings.Current = lang.ToLowerInvariant() == "ru" ? Lang.Ru : Lang.En;
-                if (string.IsNullOrEmpty(scene) || string.IsNullOrEmpty(report))
+                if (build) scenes = AuditScope.BuildScenePaths();
+                if ((scenes.Count == 0 && string.IsNullOrEmpty(folder)) || string.IsNullOrEmpty(report))
                 {
-                    Debug.LogError("[SceneAudit] Usage: -auditScene <Assets/...unity> -auditReport <file.json|file.csv> [-auditLang en|ru] [-auditHistory [-auditNote <text>]] [-auditViewpoints]");
+                    Debug.LogError("[SceneAudit] Usage: -auditScene <Assets/...unity>[,<more>] | -auditBuildScenes | -auditFolder <Assets/...> -auditReport <file.json|file.csv> [-auditLang en|ru] [-auditHistory [-auditNote <text>]] [-auditViewpoints]");
                 }
                 else
                 {
-                    EditorSceneManager.OpenScene(scene, OpenSceneMode.Single);
-                    var result = SceneAuditor.RunFullAudit(VRBudgets.Load(), false);
+                    bool viewpoints = Array.IndexOf(args, "-auditViewpoints") >= 0;
+                    bool history = Array.IndexOf(args, "-auditHistory") >= 0;
+                    var note = Argument(args, "-auditNote");
+                    var budgets = VRBudgets.Load();
+                    AuditResult result;
+                    if (!string.IsNullOrEmpty(folder)) result = AuditScope.RunFolder(folder, budgets, false);
+                    else
+                    {
+                        // Every scene on its own, while it is open: viewpoints and history points per scene.
+                        Action<AuditResult> afterEach = part =>
+                        {
+                            if (viewpoints) EstimateViewpoints(part.scenePaths);
+                            if (!history) return;
+                            AuditHistory.Record(part, note);
+                            Debug.Log("[SceneAudit] History point saved: " + AuditHistory.FileFor(part.scenePaths));
+                        };
+                        result = AuditScope.RunScenes(scenes, budgets, false, build ? ScopeKind.BuildScenes : ScopeKind.Scenes, afterEach);
+                        // One scene stays a plain report of the open scene, as before.
+                        if (result != null && result.parts != null && result.parts.Count == 1 && !build) result = result.parts[0];
+                    }
                     if (result == null) Debug.LogError("[SceneAudit] Audit returned no result.");
                     else
                     {
-                        if (Array.IndexOf(args, "-auditViewpoints") >= 0) EstimateViewpoints(result.scenePaths);
                         Save(result, report);
-                        if (Array.IndexOf(args, "-auditHistory") >= 0)
-                        {
-                            AuditHistory.Record(result, Argument(args, "-auditNote"));
-                            Debug.Log("[SceneAudit] History point saved: " + AuditHistory.FileFor(result.scenePaths));
-                        }
                         code = 0;
                     }
                 }
@@ -461,6 +522,15 @@ namespace UnityTools.SceneOptimization
             {
                 UnityEngine.Object.DestroyImmediate(set);
             }
+        }
+
+        // Every value of an argument that may repeat.
+        static System.Collections.Generic.List<string> Arguments(string[] args, string name)
+        {
+            var values = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < args.Length - 1; i++)
+                if (string.Equals(args[i], name, StringComparison.OrdinalIgnoreCase)) values.Add(args[i + 1]);
+            return values;
         }
 
         static string Argument(string[] args, string name)

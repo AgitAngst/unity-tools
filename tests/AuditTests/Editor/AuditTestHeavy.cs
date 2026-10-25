@@ -117,8 +117,11 @@ namespace AuditTestsEditor
             always[3].accepted = false;
 
             Object.DestroyImmediate(copies[0]);
-            var row = PrefabFixes.Rows(always, totals)[0].copies;
-            Check(!row.CanFixInPrefab && row.Fixable.Count == 29, "a deleted copy: not the prefab, 29 fixes on the copies left");
+            // The deleted copy leaves the copies row (a row of its own, nothing to fix); the row is no longer complete.
+            var deletedRows = PrefabFixes.Rows(always, totals);
+            var row = deletedRows.First(r => r.copies != null).copies;
+            Check(!row.CanFixInPrefab && row.issues.Count == 29 && row.Fixable.Count == 29 && deletedRows.Count == 2,
+                "a deleted copy: not the prefab, 29 fixes on the copies left");
             int applied = AutoFixer.Apply(PrefabFixes.Plan(always, true, totals));
             Check(applied == 29 && copies.Skip(1).All(c => c.transform.Find("Rig").GetComponent<Animator>().cullingMode == AnimatorCullingMode.CullUpdateTransforms),
                 "the 29 copies left are fixed on themselves");

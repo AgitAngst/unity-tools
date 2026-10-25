@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityTools.SceneOptimization;
@@ -15,7 +16,7 @@ namespace AuditTestsEditor
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
-    //     [-shotLight atlases|objects|lights|probes|reflections] [-shotCopies] [-shotHeavy tris|dc|tex]
+    //     [-shotLight atlases|objects|lights|probes|reflections] [-shotScope build|folder|selection] [-shotCopies] [-shotHeavy tris|dc|tex]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -50,6 +51,7 @@ namespace AuditTestsEditor
             window.position = new Rect(80, 80, width != null ? int.Parse(width) : 760, 860);
             if (HasArg("-shotHistory")) SeedHistory();
             if (HasArg("-shotCopies")) AuditTestViewpoints.BuildCopiesScene();
+            if (HasArg("-shotScope")) SetScope(Arg("-shotScope"));
             if (!HasArg("-shotEmpty")) Invoke("Run");
             if (HasArg("-shotCopies")) Invoke("CopiesForShot", "ANIM_ALWAYS_ANIMATE");
             if (HasArg("-shotHeavy"))
@@ -121,9 +123,43 @@ namespace AuditTestsEditor
             if (frames < 40 || (!done && EditorApplication.timeSinceStartup - started < 120)) return;
             EditorApplication.update -= Tick;
             if (originalSkin >= 0 && (originalSkin == 1) != EditorGUIUtility.isProSkin) SwitchSkin();
+            // The scope is a per-user editor preference too.
+            if (originalScope >= 0)
+            {
+                AuditScope.Kind = (ScopeKind)originalScope;
+                AuditScope.Folder = originalFolder;
+                originalScope = -1;
+            }
             // The test server keeps the editor open for the next shot.
             if (window != null) window.Close();
             AuditTestServer.Exit(0);
+        }
+
+        static int originalScope = -1;
+        static string originalFolder = "";
+
+        // The data of a scope and the scope itself, for the shot only.
+        static void SetScope(string scope)
+        {
+            originalScope = (int)AuditScope.Kind;
+            originalFolder = AuditScope.Folder;
+            switch (scope)
+            {
+                case "build":
+                    var paths = AuditTestViewpoints.BuildScopeScenes();
+                    EditorSceneManager.OpenScene(paths[0], OpenSceneMode.Single);
+                    AuditScope.Kind = ScopeKind.BuildScenes;
+                    break;
+                case "folder":
+                    AuditTestViewpoints.BuildScopeFolder();
+                    AuditScope.Folder = AuditTestViewpoints.ScopeFolder;
+                    AuditScope.Kind = ScopeKind.Folder;
+                    break;
+                default:
+                    Selection.activeGameObject = AuditTestViewpoints.BuildSelectionScene();
+                    AuditScope.Kind = ScopeKind.Selection;
+                    break;
+            }
         }
 
         // Not public in 2019.4: called by reflection.

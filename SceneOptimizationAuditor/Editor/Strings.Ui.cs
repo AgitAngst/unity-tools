@@ -7,7 +7,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.title", "VR Scene Audit", "VR-аудит сцены");
             Add("ui.run", "Run Audit", "Запустить аудит");
             Add("ui.rerun", "Run Again", "Запустить снова");
-            Add("ui.run.tip", "Checks every loaded scene. Nothing is changed.", "Проверяет все загруженные сцены. Ничего не меняет.");
+            Add("ui.run.tip", "Checks what the scope names. Nothing is changed; Build Scenes opens the scenes one by one and opens yours back.",
+                "Проверяет то, что названо в охвате. Ничего не меняет; «Сцены сборки» открывают сцены по одной и возвращают ваши.");
             Add("ui.tab.problems", "Problems", "Проблемы");
             Add("ui.tab.problems.n", "Problems ({0})", "Проблемы ({0})");
             Add("ui.tab.budgets", "Budgets", "Бюджеты");
@@ -172,7 +173,6 @@ namespace UnityTools.SceneOptimization
             Add("ui.stereo.unknown", "unknown", "неизвестно");
             Add("ui.quality.default", "Quality level: {0} (Standalone default)", "Уровень качества: {0} (по умолчанию для Standalone)");
             Add("ui.quality.current", "Quality level: {0} (current; Standalone default not found)", "Уровень качества: {0} (текущий; уровень Standalone не найден)");
-            Add("ui.scenes", "Scenes: {0} · audited {1}", "Сцены: {0} · аудит {1}");
             Add("ui.budgetOverview", "Scene Budget Overview", "Бюджеты сцены");
             Add("ui.budget.tris", "Triangles (LOD0)", "Треугольники (LOD0)");
             Add("ui.budget.drawCalls", "Draw calls", "Draw calls");

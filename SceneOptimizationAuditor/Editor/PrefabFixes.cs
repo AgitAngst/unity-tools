@@ -24,7 +24,11 @@ namespace UnityTools.SceneOptimization
         // Scene objects of the copies (two issues on one object are one copy).
         public int Copies
         {
-            get { return issues.Select(i => i.target is Component ? ((Component)i.target).gameObject : i.target).Distinct().Count(); }
+            get
+            {
+                // A copy in a scene closed since the run counts as its object.
+                return issues.Select(i => i.target is Component && i.target != null ? ((Component)i.target).gameObject : i.target).Distinct().Count();
+            }
         }
 
         public string Label
@@ -96,6 +100,8 @@ namespace UnityTools.SceneOptimization
         // not copies, for assets and settings. Looked up once per issue.
         public static Object SourceOf(AuditIssue issue)
         {
+            // The object is gone (its scene was closed): no copies row for it.
+            if (!ReferenceEquals(issue.target, null) && issue.target == null) return null;
             if (issue.sourceKnown) return issue.source;
             issue.sourceKnown = true;
             var t = issue.target;

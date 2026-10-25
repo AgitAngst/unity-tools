@@ -19,6 +19,8 @@ namespace UnityTools.SceneOptimization
         // GameObject, component or asset the issue points to; null for project settings.
         public Object target;
         public string scene = "";
+        // Path of the scene file of the object, or of the scene a scene-wide issue was found in ("" when not known).
+        public string scenePath = "";
         public string objectPath = "";
         public string assetPath = "";
         // Project Settings page path, e.g. "Project/Player".
@@ -32,6 +34,12 @@ namespace UnityTools.SceneOptimization
 
         // Marked as acceptable by the team or its check is turned off (AcceptedList); not counted, hidden by default.
         public bool accepted;
+        // Key of the target in the accepted list, kept from the run: the object may be gone since (a closed scene).
+        public string acceptKey = "";
+        // Scenes an asset problem was found in when several scenes were checked one by one.
+        public int inScenes;
+        // Set when the fix was applied; a check of several scenes drops such rows of the closed scenes.
+        public bool applied;
 
         public FixKind fixKind;
         public Action fixAction;
@@ -68,7 +76,10 @@ namespace UnityTools.SceneOptimization
             }
         }
 
-        public bool AutoFixable { get { return fixKind != FixKind.None && fixAction != null; } }
+        // The object to fix was destroyed since the run: its scene was closed or the object deleted.
+        public bool FixTargetGone { get { return !ReferenceEquals(fixTarget, null) && fixTarget == null; } }
+
+        public bool AutoFixable { get { return fixKind != FixKind.None && fixAction != null && !FixTargetGone; } }
 
         public string Location
         {
@@ -79,6 +90,12 @@ namespace UnityTools.SceneOptimization
                 if (!string.IsNullOrEmpty(assetPath)) return assetPath;
                 return settingsPath;
             }
+        }
+
+        // A row of a merged result; the run's own issue stays as it was.
+        public AuditIssue Copy()
+        {
+            return (AuditIssue)MemberwiseClone();
         }
 
         public void SetFix(FixKind kind, Object recordTarget, bool touchesAsset, Action action)

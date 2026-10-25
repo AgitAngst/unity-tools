@@ -51,6 +51,10 @@ namespace UnityTools.SceneOptimization
         public double textureMemoryMB;
         public LightReport lighting;
 
+        // Scenes to check (null: every loaded scene) and assets to check besides what the scenes use.
+        readonly IList<Scene> only;
+        readonly IList<Object> extraAssets;
+
         readonly Dictionary<Type, object> componentCache = new Dictionary<Type, object>();
         readonly Dictionary<Material, List<KeyValuePair<Texture, bool>>> materialTextures =
             new Dictionary<Material, List<KeyValuePair<Texture, bool>>>();
@@ -58,21 +62,35 @@ namespace UnityTools.SceneOptimization
 
         static readonly string[] NormalPropertyNames = { "_BumpMap", "_DetailNormalMap", "_NormalMap", "_Normal", "_NormalTex" };
 
-        public AuditContext(VRBudgets budgets)
+        public AuditContext(VRBudgets budgets, IList<Scene> only = null, IList<Object> extraAssets = null)
         {
             this.budgets = budgets;
+            this.only = only;
+            this.extraAssets = extraAssets;
             xr = XrInfo.Detect();
             quality = QualitySnapshot.Capture();
         }
 
         public void Collect()
         {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
+            if (only != null)
             {
-                var scene = SceneManager.GetSceneAt(i);
-                if (!scene.isLoaded) continue;
-                scenes.Add(scene);
-                roots.AddRange(scene.GetRootGameObjects());
+                foreach (var scene in only)
+                {
+                    if (!scene.IsValid()) continue;
+                    scenes.Add(scene);
+                    roots.AddRange(scene.GetRootGameObjects());
+                }
+            }
+            else
+            {
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    if (!scene.isLoaded) continue;
+                    scenes.Add(scene);
+                    roots.AddRange(scene.GetRootGameObjects());
+                }
             }
             foreach (var root in roots)
                 foreach (var t in root.GetComponentsInChildren<Transform>(true))
@@ -84,6 +102,20 @@ namespace UnityTools.SceneOptimization
             CollectUiTextures();
             CollectMeshesAndClips();
             CollectDependencies();
+            CollectExtraAssets();
+        }
+
+        // Loose textures and clips of a checked folder: assets nothing in the scenes uses.
+        void CollectExtraAssets()
+        {
+            if (extraAssets == null) return;
+            foreach (var asset in extraAssets)
+            {
+                var texture = asset as Texture;
+                if (texture != null && !(texture is RenderTexture)) UseOf(texture);
+                var clip = asset as AudioClip;
+                if (clip != null && !clips.ContainsKey(clip)) clips[clip] = 0;
+            }
         }
 
         // All components of a type in the scanned scenes, inactive ones included.
@@ -223,6 +255,7 @@ namespace UnityTools.SceneOptimization
             else if (go != null)
             {
                 issue.scene = go.scene.name;
+                issue.scenePath = go.scene.path;
                 issue.objectPath = PathOf(go.transform);
             }
             else if (target != null)

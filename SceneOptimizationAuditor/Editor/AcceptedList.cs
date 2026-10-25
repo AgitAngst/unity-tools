@@ -62,10 +62,12 @@ namespace UnityTools.SceneOptimization
         // Scene objects and assets by GlobalObjectId: it survives renames and moves. Components count as their GameObject.
         public static string KeyOf(AuditIssue issue)
         {
+            if (!string.IsNullOrEmpty(issue.acceptKey)) return issue.acceptKey;
             if (issue.target == null) return "*";
             var component = issue.target as Component;
             Object owner = component != null ? (Object)component.gameObject : issue.target;
-            return GlobalObjectId.GetGlobalObjectIdSlow(owner).ToString();
+            issue.acceptKey = GlobalObjectId.GetGlobalObjectIdSlow(owner).ToString();
+            return issue.acceptKey;
         }
 
         public bool IsAccepted(AuditIssue issue)

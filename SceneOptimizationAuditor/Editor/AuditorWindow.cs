@@ -135,12 +135,15 @@ namespace UnityTools.SceneOptimization
             for (int i = 0; i < Severities.Length; i++)
                 show[i] = EditorPrefs.GetBool(ShowPref + Severities[i], Severities[i] != Severity.Info);
             ProfilerCapture.Changed += Repaint;
+            // The scope button counts the selected objects.
+            Selection.selectionChanged += Repaint;
             ViewpointsEnable();
         }
 
         void OnDisable()
         {
             ProfilerCapture.Changed -= Repaint;
+            Selection.selectionChanged -= Repaint;
             ViewpointsDisable();
         }
 
@@ -214,21 +217,28 @@ namespace UnityTools.SceneOptimization
         // Long work starts after the GUI pass, so progress bars and dialogs do not break the layout.
         void Run()
         {
-            var r = SceneAuditor.RunFullAudit(budgets, true);
+            var r = AuditScope.Run(budgets);
             if (r == null) return;
+            Show(r, false);
+        }
+
+        // openOnly: a refresh of a check of several scenes after fixes; only the open scenes are new history points.
+        void Show(AuditResult r, bool openOnly)
+        {
             result = r;
             xrPreview = r.xr;
             groups = IssueGroup.Build(r.issues);
             acceptedList = AcceptedList.Load();
-            RecordHistory(r);
+            if (r.scope == ScopeKind.Loaded) RecordHistory(r);
+            else RecordParts(r, openOnly);
             // A lighting check already on the tab follows the new run.
             if (ltReport != null)
             {
                 ltReport = LightReport.Build();
                 ltPicked.Clear();
             }
-            // The run already collected the sources.
-            if (hvReport != null) hvReport = r.heavy;
+            // The run already collected the sources (a folder has none: the tab keeps its own).
+            if (hvReport != null && r.heavy != null) hvReport = r.heavy;
             openCopies.Clear();
             ListChanged();
             expanded.Clear();
@@ -238,9 +248,19 @@ namespace UnityTools.SceneOptimization
             Repaint();
         }
 
+        // The same check again, by the scope of the result; a check of several scenes checks only the open scenes again.
         void AfterFix()
         {
-            EditorApplication.delayCall += Run;
+            EditorApplication.delayCall += () =>
+            {
+                if (result == null)
+                {
+                    Run();
+                    return;
+                }
+                var r = AuditScope.Rerun(result, budgets);
+                if (r != null) Show(r, r.parts != null);
+            };
         }
 
         // Used by the screenshot test: picks the rows of the first group and the first lightmap rows.
@@ -265,6 +285,15 @@ namespace UnityTools.SceneOptimization
             var run = new GUIContent(" " + Strings.Get(result == null ? "ui.run" : "ui.rerun"), playIcon, Strings.Get("ui.run.tip"));
             if (GUILayout.Button(run, EditorStyles.toolbarButton, GUILayout.Width(170f)))
                 EditorApplication.delayCall += Run;
+            ScopeButton();
+
+            // A narrow window gets the fixes, the report, the version and the language on a second row.
+            if (position.width < 640f)
+            {
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            }
 
             var safe = SafeFixes();
             EditorGUI.BeginDisabledGroup(safe.Count == 0);
@@ -282,13 +311,6 @@ namespace UnityTools.SceneOptimization
             }
             EditorGUI.EndDisabledGroup();
 
-            // A narrow window gets the version and the language on a second row instead of cutting them.
-            if (position.width < 640f)
-            {
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            }
             GUILayout.FlexibleSpace();
             GUILayout.Label(new GUIContent(Strings.Format("ui.version", ToolVersion.Full), Strings.Get("ui.version.tip")), EditorStyles.miniLabel);
             var langs = new[] { new GUIContent(LangLabels[0], Strings.Get("ui.lang.tip")), new GUIContent(LangLabels[1], Strings.Get("ui.lang.tip")) };
