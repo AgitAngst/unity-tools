@@ -22,10 +22,12 @@ namespace UnityTools.SceneOptimization
                 if (!ctx.lowerLodRenderers.Contains(renderer)) total += tris;
 
                 if (ctx.lodRenderers.Contains(renderer)) continue;
+                // A LOD level lighter by half takes over at a distance.
+                long lodGain = (long)(tris * VRBudgets.LodTrisShare);
                 if (tris > b.objectTrisCritical)
-                    ctx.Report("MESH_NO_LOD", Category.Meshes, Severity.Critical, renderer, tris, b.objectTrisCritical);
+                    ctx.Report("MESH_NO_LOD", Category.Meshes, Severity.Critical, renderer, tris, b.objectTrisCritical).Gain(0, 0, lodGain, true);
                 else if (tris > b.objectTrisWarning)
-                    ctx.Report("MESH_NO_LOD", Category.Meshes, Severity.Warning, renderer, tris, b.objectTrisWarning);
+                    ctx.Report("MESH_NO_LOD", Category.Meshes, Severity.Warning, renderer, tris, b.objectTrisWarning).Gain(0, 0, lodGain, true);
             }
             ctx.sceneTris = total;
             Budget(ctx, "MESH_SCENE_TRIS", Category.Meshes, total, b.sceneTrisWarning, b.sceneTrisCritical);
@@ -59,6 +61,8 @@ namespace UnityTools.SceneOptimization
         {
             var users = new Dictionary<string, int>();
             var neededReadable = new Dictionary<string, bool>();
+            // Memory of the meshes of every model: what its Read/Write copy costs.
+            var meshMB = new Dictionary<string, double>();
             foreach (var pair in ctx.meshes)
             {
                 var path = AssetDatabase.GetAssetPath(pair.Key);
@@ -69,6 +73,9 @@ namespace UnityTools.SceneOptimization
                 bool needed;
                 neededReadable.TryGetValue(path, out needed);
                 neededReadable[path] = needed || ctx.colliderMeshes.Contains(pair.Key) || ctx.particleMeshes.Contains(pair.Key);
+                double mb;
+                meshMB.TryGetValue(path, out mb);
+                meshMB[path] = mb + FixGain.MeshMB(pair.Key);
             }
 
             foreach (var pair in users)
@@ -85,6 +92,7 @@ namespace UnityTools.SceneOptimization
                     issue.users = pair.Value;
                     if (!needed)
                     {
+                        issue.Gain(meshMB[pair.Key], 0, 0, false);
                         var model = importer;
                         issue.SetFix(FixKind.Review, model, true, () =>
                         {

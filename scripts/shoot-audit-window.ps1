@@ -57,6 +57,11 @@ $shots = @(
     @("scope-folder-ru-dark", "ru", "dark", @("-shotScope", "folder", "-shotExpand", "all")),
     @("scope-selection-ru-dark", "ru", "dark", @("-shotScope", "selection", "-shotExpand", "all")),
     @("scope-narrow-ru-dark", "ru", "dark", @("-shotScope", "build", "-shotWidth", "560")),
+    # Gains of fixes: by gain, the usual order, narrow.
+    @("gain-ru-dark", "ru", "dark", @("-shotGain", "on", "-shotExpand", "all")),
+    @("gain-en-dark", "en", "dark", @("-shotGain", "on", "-shotExpand", "all")),
+    @("gain-off-ru-dark", "ru", "dark", @("-shotGain", "off")),
+    @("gain-narrow-ru-dark", "ru", "dark", @("-shotGain", "on", "-shotWidth", "560")),
     @("budgets-ru-dark", "ru", "dark", @("-shotTab", "5")),
     @("budgets-en-dark", "en", "dark", @("-shotTab", "5")),
     @("profiler-en-dark", "en", "dark", @("-shotTab", "6")),

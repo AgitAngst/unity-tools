@@ -4,8 +4,8 @@ namespace UnityTools.SceneOptimization
     // Updated by scripts\stamp-version.ps1 before each commit.
     public static class ToolVersion
     {
-        public const string Version = "1.9.0";
-        public const int Build = 34;
+        public const string Version = "2.0.0";
+        public const int Build = 35;
 
         public static string Full { get { return Version + "." + Build; } }
     }

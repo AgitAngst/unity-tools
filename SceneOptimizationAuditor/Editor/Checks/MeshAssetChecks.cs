@@ -90,6 +90,7 @@ namespace UnityTools.SceneOptimization
                 var names = same.Select(m => AssetDatabase.GetAssetPath(m) + ":" + m.name).Distinct().ToList();
                 if (names.Count < 2) continue;
                 ctx.Report("MESH_DUPLICATE", Category.Meshes, Severity.Info, same[0], same.Count, string.Join(", ", same.Select(m => m.name).ToArray()))
+                    .Gain(same.Skip(1).Sum(m => FixGain.MeshMB(m)), 0, 0, false)
                     .users = same.Sum(m => renderersByMesh[m].Count);
             }
 

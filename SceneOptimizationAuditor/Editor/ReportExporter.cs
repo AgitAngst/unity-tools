@@ -27,6 +27,10 @@ namespace UnityTools.SceneOptimization
             public int warning;
             public int info;
             public int accepted;
+            // What fixing every problem that is not acceptable would free (rough sums).
+            public double gainMB;
+            public long gainDrawCalls;
+            public long gainTris;
         }
 
         [Serializable]
@@ -55,6 +59,10 @@ namespace UnityTools.SceneOptimization
             public string suggestion;
             public bool autoFixable;
             public bool accepted;
+            public double gainMB;
+            public long gainDrawCalls;
+            public long gainTris;
+            public bool gainApprox;
         }
 
         // One scene of a check of several scenes; budgets are -1 for scenes checked together with other open scenes.
@@ -235,7 +243,10 @@ namespace UnityTools.SceneOptimization
                     critical = result.Count(Severity.Critical),
                     warning = result.Count(Severity.Warning),
                     info = result.Count(Severity.Info),
-                    accepted = result.AcceptedCount
+                    accepted = result.AcceptedCount,
+                    gainMB = Math.Round(FixGain.Sum(result.issues).mb, 1),
+                    gainDrawCalls = FixGain.Sum(result.issues).drawCalls,
+                    gainTris = FixGain.Sum(result.issues).tris
                 },
                 sceneBudgets = new BudgetsDto
                 {
@@ -294,7 +305,11 @@ namespace UnityTools.SceneOptimization
                     message = issue.Message,
                     suggestion = issue.Suggestion,
                     autoFixable = issue.AutoFixable,
-                    accepted = issue.accepted
+                    accepted = issue.accepted,
+                    gainMB = Math.Round(issue.gainMB, 1),
+                    gainDrawCalls = issue.gainDrawCalls,
+                    gainTris = issue.gainTris,
+                    gainApprox = issue.gainApprox
                 };
             }
             return JsonUtility.ToJson(report, true);
@@ -403,7 +418,7 @@ namespace UnityTools.SceneOptimization
         public static string ToCsv(AuditResult result)
         {
             var sb = new StringBuilder();
-            sb.Append("CheckId,Category,Severity,Scene,ObjectPath,AssetPath,Message,Suggestion,AutoFixable,Accepted,ScenePath\r\n");
+            sb.Append("CheckId,Category,Severity,Scene,ObjectPath,AssetPath,Message,Suggestion,AutoFixable,Accepted,ScenePath,GainMB,GainDrawCalls,GainTris\r\n");
             foreach (var issue in result.issues)
             {
                 var assetPath = !string.IsNullOrEmpty(issue.assetPath) ? issue.assetPath : issue.settingsPath;
@@ -417,7 +432,10 @@ namespace UnityTools.SceneOptimization
                   .Append(Csv(issue.Suggestion)).Append(',')
                   .Append(issue.AutoFixable ? "true" : "false").Append(',')
                   .Append(issue.accepted ? "true" : "false").Append(',')
-                  .Append(Csv(issue.scenePath)).Append("\r\n");
+                  .Append(Csv(issue.scenePath)).Append(',')
+                  .Append(Math.Round(issue.gainMB, 1).ToString(CultureInfo.InvariantCulture)).Append(',')
+                  .Append(issue.gainDrawCalls.ToString(CultureInfo.InvariantCulture)).Append(',')
+                  .Append(issue.gainTris.ToString(CultureInfo.InvariantCulture)).Append("\r\n");
             }
             return sb.ToString();
         }

@@ -10,10 +10,15 @@ namespace UnityTools.SceneOptimization
             foreach (var row in report.reflections)
             {
                 var probe = row.probe;
+                // Down to the Warning resolution: the cubemap shrinks with the area of its faces.
+                double k = (double)VRBudgets.ReflectionResolutionWarning / Math.Max(1, row.resolution);
+                double smaller = row.MB * (1 - k * k);
                 if (row.resolution >= VRBudgets.ReflectionResolutionCritical)
-                    ctx.Report("REFL_RESOLUTION", Category.Lighting, Severity.Critical, probe, row.resolution, VRBudgets.ReflectionResolutionWarning, Math.Round(row.MB, 1));
+                    ctx.Report("REFL_RESOLUTION", Category.Lighting, Severity.Critical, probe, row.resolution, VRBudgets.ReflectionResolutionWarning, Math.Round(row.MB, 1))
+                        .Gain(smaller, 0, 0, row.estimated);
                 else if (row.Large)
-                    ctx.Report("REFL_RESOLUTION", Category.Lighting, Severity.Warning, probe, row.resolution, VRBudgets.ReflectionResolutionWarning, Math.Round(row.MB, 1));
+                    ctx.Report("REFL_RESOLUTION", Category.Lighting, Severity.Warning, probe, row.resolution, VRBudgets.ReflectionResolutionWarning, Math.Round(row.MB, 1))
+                        .Gain(smaller, 0, 0, row.estimated);
                 if (row.notBaked)
                     ctx.Report("REFL_NOT_BAKED", Category.Lighting, Severity.Warning, probe, row.mode.ToString());
                 if (row.noBox)
@@ -24,7 +29,8 @@ namespace UnityTools.SceneOptimization
                     issue.SetFix(FixKind.Review, target, false, () => target.boxProjection = true);
                 }
                 if (row.Duplicate)
-                    ctx.Report("REFL_DUPLICATE", Category.Lighting, Severity.Warning, probe, row.duplicateOf.name, (int)Math.Round(row.overlap * 100f));
+                    ctx.Report("REFL_DUPLICATE", Category.Lighting, Severity.Warning, probe, row.duplicateOf.name, (int)Math.Round(row.overlap * 100f))
+                        .Gain(row.MB, 0, 0, row.estimated);
             }
             // Compared as shown: rounded to 0.1 MB.
             double mb = Math.Round(report.ReflectionMB, 1);

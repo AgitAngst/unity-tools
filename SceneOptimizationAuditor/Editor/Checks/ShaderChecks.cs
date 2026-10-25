@@ -73,7 +73,8 @@ namespace UnityTools.SceneOptimization
                     if (source.grabUnnamed) ShaderIssue(ctx, "SHADER_GRABPASS", Severity.Warning, shader, users);
                     else if (source.grabPass) ShaderIssue(ctx, "SHADER_GRABPASS", Severity.Info, shader, users).messageKey = "SHADER_GRABPASS_NAMED";
                     int passes = source.DrawPasses;
-                    if (passes > 1) ShaderIssue(ctx, "SHADER_MULTIPASS", Severity.Warning, shader, users, passes);
+                    // Every extra pass draws every object once more.
+                    if (passes > 1) ShaderIssue(ctx, "SHADER_MULTIPASS", Severity.Warning, shader, users, passes).Gain(0, (long)(passes - 1) * users, 0, false);
                     if (instanced && source.VertexWithoutStereo) ShaderIssue(ctx, "SHADER_NO_STEREO", Severity.Critical, shader, users);
                     ulong variants;
                     if (VariantCount(shader, out variants) && variants > VRBudgets.ShaderVariantsInfo)

@@ -45,12 +45,14 @@ namespace UnityTools.SceneOptimization
                 var go = renderer.gameObject;
                 var materials = renderer.sharedMaterials;
 
+                // One material in an atlas instead of several: one call instead of one per material.
                 if (materials.Length > VRBudgets.MultiMaterialWarning)
-                    ctx.Report("DC_MANY_MATERIALS", Category.DrawCalls, Severity.Warning, renderer, materials.Length);
+                    ctx.Report("DC_MANY_MATERIALS", Category.DrawCalls, Severity.Warning, renderer, materials.Length).Gain(0, materials.Length - 1, 0, true);
                 else if (materials.Length > 1)
-                    ctx.Report("DC_MULTI_MATERIAL", Category.DrawCalls, Severity.Info, renderer, materials.Length);
+                    ctx.Report("DC_MULTI_MATERIAL", Category.DrawCalls, Severity.Info, renderer, materials.Length).Gain(0, materials.Length - 1, 0, true);
                 if (materials.Length > mesh.subMeshCount)
-                    ctx.Report("DC_EXTRA_MATERIALS", Category.DrawCalls, Severity.Warning, renderer, materials.Length, mesh.subMeshCount);
+                    ctx.Report("DC_EXTRA_MATERIALS", Category.DrawCalls, Severity.Warning, renderer, materials.Length, mesh.subMeshCount)
+                        .Gain(0, materials.Length - mesh.subMeshCount, 0, false);
 
                 bool isStatic = (GameObjectUtility.GetStaticEditorFlags(go) & StaticEditorFlags.BatchingStatic) != 0;
                 if (!isStatic && !HasMovers(go.transform))
@@ -94,6 +96,7 @@ namespace UnityTools.SceneOptimization
                 }
                 var issue = ctx.Report("DC_INSTANCING_OFF", Category.DrawCalls, Severity.Warning, material, instances);
                 issue.users = instances;
+                issue.Gain(0, instances - 1, 0, false);
                 if (AuditContext.IsEditableAsset(material))
                     issue.SetFix(FixKind.Safe, material, true, () => material.enableInstancing = true);
             }

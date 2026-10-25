@@ -79,7 +79,9 @@ namespace UnityTools.SceneOptimization
                     float smallest = users.Min(r => MaxSize(r.bounds));
                     float largest = users.Max(r => MaxSize(r.bounds));
                     if (smallest > 0.001f && side >= VRBudgets.DensityHighMinSide && side / smallest > VRBudgets.DensityHighPxPerMeter)
-                        ctx.Report("TEX_DENSITY_HIGH", Category.Textures, Severity.Info, texture, Math.Round(side / smallest), side, Math.Round(smallest, 2)).users = use.users;
+                        ctx.Report("TEX_DENSITY_HIGH", Category.Textures, Severity.Info, texture, Math.Round(side / smallest), side, Math.Round(smallest, 2))
+                            // Sized for the largest object that uses it, so no user gets blurry.
+                            .Gain(FixGain.ResizedMB(texture, Mathf.NextPowerOfTwo(Mathf.CeilToInt(largest * VRBudgets.DensityGainPxPerMeter))), 0, 0, true).users = use.users;
                     else if (largest > VRBudgets.DensityLowMinMeters && side / largest < VRBudgets.DensityLowPxPerMeter)
                         ctx.Report("TEX_DENSITY_LOW", Category.Textures, Severity.Info, texture, Math.Round(side / largest, 1), side, Math.Round(largest, 1)).users = use.users;
 
@@ -114,6 +116,7 @@ namespace UnityTools.SceneOptimization
                     Array.IndexOf(AlphaFormats, texture2D.format.ToString()) >= 0 && AlphaFullyOpaque(path))
                 {
                     var issue = ctx.Report("TEX_ALPHA_UNUSED", Category.Textures, Severity.Info, texture, texture2D.format.ToString());
+                    issue.Gain(FixGain.ReformattedMB(texture, "DXT1"), 0, 0, false);
                     issue.users = use.users;
                     issue.SetFix(FixKind.Review, importer, true, () =>
                     {
@@ -149,7 +152,8 @@ namespace UnityTools.SceneOptimization
             {
                 if (same.Count < 2) continue;
                 ctx.Report("TEX_DUPLICATE", Category.Textures, Severity.Info, same[0], same.Count,
-                    string.Join(", ", same.Select(t => Path.GetFileName(AssetDatabase.GetAssetPath(t))).ToArray()));
+                    string.Join(", ", same.Select(t => Path.GetFileName(AssetDatabase.GetAssetPath(t))).ToArray()))
+                    .Gain(same.Skip(1).Sum(t => FixGain.TextureMB(t)), 0, 0, false);
             }
         }
 

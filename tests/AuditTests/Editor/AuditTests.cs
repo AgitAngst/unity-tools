@@ -868,7 +868,7 @@ namespace AuditTestsEditor
             var json = JsonUtility.FromJson<ReportExporter.ReportDto>(ReportExporter.ToJson(after, null));
             Check(json.summary.accepted == after.AcceptedCount && json.issues.Any(i => i.checkId == "MESH_EXTREME_SCALE" && i.accepted),
                 "JSON: summary.accepted and issue.accepted");
-            Check(ReportExporter.ToCsv(after).Split('\n')[0].TrimEnd().EndsWith(",Accepted,ScenePath"), "CSV has the Accepted column (ScenePath after it)");
+            Check(ReportExporter.ToCsv(after).Split('\n')[0].Contains(",Accepted,ScenePath,"), "CSV has the Accepted column (ScenePath and the gains after it)");
 
             // Moving the object does not lose the mark.
             GameObject.Find("Asset/Huge").transform.position += Vector3.right * 5f;

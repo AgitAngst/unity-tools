@@ -221,7 +221,7 @@ namespace AuditTestsEditor
             var csv = Path.Combine(ReportDir, "scope-two.csv");
             code = ReportExporter.RunWithArgs(new[] { "-auditScene", paths[0], "-auditScene", paths[2], "-auditReport", csv });
             var lines = code == 0 ? File.ReadAllLines(csv) : new string[0];
-            Check(lines.Length > 1 && lines[0].EndsWith(",ScenePath") && lines.Any(l => l.EndsWith(paths[2])), "CSV: the repeated flag, a ScenePath column");
+            Check(lines.Length > 1 && lines[0].Contains(",ScenePath,") && lines.Any(l => l.Contains("," + paths[2] + ",")), "CSV: the repeated flag, a ScenePath column");
 
             var build = Path.Combine(ReportDir, "scope-build.json");
             code = ReportExporter.RunWithArgs(new[] { "-auditBuildScenes", "-auditReport", build });

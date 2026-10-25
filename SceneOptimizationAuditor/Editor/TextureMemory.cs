@@ -5,6 +5,19 @@ namespace UnityTools.SceneOptimization
     // Rough GPU size of a texture from its format, size, mip levels and faces.
     public static class TextureMemory
     {
+        // Name of the texture's format as the table below knows it.
+        public static string FormatOf(Texture texture)
+        {
+            var t2d = texture as Texture2D;
+            if (t2d != null) return t2d.format.ToString();
+            var cube = texture as Cubemap;
+            if (cube != null) return cube.format.ToString();
+            var array = texture as Texture2DArray;
+            if (array != null) return array.format.ToString();
+            var t3d = texture as Texture3D;
+            return t3d != null ? t3d.format.ToString() : "";
+        }
+
         public static double EstimateBytes(Texture texture, bool keepsCpuCopy)
         {
             if (texture == null) return 0;
@@ -48,7 +61,7 @@ namespace UnityTools.SceneOptimization
         }
 
         // Names, not enum members, so the table compiles on every editor version.
-        static double BitsPerPixel(string format)
+        public static double BitsPerPixel(string format)
         {
             switch (format)
             {

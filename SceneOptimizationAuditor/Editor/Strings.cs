@@ -89,6 +89,7 @@ namespace UnityTools.SceneOptimization
             AddShaders();
             AddReflections();
             AddScope();
+            AddGain();
         }
     }
 }

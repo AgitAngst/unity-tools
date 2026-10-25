@@ -16,7 +16,7 @@ namespace AuditTestsEditor
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
-    //     [-shotLight atlases|objects|lights|probes|reflections] [-shotScope build|folder|selection] [-shotCopies] [-shotHeavy tris|dc|tex]
+    //     [-shotLight atlases|objects|lights|probes|reflections] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -52,6 +52,12 @@ namespace AuditTestsEditor
             if (HasArg("-shotHistory")) SeedHistory();
             if (HasArg("-shotCopies")) AuditTestViewpoints.BuildCopiesScene();
             if (HasArg("-shotScope")) SetScope(Arg("-shotScope"));
+            if (HasArg("-shotGain"))
+            {
+                AuditTestViewpoints.BuildGainScene();
+                originalByGain = GetByGain();
+                SetByGain(Arg("-shotGain") != "off");
+            }
             if (!HasArg("-shotEmpty")) Invoke("Run");
             if (HasArg("-shotCopies")) Invoke("CopiesForShot", "ANIM_ALWAYS_ANIMATE");
             if (HasArg("-shotHeavy"))
@@ -123,7 +129,12 @@ namespace AuditTestsEditor
             if (frames < 40 || (!done && EditorApplication.timeSinceStartup - started < 120)) return;
             EditorApplication.update -= Tick;
             if (originalSkin >= 0 && (originalSkin == 1) != EditorGUIUtility.isProSkin) SwitchSkin();
-            // The scope is a per-user editor preference too.
+            // "By gain" and the scope are per-user editor preferences too.
+            if (originalByGain.HasValue)
+            {
+                SetByGain(originalByGain.Value);
+                originalByGain = null;
+            }
             if (originalScope >= 0)
             {
                 AuditScope.Kind = (ScopeKind)originalScope;
@@ -133,6 +144,20 @@ namespace AuditTestsEditor
             // The test server keeps the editor open for the next shot.
             if (window != null) window.Close();
             AuditTestServer.Exit(0);
+        }
+
+        static bool? originalByGain;
+
+        static bool GetByGain()
+        {
+            var p = typeof(AuditorWindow).GetProperty("ByGain", BindingFlags.Static | BindingFlags.NonPublic);
+            return p != null && (bool)p.GetValue(null, null);
+        }
+
+        static void SetByGain(bool on)
+        {
+            var p = typeof(AuditorWindow).GetProperty("ByGain", BindingFlags.Static | BindingFlags.NonPublic);
+            if (p != null) p.SetValue(null, on, null);
         }
 
         static int originalScope = -1;

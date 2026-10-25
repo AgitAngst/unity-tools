@@ -92,6 +92,23 @@ namespace UnityTools.SceneOptimization
             }
         }
 
+        // Groups by the share of the budgets their fixes free; kept in EditorPrefs.
+        static bool? byGain;
+        static bool ByGain
+        {
+            get
+            {
+                if (!byGain.HasValue) byGain = EditorPrefs.GetBool("UnityTools.SceneAudit.ByGain", false);
+                return byGain.Value;
+            }
+            set
+            {
+                if (byGain == value) return;
+                byGain = value;
+                EditorPrefs.SetBool("UnityTools.SceneAudit.ByGain", value);
+            }
+        }
+
         AuditResult result;
         List<IssueGroup> groups = new List<IssueGroup>();
         XrInfo xrPreview;
@@ -102,6 +119,10 @@ namespace UnityTools.SceneOptimization
         readonly HashSet<Category> closedCategories = new HashSet<Category>();
 
         GUIStyle wrapMini;
+        // Gains in the colour of "better": a row, a group header, the total.
+        GUIStyle gainRow;
+        GUIStyle gainHead;
+        GUIStyle gainTotal;
         GUIStyle hint;
         GUIStyle link;
         // A link in a table cell: one line, cut at the cell (the full text is in the tooltip).
@@ -169,6 +190,12 @@ namespace UnityTools.SceneOptimization
             warnIcon = EditorGUIUtility.IconContent("console.warnicon.sml").image;
             infoIcon = EditorGUIUtility.IconContent("console.infoicon.sml").image;
             playIcon = EditorGUIUtility.IconContent("PlayButton").image;
+            gainRow = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleRight };
+            gainRow.normal.textColor = TextOk;
+            gainHead = new GUIStyle(EditorStyles.miniBoldLabel) { alignment = TextAnchor.MiddleRight };
+            gainHead.normal.textColor = TextOk;
+            gainTotal = new GUIStyle(EditorStyles.boldLabel) { wordWrap = true };
+            gainTotal.normal.textColor = TextOk;
         }
 
         void OnGUI()

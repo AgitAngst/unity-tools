@@ -41,6 +41,23 @@ namespace UnityTools.SceneOptimization
         // Set when the fix was applied; a check of several scenes drops such rows of the closed scenes.
         public bool applied;
 
+        // What the fix would free (FixGain): memory, draw calls, triangles; approximate for rough estimates.
+        public double gainMB;
+        public long gainDrawCalls;
+        public long gainTris;
+        public bool gainApprox;
+
+        public bool HasGain { get { return gainMB >= 0.05 || gainDrawCalls > 0 || gainTris > 0; } }
+
+        public AuditIssue Gain(double mb, long drawCalls, long tris, bool approx)
+        {
+            gainMB = mb;
+            gainDrawCalls = drawCalls;
+            gainTris = tris;
+            gainApprox = approx;
+            return this;
+        }
+
         public FixKind fixKind;
         public Action fixAction;
         // Object recorded for Undo (scene fixes) or marked dirty (asset fixes).

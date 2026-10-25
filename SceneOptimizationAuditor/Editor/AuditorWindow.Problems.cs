@@ -22,6 +22,7 @@ namespace UnityTools.SceneOptimization
             DrawSeverityCards();
             DrawContext();
             DrawScopeBudgets();
+            DrawGainTotal();
             DrawListToolbar();
 
             listScroll = EditorGUILayout.BeginScrollView(listScroll);
@@ -30,7 +31,7 @@ namespace UnityTools.SceneOptimization
             {
                 foreach (var category in Categories)
                 {
-                    var inCategory = groups.Where(g => g.category == category && IsShown(g) && Visible(g).Count > 0).ToList();
+                    var inCategory = Ordered(groups.Where(g => g.category == category && IsShown(g) && Visible(g).Count > 0)).ToList();
                     if (inCategory.Count == 0) continue;
                     bool open = !closedCategories.Contains(category);
                     var title = Strings.CategoryName(category) + "  ·  " + inCategory.Sum(g => Visible(g).Count);
@@ -44,7 +45,7 @@ namespace UnityTools.SceneOptimization
             }
             else
             {
-                foreach (var g in groups) if (IsShown(g)) drawn += DrawGroup(g, drawn);
+                foreach (var g in Ordered(groups)) if (IsShown(g)) drawn += DrawGroup(g, drawn);
             }
             if (drawn == 0) DrawNothing();
             GUILayout.Space(8f);
@@ -176,25 +177,23 @@ namespace UnityTools.SceneOptimization
             GUILayout.Space(8f);
             byCategory = GUILayout.Toggle(byCategory, new GUIContent(Strings.Get("ui.byCategory"), Strings.Get("ui.byCategory.tip")),
                 EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
+            ByGain = GUILayout.Toggle(ByGain, new GUIContent(Strings.Get("ui.gain.sort"), Strings.Get("ui.gain.sort.tip")),
+                EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
             CopiesTogether = GUILayout.Toggle(CopiesTogether, new GUIContent(Strings.Get("ui.copies"), Strings.Get("ui.copies.tip")),
                 EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
+            var button = EditorStyles.toolbarButton;
+            float toggles = 230f + button.CalcSize(new GUIContent(Strings.Get("ui.byCategory"))).x + button.CalcSize(new GUIContent(Strings.Get("ui.gain.sort"))).x +
+                            button.CalcSize(new GUIContent(Strings.Get("ui.copies"))).x;
+            float expanders = button.CalcSize(new GUIContent(Strings.Get("ui.expandAll"))).x + button.CalcSize(new GUIContent(Strings.Get("ui.collapseAll"))).x;
+            float rest = button.CalcSize(new GUIContent(Strings.Format("ui.acc.show", 0) + "000")).x + button.CalcSize(new GUIContent(Strings.Get("ui.sel.all"))).x;
+            // What does not fit goes on a second row: first the filter and "Select all", then also "Expand all" and "Collapse all".
+            bool expandersBelow = toggles + expanders > position.width;
+            if (expandersBelow) NextToolbarRow();
             if (GUILayout.Button(Strings.Get("ui.expandAll"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                 foreach (var g in groups) expanded[g.key] = true;
             if (GUILayout.Button(Strings.Get("ui.collapseAll"), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                 expanded.Clear();
-            // The filter and "Select all" go on a second row when the first one is full.
-            float used = 330f + EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.byCategory"))).x +
-                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.copies"))).x +
-                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.expandAll"))).x +
-                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.collapseAll"))).x +
-                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Format("ui.acc.show", 0) + "000")).x +
-                         EditorStyles.toolbarButton.CalcSize(new GUIContent(Strings.Get("ui.sel.all"))).x;
-            if (used > position.width)
-            {
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            }
+            if (!expandersBelow && toggles + expanders + rest > position.width) NextToolbarRow();
             GUILayout.FlexibleSpace();
             showAccepted = GUILayout.Toggle(showAccepted, new GUIContent(Strings.Format("ui.acc.show", result != null ? result.AcceptedCount : 0), Strings.Get("ui.acc.show.tip")),
                 EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
@@ -204,6 +203,13 @@ namespace UnityTools.SceneOptimization
                         foreach (var issue in Visible(g)) if (MultiSelect.CanPick(issue)) picked.Add(issue);
             EditorGUILayout.EndHorizontal();
             DrawSelectionBar();
+        }
+
+        void NextToolbarRow()
+        {
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
         }
 
         // Shown only while something is picked: count on one line, actions on the next.
@@ -363,6 +369,14 @@ namespace UnityTools.SceneOptimization
                 GUI.Label(new Rect(right - width, rect.y + 5f, width, 16f), name, chip);
                 right -= width + 4f;
             }
+            var gain = FixGain.Sum(visible);
+            if (gain.Any)
+            {
+                var text = GainText(gain.mb, gain.drawCalls, gain.tris, gain.approx, false);
+                var width = gainHead.CalcSize(new GUIContent(text)).x + 6f;
+                GUI.Label(new Rect(right - width, rect.y + 5f, width, 16f), new GUIContent(text, Strings.Get("ui.gain.group.tip")), gainHead);
+                right -= width + 4f;
+            }
 
             var head = new Rect(rect.x + 8f, rect.y, right - rect.x - 8f, rect.height);
             bool toggled = EditorGUI.Foldout(new Rect(head.x, head.y + 5f, 14f, 16f), open, GUIContent.none, true);
@@ -458,6 +472,10 @@ namespace UnityTools.SceneOptimization
             var first = row.issues[0];
             GUILayout.Label(new GUIContent(first.Message, first.Suggestion), wrapMini);
             EditorGUILayout.EndVertical();
+            var rowGain = FixGain.Sum(row.issues);
+            if (rowGain.Any)
+                GUILayout.Label(new GUIContent(GainText(rowGain.mb, rowGain.drawCalls, rowGain.tris, rowGain.approx, false), Strings.Get("ui.gain.tip")), gainRow,
+                    GUILayout.ExpandWidth(false));
             var fixable = row.Fixable;
             if (row.CanFixInPrefab)
             {
@@ -519,6 +537,9 @@ namespace UnityTools.SceneOptimization
             var message = issue.accepted ? Strings.Get("ui.acc.tag") + "  ·  " + issue.Message : issue.Message;
             GUILayout.Label(new GUIContent(message, issue.Suggestion), wrapMini);
             EditorGUILayout.EndVertical();
+            if (issue.HasGain)
+                GUILayout.Label(new GUIContent(GainText(issue.gainMB, issue.gainDrawCalls, issue.gainTris, issue.gainApprox, false), Strings.Get("ui.gain.tip")),
+                    gainRow, GUILayout.ExpandWidth(false));
             if (ownFix && issue.AutoFixable && !issue.accepted)
             {
                 if (GUILayout.Button(new GUIContent(Strings.Get("ui.fix"), issue.FixDescription), EditorStyles.miniButton, GUILayout.Width(84f)))
@@ -539,6 +560,43 @@ namespace UnityTools.SceneOptimization
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(2f);
+        }
+
+        // Groups by the share of the budgets their fixes free when "By gain" is on; groups without a gain keep their order.
+        IEnumerable<IssueGroup> Ordered(IEnumerable<IssueGroup> list)
+        {
+            if (!ByGain || result == null) return list;
+            var b = result.budgets;
+            return list.OrderByDescending(g => FixGain.GroupShare(Visible(g), b));
+        }
+
+        // "−34 MB  ·  −120 DC"; the total names the units in full.
+        static string GainText(double mb, long drawCalls, long tris, bool approx, bool longUnits)
+        {
+            var parts = new List<string>();
+            if (mb >= 0.05) parts.Add(Strings.Format(longUnits ? "ui.gain.mb.long" : "ui.gain.mb", FormatNumber(mb >= 10 ? Math.Round(mb) : Math.Round(mb, 1))));
+            if (drawCalls > 0) parts.Add(Strings.Format(longUnits ? "ui.gain.dc.long" : "ui.gain.dc", FormatNumber(drawCalls)));
+            if (tris > 0) parts.Add(Strings.Format(longUnits ? "ui.gain.tris.long" : "ui.gain.tris", FormatNumber(tris)));
+            var text = string.Join("  ·  ", parts.ToArray());
+            return approx ? "≈ " + text : text;
+        }
+
+        // What fixing every problem that is not acceptable would free, under the budget bars.
+        void DrawGainTotal()
+        {
+            var total = FixGain.Sum(result.issues);
+            if (!total.Any) return;
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(8f);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label(Strings.Get("ui.gain.total"), EditorStyles.boldLabel, GUILayout.ExpandWidth(false));
+            GUILayout.Label(new GUIContent(GainText(total.mb, total.drawCalls, total.tris, total.approx, true), Strings.Get("ui.gain.total.tip")), gainTotal);
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Label(Strings.Get("ui.gain.total.note"), wrapMini);
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(8f);
+            EditorGUILayout.EndHorizontal();
         }
 
         static void Select(AuditIssue issue)

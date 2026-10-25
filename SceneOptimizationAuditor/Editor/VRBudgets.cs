@@ -186,6 +186,13 @@ namespace UnityTools.SceneOptimization
         public const int ReflectionMemoryWarningMB = 64;
         public const float RoomProbeMeters = 30f;
         public const float ReflectionDuplicateShare = 0.8f;
+        // Gains: a texture denser than needed comes down to this many pixels per metre of its smallest object; a clip
+        // compressed in memory takes about this part of its PCM; compressed lightmaps this part of uncompressed ones;
+        // a LOD level this part of the mesh.
+        public const float DensityGainPxPerMeter = 1024f;
+        public const double CompressedAudioShare = 0.15;
+        public const double CompressedLightmapShare = 0.25;
+        public const double LodTrisShare = 0.5;
         // A shader of the project with more variants than this builds and loads slowly.
         public const int ShaderVariantsInfo = 512;
 

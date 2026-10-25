@@ -50,8 +50,18 @@ namespace UnityTools.SceneOptimization
 #pragma warning restore 0618
 
             ctx.lighting = LightReport.Build(ctx.roots, q.pixelLightCount, q.shadowmaskMode);
+            // A realtime point or spot costs a pass on every object in its range; baked, it costs none.
+            foreach (var issue in ctx.issues)
+                if (issue.checkId == "LIGHT_REALTIME") issue.Gain(0, InRangeOf(ctx.lighting, issue.target as Light), 0, true);
             AuditBakedLighting(ctx, ctx.lighting);
             AuditReflections(ctx, ctx.lighting);
+        }
+
+        static long InRangeOf(LightReport report, Light light)
+        {
+            foreach (var s in report.sources)
+                if (s.light == light) return s.inRange;
+            return 0;
         }
 
         // Settings path that opens the Lighting window instead of a Project Settings page.
@@ -69,9 +79,11 @@ namespace UnityTools.SceneOptimization
             else if (mb > b.lightmapMemoryWarningMB)
                 ctx.Report("LIGHT_LIGHTMAP_MEMORY", Category.Lighting, Severity.Warning, null, mb, b.lightmapMemoryWarningMB);
             if (report.atlases.Count > 0 && !report.compressed)
-                ctx.ReportSetting("LIGHT_LIGHTMAP_UNCOMPRESSED", Category.Lighting, Severity.Warning, LightingWindow, mb);
+                ctx.ReportSetting("LIGHT_LIGHTMAP_UNCOMPRESSED", Category.Lighting, Severity.Warning, LightingWindow, mb)
+                    .Gain(report.MB * (1 - VRBudgets.CompressedLightmapShare), 0, 0, true);
             if (report.HasDirectionTextures)
-                ctx.ReportSetting("LIGHT_LIGHTMAP_DIRECTIONAL", Category.Lighting, Severity.Info, LightingWindow, Math.Round(report.DirectionMB, 1));
+                ctx.ReportSetting("LIGHT_LIGHTMAP_DIRECTIONAL", Category.Lighting, Severity.Info, LightingWindow, Math.Round(report.DirectionMB, 1))
+                    .Gain(report.DirectionMB, 0, 0, false);
 
             if (report.NoLightmap > 0 || report.NotBakedLights > 0)
                 ctx.ReportSetting("LIGHT_NOT_BAKED", Category.Lighting, Severity.Warning, LightingWindow, report.NoLightmap, report.NotBakedLights);
@@ -81,6 +93,8 @@ namespace UnityTools.SceneOptimization
                 if (o.small)
                 {
                     var issue = ctx.Report("LIGHT_SMALL_IN_LIGHTMAP", Category.Lighting, Severity.Info, o.renderer.gameObject, Math.Round(o.size, 2));
+                    // Its part of the atlas, once the lighting is baked again without it.
+                    if (o.atlas >= 0) issue.Gain(o.share * report.atlases[o.atlas].bytes / (1024.0 * 1024.0), 0, 0, true);
                     var target = o.renderer;
                     issue.SetFix(FixKind.Review, target, false, () => target.receiveGI = ReceiveGI.LightProbes);
                 }
@@ -104,9 +118,10 @@ namespace UnityTools.SceneOptimization
             foreach (var s in report.sources)
             {
                 if (s.wide)
-                    ctx.Report("LIGHT_WIDE_REALTIME", Category.Lighting, Severity.Warning, s.light, s.light.type.ToString(), s.inRange, VRBudgets.WideLightRenderers);
+                    ctx.Report("LIGHT_WIDE_REALTIME", Category.Lighting, Severity.Warning, s.light, s.light.type.ToString(), s.inRange, VRBudgets.WideLightRenderers)
+                        .Gain(0, s.inRange, 0, true);
                 if (s.important)
-                    ctx.Report("LIGHT_IMPORTANT", Category.Lighting, Severity.Warning, s.light, s.light.type.ToString());
+                    ctx.Report("LIGHT_IMPORTANT", Category.Lighting, Severity.Warning, s.light, s.light.type.ToString()).Gain(0, s.inRange, 0, true);
             }
         }
     }

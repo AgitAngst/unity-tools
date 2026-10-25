@@ -26,6 +26,8 @@ namespace UnityTools.SceneOptimization
                 {
                     var issue = ctx.Report("AUDIO_DECOMPRESS_LONG", Category.Audio, Severity.Warning, clip, lengthText);
                     issue.users = pair.Value;
+                    // Decompressed PCM against the clip kept compressed or streamed.
+                    issue.Gain(FixGain.PcmMB(clip) * (1 - VRBudgets.CompressedAudioShare), 0, 0, true);
                     var newType = length >= VRBudgets.StreamingFromSeconds ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
                     issue.SetFix(FixKind.Review, importer, true, () =>
                     {
@@ -43,6 +45,9 @@ namespace UnityTools.SceneOptimization
                     {
                         var issue = ctx.Report("AUDIO_PCM_LARGE", Category.Audio, Severity.Warning, clip, Math.Round(bytes / (1024.0 * 1024.0), 1));
                         issue.users = pair.Value;
+                        // Decompressed on load, the clip is PCM in memory whatever its format: only the build gets smaller.
+                        if (settings.loadType != AudioClipLoadType.DecompressOnLoad)
+                            issue.Gain(bytes / (1024.0 * 1024.0) * (1 - VRBudgets.CompressedAudioShare), 0, 0, true);
                         issue.SetFix(FixKind.Review, importer, true, () =>
                         {
                             var s = ReadSampleSettings(importer);

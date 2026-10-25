@@ -36,10 +36,13 @@ namespace UnityTools.SceneOptimization
                     int size = Mathf.Max(texture.width, texture.height);
                     if (settings.maxTextureSize > 0 && settings.maxTextureSize < size) size = settings.maxTextureSize;
                     bool cube = texture is Cubemap || importer.textureShape == TextureImporterShape.TextureCube || use.skybox;
+                    // The gain: down to the Warning threshold.
                     if (size > b.textureSizeCritical)
-                        ctx.Report("TEX_SIZE", Category.Textures, cube ? Severity.Warning : Severity.Critical, texture, size, b.textureSizeCritical).users = use.users;
+                        ctx.Report("TEX_SIZE", Category.Textures, cube ? Severity.Warning : Severity.Critical, texture, size, b.textureSizeCritical)
+                            .Gain(FixGain.ResizedMB(texture, b.textureSizeWarning), 0, 0, false).users = use.users;
                     else if (size > b.textureSizeWarning)
-                        ctx.Report("TEX_SIZE", Category.Textures, Severity.Warning, texture, size, b.textureSizeWarning).users = use.users;
+                        ctx.Report("TEX_SIZE", Category.Textures, Severity.Warning, texture, size, b.textureSizeWarning)
+                            .Gain(FixGain.ResizedMB(texture, b.textureSizeWarning), 0, 0, false).users = use.users;
 
                     if (use.normalSlot && importer.textureType != TextureImporterType.NormalMap)
                     {
@@ -71,6 +74,7 @@ namespace UnityTools.SceneOptimization
                         var formatName = settings.overridden ? settings.format.ToString() : "Uncompressed";
                         var issue = ctx.Report("TEX_UNCOMPRESSED", Category.Textures, Severity.Warning, texture, formatName, suggested.ToString());
                         issue.users = use.users;
+                        issue.Gain(FixGain.ReformattedMB(texture, suggested.ToString()), 0, 0, false);
                         issue.SetFix(FixKind.Review, importer, true, () =>
                         {
                             var current = EffectiveSettings(importer);
@@ -94,6 +98,8 @@ namespace UnityTools.SceneOptimization
                 {
                     var issue = ctx.Report("TEX_READ_WRITE", Category.Textures, Severity.Warning, texture);
                     issue.users = use.users;
+                    // The copy kept in CPU memory.
+                    issue.Gain(FixGain.TextureMB(texture), 0, 0, false);
                     issue.SetFix(FixKind.Review, importer, true, () =>
                     {
                         importer.isReadable = false;
