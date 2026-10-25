@@ -5,7 +5,7 @@ namespace UnityTools.SceneOptimization
 {
     public enum Severity { Critical = 0, Warning = 1, Info = 2 }
 
-    public enum Category { DrawCalls, Meshes, Textures, Materials, Lighting, Particles, Physics, Animators, Audio, VRSpecific, General }
+    public enum Category { DrawCalls, Meshes, Textures, Materials, Shaders, Lighting, Particles, Physics, Animators, Audio, VRSpecific, General }
 
     // Safe fixes run in a batch, Review fixes one row at a time after the user looks at them.
     public enum FixKind { None, Safe, Review }

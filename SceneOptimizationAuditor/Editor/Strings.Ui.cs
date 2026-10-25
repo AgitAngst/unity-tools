@@ -140,8 +140,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.h.since", "Since the last point ({0}): Critical {1} · Warnings {2}", "С прошлой точки ({0}): критичных {1} · предупреждений {2}");
             Add("ui.h.since.tip", "Compared with the previous point of the History tab.", "Сравнение с прошлой точкой вкладки «История».");
             Add("ui.empty.title", "VR scene audit", "Аудит VR-сцены");
-            Add("ui.empty.text", "Checks the open scenes for HTC Vive Pro at 90 FPS: draw calls, meshes, textures, lighting, particles, physics, animation, audio and VR settings. Nothing is changed: fixes are applied only when you press Fix and confirm.",
-                "Проверит открытые сцены под HTC Vive Pro и 90 FPS: draw calls, меши, текстуры, свет, частицы, физику, анимацию, звук и настройки VR. Ничего не меняет: исправления — только по кнопке «Исправить» и после подтверждения.");
+            Add("ui.empty.text", "Checks the open scenes for HTC Vive Pro at 90 FPS: draw calls, meshes, textures, shaders, lighting, particles, physics, animation, audio and VR settings. Nothing is changed: fixes are applied only when you press Fix and confirm.",
+                "Проверит открытые сцены под HTC Vive Pro и 90 FPS: draw calls, меши, текстуры, шейдеры, свет, частицы, физику, анимацию, звук и настройки VR. Ничего не меняет: исправления — только по кнопке «Исправить» и после подтверждения.");
             Add("ui.verdict.critical", "{0} critical problems: fix them first.", "Критичных проблем: {0} — исправьте их в первую очередь.");
             Add("ui.verdict.warning", "No critical problems. {0} warnings are worth a look.", "Критичных проблем нет. Предупреждений: {0} — стоит просмотреть.");
             Add("ui.verdict.clean", "No critical problems and no warnings.", "Нет ни критичных проблем, ни предупреждений.");
@@ -264,6 +264,7 @@ namespace UnityTools.SceneOptimization
             Add("cat.Meshes", "Meshes", "Меши");
             Add("cat.Textures", "Textures", "Текстуры");
             Add("cat.Materials", "Materials", "Материалы");
+            Add("cat.Shaders", "Shaders", "Шейдеры");
             Add("cat.Lighting", "Lighting", "Освещение");
             Add("cat.Particles", "Particles", "Частицы");
             Add("cat.Physics", "Physics", "Физика");

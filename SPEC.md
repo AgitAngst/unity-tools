@@ -745,10 +745,11 @@ Undo сцены; сбор «Тяжёлых» (копии, треугольник
 «Шейдеры» после «Материалов»; запись — на шейдер, с числом объектов. Исправлений нет — правится исходник.
 
 - `SHADER_ERROR` — ошибки, которые Unity уже знает (`ShaderUtil.ShaderHasError`), шейдер не поддерживается
-  (`isSupported`) или пропал (`Hidden/InternalErrorShader`) → Critical: розовые объекты.
-- `SHADER_GRABPASS` — в исходнике есть GrabPass → Warning: копия экрана на каждый объект, в VR — для двух глаз.
+  (`isSupported`) или пропал (`Hidden/InternalErrorShader`, запись — на материал) → Critical: розовые объекты.
+- `SHADER_GRABPASS` — в первом SubShader GrabPass без имени текстуры → Warning: копия экрана на каждый объект, в VR — для
+  двух глаз; с именем (`GrabPass { "_Name" }`) → Info: копия раз за кадр.
 - `SHADER_MULTIPASS` — в первом SubShader больше одного прохода рисования → Warning: объект рисуется N раз. Считаются
-  проходы без LightMode или с Always, проходы ForwardBase (нет их — Vertex, VertexLM), UsePass (кроме теней, Meta,
+  проходы без LightMode или с Always, проходы ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме теней, Meta,
   Deferred и ForwardAdd по имени) и один за surface-шейдер; ForwardAdd, ShadowCaster, Meta, Deferred, Prepass,
   MotionVectors — нет.
 - `SHADER_NO_STEREO` — stereo-режим Single Pass Instanced, вершинная функция (`#pragma vertex`) определена в исходнике
@@ -764,6 +765,10 @@ Undo сцены; сбор «Тяжёлых» (копии, треугольник
 **Готово, когда:** тест на шейдерах, которые тест пишет в проект (GrabPass, контур вторым проходом, шаблон Unlit без
 stereo, cutout без AlphaToMask и с ним, 1024 варианта, с ошибкой разбора), и на Standard — проверки срабатывают и
 молчат; `run-audit-tests.ps1` зелёный; страница утилиты, TESTPLAN, HANDOFF; версия 1.7.0.
+
+Сделано 25.10.2026: тест `shaders` (разбор исходника на строках; 11 шейдеров, которые тест пишет в проект, Standard
+opaque и cutout, материал с удалённым шейдером; при Single Pass Instanced и MSAA 4x и без них), тексты RU/EN. Не
+проверено вживую: шейдеры уровня владельца и Single Pass Instanced в шлеме.
 
 ---
 

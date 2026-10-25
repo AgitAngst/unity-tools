@@ -4,11 +4,11 @@
 (HTC Vive Pro, SteamVR, 90 Гц) и показывает проблемы по уровням Critical / Warning / Info с подсказкой,
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 
-**Состояние:** код этапов 1–16 из `SPEC.md` написан (версия 1.6.0). Автотесты в Unity 2019.4.41f2 зелёные (25.10.2026,
-`scripts\run-audit-tests.ps1`, 38 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
+**Состояние:** код этапов 1–17 из `SPEC.md` написан (версия 1.7.0). Автотесты в Unity 2019.4.41f2 зелёные (25.10.2026,
+`scripts\run-audit-tests.ps1`, 39 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
 замер в Play Mode): проверки, бюджеты, экспорт, исправления и Undo, точки обзора, замер, свет, копии префабов,
-«Тяжёлые» и частицы. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
-22.10.2026; этапы 5–16 вживую не смотрены.
+«Тяжёлые», частицы и шейдеры. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
+22.10.2026; этапы 5–17 вживую не смотрены.
 Не проверены настоящий OpenVR XR Plugin (в тестах — заглушки) и замер со шлемом — см. [TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
@@ -24,7 +24,7 @@
 Вид — по [ui-guideline.md](ui-guideline.md); снимки — `scripts\shoot-audit-window.ps1`.
 
 - **Тулбар:** «Запустить аудит» («Запустить снова» после прогона), «Исправить безопасное (N)»,
-  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v1.6.0.28` (X.Y.Z и номер сборки — число коммитов
+  «Сохранить отчёт ▾» (JSON или CSV), справа версия утилиты `v1.7.0.29` (X.Y.Z и номер сборки — число коммитов
   репозитория) и `EN | RU` (хранится в `EditorPrefs`). Версия видна и на экране до первого прогона. На окне уже 640
   версия и `EN | RU` уходят во вторую строку тулбара.
 - **Вкладки:** «Проблемы (N)», «Точки обзора», «Развёртка под свет», «Свет», «Тяжёлые», «Бюджеты», «Профайлер», «История». На широком окне
@@ -290,6 +290,10 @@ Critical / Warning / Info / допустимых, треугольники и п
 - XR: legacy — `PlayerSettings.GetVirtualRealitySDKs(Standalone)`, флаг `m_BuildTargetVRSettings`,
   `PlayerSettings.stereoRenderingPath`; XR Plug-in Management — `XRGeneralSettingsPerBuildTarget` для
   Standalone и его загрузчики; режим stereo OpenVR — из ассета `OpenVRSettings` (только читается).
+- Шейдеры: материалы включённых рендереров (с частицами), запись — на шейдер с числом объектов. Исходник читается у
+  `.shader` в `Assets/` — без комментариев, первый SubShader (и внутри `Category`), проходы и их LightMode, UsePass,
+  GrabPass, AlphaToMask, `#pragma vertex` и `#include` из `Assets/` (до 8 уровней, путь от папки шейдера или от
+  `Assets/`); встроенные `.cginc` не читаются. Встроенные и пакетные шейдеры — только ошибки и alpha-test.
 - Ассеты вне `Assets/` (пакеты, встроенные) и меши без импортёра — без проверок импорта и без
   исправлений.
 
@@ -363,7 +367,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 0.0002 с; развёртка под свет — допуск 0–1 0.001, наложения от 1 % на сетке 256 × 256; исправление Load Type — Streaming для клипов от 60 с;
 свет — «мелкий» в lightmap меньше 0,5 м, «много атласа» больше 20 %, широкий реалтайм-источник — больше 50 объектов в
 зоне, область проб — коробка всех проб + 1 м; частицы — больше 1000 / 5000 одновременно в системе и 20 000 в сцене,
-крупная прозрачная частица — от 1 м и от 20 одновременно.
+крупная прозрачная частица — от 1 м и от 20 одновременно; шейдер — больше 512 вариантов.
 
 ## Проверки
 
@@ -429,6 +433,13 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `MAT_KEYWORD_NO_TEXTURE` | I | ключевое слово `_NORMALMAP`, `_METALLICGLOSSMAP`, `_SPECGLOSSMAP`, `_PARALLAXMAP`, `_DETAIL_MULX2` без своей текстуры (исправление — выключить) | R |
 | `MAT_SIMPLE_STANDARD` | I | число материалов Standard только с альбедо (одна запись) | — |
 | `MAT_DEFAULT` | W | объект рисуется встроенным Default-Material | — |
+| **Shaders** | | | |
+| `SHADER_ERROR` | C | шейдер материала с ошибками, которые Unity уже знает (`ShaderUtil.ShaderHasError`), или не поддерживается (`isSupported`); у материала без шейдера (удалён — `Hidden/InternalErrorShader`) — запись на материал | — |
+| `SHADER_GRABPASS` | W / I | в первом SubShader исходника GrabPass без имени текстуры (W: копия экрана на каждый объект) или с именем (I: раз за кадр) | — |
+| `SHADER_MULTIPASS` | W | в первом SubShader больше одного прохода рисования: без LightMode или Always, ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме имён с SHADOW, META, DEFERRED, PREPASS, FORWARD_DELTA, FORWARDADD, MOTION) и один за surface-шейдер | — |
+| `SHADER_NO_STEREO` | C | stereo-режим Single Pass Instanced, функция `#pragma vertex` определена в исходнике или его `#include` из `Assets/`, а в нём нет `UNITY_VERTEX_OUTPUT_STEREO` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO` | — |
+| `SHADER_VARIANTS` | I | у шейдера из `Assets/` больше 512 вариантов (`ShaderUtil.GetVariantCount` через reflection; нет метода — молчит) | — |
+| `SHADER_ALPHA_TEST_MSAA` | I | MSAA в Quality больше 1x, у материала RenderType = TransparentCutout, в первом SubShader нет `AlphaToMask On` (или `AlphaToMask [свойство]`); у встроенных и пакетных шейдеров — считается, что нет; число — объектов с такими материалами | — |
 | **Lighting** | | | |
 | `LIGHT_REALTIME` | W | Point/Spot в Realtime | — |
 | `LIGHT_SHADOWED` | W / C | Realtime/Mixed источников с тенями больше порога | — |
@@ -573,7 +584,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
   `message`, `suggestion`, `autoFixable`, `accepted`). `summary` — `critical`, `warning`, `info` (без допустимых),
   `accepted` (число допустимых); `sceneBudgets` —
   `isEstimate`, `totalTris`, `trisLimit`, `estimatedDrawCalls`, `drawCallLimit`, `textureMemoryMB`,
-  `textureMemoryLimitMB`; `category` — `DrawCalls`, `Meshes`, `Textures`, `Materials`, `Lighting`, `Particles`, `Physics`, `Animators`,
+  `textureMemoryLimitMB`; `category` — `DrawCalls`, `Meshes`, `Textures`, `Materials`, `Shaders`, `Lighting`, `Particles`, `Physics`, `Animators`,
   `Audio`, `VRSpecific`, `General`; поля `profilerSnapshot` — в разделе о снимке ниже.
 - **CSV** (UTF-8 с BOM, RFC 4180): `CheckId, Category, Severity, Scene, ObjectPath, AssetPath, Message,
   Suggestion, AutoFixable, Accepted`.
@@ -692,6 +703,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `ViewpointTour.cs` | замер по точкам: результат (`TourMeasure`), план, шаги (`TourRun`), перенос rig и заморозка (`TourMath`), ход в Play Mode (`ViewpointTour`) |
 | `ViewpointTourPanel.cs` | панель «Замер в Play Mode» |
 | `PrefabFixes.cs` | «Копии вместе»: источник записи, строки копий, план исправлений, «Исправить в префабе» |
+| `ShaderSource.cs` | разбор исходника шейдера для проверок шейдеров: проходы первого SubShader, GrabPass, AlphaToMask, вершинные функции и `#include` проекта |
 | `HeavyReport.cs` | вкладка «Тяжёлые»: исходник рендерера (общий с «Что здесь тяжёлое»), сбор, доли, CSV |
 | `AuditorWindow.Heavy.cs` | вкладка «Тяжёлые» |
 | `LightReport.cs` | вкладка «Свет» и проверки света: атласы, объекты в lightmap, источники, пробы; исправление «На пробы» |
@@ -708,7 +720,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `VRBudgets.cs` | пороги и константы, файл бюджетов |
 | `XrInfo.cs`, `QualitySnapshot.cs` | XR и уровень качества |
 | `TextureMemory.cs` | оценка памяти текстуры |
-| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs`, `Strings.Particles.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые»; проверки частиц |
+| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs`, `Strings.Particles.cs`, `Strings.Shaders.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые»; проверки частиц; проверки шейдеров |
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |
 | `ReportExporter.cs` | JSON, CSV, командная строка |
 | `ProfilerCapture.cs` | снимок профайлера |

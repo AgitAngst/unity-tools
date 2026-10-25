@@ -4,7 +4,12 @@
 
 Unity 2019.4.41f2, `scripts\run-audit-tests.ps1` в тестовом сервере (`scripts\audit-server.ps1`: один batch-редактор,
 запущенный один раз, все шаги — командами в нём; шаги `cli-*` — через `ReportExporter.RunWithArgs`, без выхода из
-редактора): **38 шагов из 38 зелёные**, версия 1.6.0. С 1.6.0 — шаг `particles`: системы частиц на каждую проверку (оценка частиц
+редактора): **39 шагов из 39 зелёные**, версия 1.7.0. С 1.7.0 — шаг `shaders`: разбор исходника на строках (комментарии,
+Vertex / VertexLM / VertexLMRGBM как один проход, surface, UsePass тени и контура, Category, GrabPass с именем и без,
+AlphaToMask из свойства, шаблон Unlit, `vert_img`) и 11 шейдеров, которые тест пишет в проект (хороший, GrabPass с
+именем и без, контур вторым проходом, ForwardBase + ForwardAdd + ShadowCaster + UsePass, шаблон Unlit, вершинная функция
+из `.cginc` проекта, cutout с AlphaToMask и без, 1024 варианта, ошибка разбора), Standard opaque и cutout, материал с
+удалённым шейдером; при Single Pass Instanced и MSAA 4x — и без них. С 1.6.0 — шаг `particles`: системы частиц на каждую проверку (оценка частиц
 одновременно — Rate × Lifetime, Max Particles, Bursts и повторяющиеся Bursts, незацикленная, Rate over Distance,
 выключенная Emission, суб-эмиттер, кривая; размер — 3D, Size over Lifetime, Scaling Mode Hierarchy / Local / Shape),
 тишина на обычной и неактивной системе, на крупной непрозрачной и на малочисленной, на модуле Lights без Light, четыре исправления и одно Undo, пять копий префаба факела — «Исправить в
@@ -268,6 +273,12 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 - [ ] Исправления «Выключить модуль Lights», «Collision Quality = Medium», «Cast Shadows = Off», «Включить GPU
       Instancing»: окно подтверждения, после — эффект выглядит приемлемо, Ctrl+Z возвращает.
 - [ ] Префаб эффекта в нескольких копиях — «Исправить в префабе».
+
+## 6д. Шейдеры (этап 17, 1.7.0) — вручную, владелец
+
+- [ ] Уровень со своими шейдерами: категория «Шейдеры» — GrabPass, проходы, варианты правдоподобны; клик выделяет шейдер.
+- [ ] Single Pass Instanced в шлеме: шейдер с `SHADER_NO_STEREO` действительно виден одним глазом, после макросов — двумя.
+- [ ] Листва с alpha-test: `SHADER_ALPHA_TEST_MSAA`; с `AlphaToMask On` края при MSAA мягче.
 
 ## 7. Окно — вручную, владелец
 

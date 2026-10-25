@@ -180,6 +180,8 @@ namespace UnityTools.SceneOptimization
         public const int ParticlesTotalWarning = 20000;
         public const float LargeParticleMeters = 1f;
         public const int LargeParticleMinCount = 20;
+        // A shader of the project with more variants than this builds and loads slowly.
+        public const int ShaderVariantsInfo = 512;
 
         public const string FileName = "SceneOptimizationAuditor.json";
 
