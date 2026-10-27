@@ -1,6 +1,6 @@
 # unity-tools — документация
 
-Версия программы: 2.1.2
+Версия программы: 2.1.3
 
 Это документация того, что есть сейчас. Правила для сессий — [CLAUDE.md](../CLAUDE.md); замысел и
 этапы — [SPEC.md](../SPEC.md); что осталось проверить — [TESTPLAN.md](../TESTPLAN.md).
@@ -73,7 +73,7 @@
   `light-refl-ru-dark`, `light-refl-en-dark`, `light-refl-narrow-ru-dark`, `scope-build-ru-dark`, `scope-build-en-dark`,
   `empty-en-dark`, `empty-narrow-ru-dark`, `start-result-ru-dark`, `help-check-ru-dark`, `help-check-en-dark`,
   `help-check-narrow-ru-dark`, `scope-folder-ru-dark`, `scope-selection-ru-dark`, `scope-narrow-ru-dark`, `gain-ru-dark`, `gain-en-dark`, `gain-off-ru-dark`,
-  `gain-narrow-ru-dark`,
+  `gain-narrow-ru-dark`, `bars-ru-dark`, `bars-en-dark`, `bars-narrow-ru-dark`,
   `copies-ru-dark`, `copies-en-dark`, `heavy-empty-ru-dark`, `heavy-ru-dark`, `heavy-en-dark`, `heavy-narrow-ru-dark`,
   `picked-ru-dark`, `lightmap-picked-ru-dark`, `budgets-ru-dark`, `budgets-en-dark`, `profiler-en-dark`,
   `history-ru-dark`, `history-en-dark`) в тёмном скине (светлый в 2019.4 из кода не переключить): окно открывается

@@ -31,6 +31,8 @@ namespace UnityTools.SceneOptimization
         public static Color TextCritical { get { return EditorGUIUtility.isProSkin ? new Color32(0xFF, 0x8A, 0x8A, 0xFF) : new Color32(0x9E, 0x1C, 0x1C, 0xFF); } }
         public static Color TextWarning { get { return EditorGUIUtility.isProSkin ? new Color32(0xF2, 0xB8, 0x33, 0xFF) : new Color32(0x6B, 0x47, 0x00, 0xFF); } }
         public static Color TextOk { get { return EditorGUIUtility.isProSkin ? new Color32(0x5C, 0xC9, 0x68, 0xFF) : new Color32(0x18, 0x5A, 0x22, 0xFF); } }
+        // Text over a fill of a severity colour: at least 4.5:1 on red, about 7:1 on green and 10:1 on yellow.
+        public static readonly Color OnFillText = new Color32(0x09, 0x09, 0x09, 0xFF);
         // Background of a table row picked by a click: the editor selection colour.
         static Color SelectionColor { get { return EditorGUIUtility.isProSkin ? new Color(0.17f, 0.36f, 0.53f, 0.8f) : new Color(0.23f, 0.45f, 0.69f, 0.32f); } }
 
@@ -137,6 +139,8 @@ namespace UnityTools.SceneOptimization
         [NonSerialized] GUIStyle emptyText;
         [NonSerialized] GUIStyle chip;
         [NonSerialized] GUIStyle centeredMini;
+        // Figures of a budget bar over its fill: near black on every severity colour (owner, 27.10.2026).
+        [NonSerialized] GUIStyle onFill;
         [NonSerialized] GUIStyle boldFoldout;
         [NonSerialized] GUIStyle searchField;
         [NonSerialized] GUIStyle searchCancel;
@@ -187,6 +191,8 @@ namespace UnityTools.SceneOptimization
             emptyText = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
             chip = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleRight };
             centeredMini = new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
+            onFill = new GUIStyle(centeredMini);
+            onFill.normal.textColor = OnFillText;
             boldFoldout = new GUIStyle(EditorStyles.foldout) { fontStyle = FontStyle.Bold };
             searchField = GUI.skin.FindStyle("ToolbarSeachTextField") ?? EditorStyles.toolbarTextField;
             searchCancel = GUI.skin.FindStyle("ToolbarSeachCancelButton") ?? EditorStyles.toolbarButton;

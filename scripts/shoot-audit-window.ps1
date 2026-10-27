@@ -23,6 +23,10 @@ $shots = @(
     @("empty-narrow-ru-dark", "ru", "dark", @("-shotEmpty", "-shotWidth", "560")),
     @("start-result-ru-dark", "ru", "dark", @("-shotStart")),
     @("help-check-ru-dark", "ru", "dark", @("-shotGain", "off", "-shotHelp", "TEX_SIZE")),
+    # Budget bars of every colour: dark figures over the fill, the skin's colour after it.
+    @("bars-ru-dark", "ru", "dark", @("-shotGain", "off", "-shotBars")),
+    @("bars-en-dark", "en", "dark", @("-shotGain", "off", "-shotBars")),
+    @("bars-narrow-ru-dark", "ru", "dark", @("-shotGain", "off", "-shotBars", "-shotWidth", "560")),
     @("help-check-en-dark", "en", "dark", @("-shotGain", "off", "-shotHelp", "TEX_SIZE")),
     @("help-check-narrow-ru-dark", "ru", "dark", @("-shotGain", "off", "-shotHelp", "TEX_SIZE", "-shotWidth", "560")),
     @("problems-ru-dark", "ru", "dark", @("-shotExpand", "critical")),

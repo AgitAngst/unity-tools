@@ -32,17 +32,25 @@ namespace UnityTools.SceneOptimization
             float labelWidth = Mathf.Min(LabelColumn, rect.width * 0.35f);
             var bar = new Rect(rect.x + labelWidth, rect.y + 2f, rect.width - labelWidth, rect.height - 4f);
             GUI.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label);
+            float fill = critical > 0 ? Mathf.Clamp01((float)(value / critical)) : 0f;
+            float filled = Mathf.Round(bar.width * fill);
             if (Event.current.type == EventType.Repaint)
             {
                 EditorGUI.DrawRect(bar, EditorGUIUtility.isProSkin ? new Color(0.18f, 0.18f, 0.18f) : new Color(0.78f, 0.78f, 0.78f));
-                float fill = critical > 0 ? Mathf.Clamp01((float)(value / critical)) : 0f;
                 var color = value > critical ? CriticalColor : value > warning ? WarningColor : OkColor;
-                EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * fill, bar.height), color);
+                EditorGUI.DrawRect(new Rect(bar.x, bar.y, filled, bar.height), color);
                 float mark = critical > 0 ? Mathf.Clamp01((float)(warning / critical)) : 0f;
                 EditorGUI.DrawRect(new Rect(bar.x + bar.width * mark, bar.y, 1f, bar.height), new Color(0f, 0f, 0f, 0.5f));
             }
-            var text = Strings.Format("ui.budget.value", FormatNumber(value) + unit, FormatNumber(warning) + unit);
-            GUI.Label(bar, new GUIContent(text, Strings.Get("ui.budget.tip")), centeredMini);
+            // The figures change colour at the edge of the fill: near black over it, the skin's text colour after it.
+            var text = new GUIContent(Strings.Format("ui.budget.value", FormatNumber(value) + unit, FormatNumber(warning) + unit));
+            GUI.BeginClip(new Rect(bar.x, bar.y, filled, bar.height));
+            GUI.Label(new Rect(0f, 0f, bar.width, bar.height), text, onFill);
+            GUI.EndClip();
+            GUI.BeginClip(new Rect(bar.x + filled, bar.y, bar.width - filled, bar.height));
+            GUI.Label(new Rect(-filled, 0f, bar.width, bar.height), text, centeredMini);
+            GUI.EndClip();
+            GUI.Label(bar, new GUIContent("", Strings.Get("ui.budget.tip")), GUIStyle.none);
         }
 
         void DrawBudgetsTab()

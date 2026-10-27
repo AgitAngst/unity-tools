@@ -17,7 +17,7 @@ namespace AuditTestsEditor
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     //     [-shotLight atlases|objects|lights|probes|reflections] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
-    //     [-shotHelp <checkId>] [-shotStart]
+    //     [-shotHelp <checkId>] [-shotStart] [-shotBars]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -59,6 +59,10 @@ namespace AuditTestsEditor
                 originalByGain = GetByGain();
                 SetByGain(Arg("-shotGain") != "off");
             }
+            // Low thresholds for the gain scene: triangles yellow, draw calls green, texture memory red.
+            if (HasArg("-shotBars"))
+                SetField("budgets", new VRBudgets { sceneTrisWarning = 20000, sceneTrisCritical = 60000, drawCallsWarning = 30, drawCallsCritical = 60,
+                    textureMemoryWarningMB = 5, textureMemoryCriticalMB = 8 });
             if (!HasArg("-shotEmpty")) Invoke("Run");
             if (HasArg("-shotCopies")) Invoke("CopiesForShot", "ANIM_ALWAYS_ANIMATE");
             if (HasArg("-shotHeavy"))
