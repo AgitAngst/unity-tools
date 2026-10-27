@@ -16,8 +16,23 @@ namespace UnityTools.SceneOptimization
         public int textureMemoryCriticalMB;
     }
 
-    // Thresholds of the audit. Defaults are starting values for HTC Vive Pro on the target GPU (RTX 2070 unless
-    // the project picks another); projects override them in ProjectSettings/SceneOptimizationAuditor.json.
+    // A target headset: panels and refresh rates as the maker gives them, field of view of one eye.
+    public sealed class HeadsetPreset
+    {
+        public string id;
+        public string name;
+        public int panelWidth;
+        public int panelHeight;
+        public int[] rates;
+        public int defaultRate;
+        // Vertical, degrees; aspect — width / height of one eye.
+        public float fieldOfView;
+        public float aspect;
+        public bool wireless;
+    }
+
+    // Thresholds of the audit. Defaults are starting values for the target headset (HTC Vive Pro 2 Wireless) on the target
+    // GPU (RTX 2070 unless the project picks another); projects override them in ProjectSettings/SceneOptimizationAuditor.json.
     [Serializable]
     public sealed class VRBudgets
     {
@@ -34,8 +49,33 @@ namespace UnityTools.SceneOptimization
         };
         public const string DefaultGpu = "RTX2070";
 
+        // Owner, 27.10.2026: "the project has a Vive Pro 2 Wireless; add a choice and settings of the headset".
+        public static readonly HeadsetPreset[] Headsets =
+        {
+            new HeadsetPreset { id = "VivePro", name = "HTC Vive Pro", panelWidth = 1440, panelHeight = 1600, rates = new[] { 90 }, defaultRate = 90, fieldOfView = 110f, aspect = 0.9f },
+            new HeadsetPreset { id = "VivePro2", name = "HTC Vive Pro 2", panelWidth = 2448, panelHeight = 2448, rates = new[] { 90, 120 }, defaultRate = 90, fieldOfView = 116f, aspect = 1f },
+            // The wireless adapter carries 90 Hz.
+            new HeadsetPreset { id = "VivePro2Wireless", name = "HTC Vive Pro 2 Wireless", panelWidth = 2448, panelHeight = 2448, rates = new[] { 90 }, defaultRate = 90, fieldOfView = 116f, aspect = 1f, wireless = true },
+            new HeadsetPreset { id = "Index", name = "Valve Index", panelWidth = 1440, panelHeight = 1600, rates = new[] { 80, 90, 120, 144 }, defaultRate = 90, fieldOfView = 110f, aspect = 0.9f },
+        };
+        public const string DefaultHeadset = "VivePro2Wireless";
+        // A budget file from before headsets could be picked: the Vive Pro the audit was made for.
+        public const string LegacyHeadset = "VivePro";
+        // SteamVR at 100 % renders about 1.4 times the panel on each side, for the distortion of the lenses; the percent
+        // scales the area.
+        public const float RenderSupersample = 1.4f;
+        public const int RenderScaleMin = 20;
+        public const int RenderScaleMax = 500;
+        // The transparent share was set for the Vive Pro at 90 Hz and 100 %; other headsets divide it by their pixel rate.
+        public const int TransparentWarningBase = 100;
+        public const int TransparentCriticalBase = 200;
+
         // Id of the target GPU; empty in a budget file saved before GPUs could be picked.
         public string targetGpu = DefaultGpu;
+        // Target headset, its refresh rate and the SteamVR render resolution in percent.
+        public string targetHeadset = DefaultHeadset;
+        public int refreshRate = 90;
+        public int renderScale = 100;
         public int drawCallsWarning = 1000;
         public int drawCallsCritical = 2000;
         public int sceneTrisWarning = 3000000;
@@ -55,8 +95,9 @@ namespace UnityTools.SceneOptimization
         public float frameTimeWarningMs = 10f;
         public float frameTimeCriticalMs = 11.1f;
         // Share of the screen under transparent objects in one view, percent; above 100 means layers of overdraw.
-        public int transparentWarningPercent = 100;
-        public int transparentCriticalPercent = 200;
+        // The values of the default headset (Vive Pro 2 Wireless, 90 Hz, 100 %), as ApplyHeadset gives them.
+        public int transparentWarningPercent = 38;
+        public int transparentCriticalPercent = 77;
         // Memory of the lightmaps of the loaded scenes: color, direction and shadowmask textures.
         public int lightmapMemoryWarningMB = 128;
         public int lightmapMemoryCriticalMB = 256;
@@ -102,9 +143,83 @@ namespace UnityTools.SceneOptimization
             return budgets;
         }
 
+        // Defaults for the GPU, keeping the headset, its rate and percent.
+        public static VRBudgets DefaultsFor(string gpu, string headset, int rate, int scale)
+        {
+            var budgets = DefaultsFor(gpu);
+            budgets.ApplyHeadset(headset, rate, scale);
+            return budgets;
+        }
+
+        public static HeadsetPreset FindHeadset(string id)
+        {
+            foreach (var h in Headsets) if (h.id == id) return h;
+            return null;
+        }
+
+        public HeadsetPreset Headset { get { return FindHeadset(targetHeadset) ?? FindHeadset(LegacyHeadset); } }
+
+        // Render target of one eye at the SteamVR percent.
+        public int RenderWidth { get { return RenderSide(Headset.panelWidth, renderScale); } }
+        public int RenderHeight { get { return RenderSide(Headset.panelHeight, renderScale); } }
+
+        static int RenderSide(int panel, int scale)
+        {
+            return (int)Math.Round(panel * RenderSupersample * Math.Sqrt(scale / 100.0));
+        }
+
+        // Pixels of both eyes a second against the Vive Pro at 90 Hz and 100 %.
+        public double PixelFactor
+        {
+            get
+            {
+                var reference = FindHeadset(LegacyHeadset);
+                double baseRate = (double)RenderSide(reference.panelWidth, 100) * RenderSide(reference.panelHeight, 100) * reference.defaultRate;
+                return (double)RenderWidth * RenderHeight * refreshRate / baseRate;
+            }
+        }
+
+        public static float FrameCriticalFor(int rate) { return Round1(1000.0 / rate); }
+        public static float FrameWarningFor(int rate) { return Round1(1000.0 / rate * 0.9); }
+
+        static float Round1(double v) { return (float)Math.Round(v, 1, MidpointRounding.AwayFromZero); }
+
+        // FPS of the profiler: green from one below the rate, yellow from 89 % of it (89 and 80 at 90 Hz).
+        public int FpsWarning { get { return refreshRate - 1; } }
+        public int FpsCritical { get { return (int)Math.Round(refreshRate * 0.89); } }
+
+        // Fills the frame time and the transparent share for the headset; a rate it has not goes to its default.
+        public void ApplyHeadset(string id, int rate, int scale)
+        {
+            var h = FindHeadset(id);
+            if (h == null) return;
+            targetHeadset = h.id;
+            refreshRate = Array.IndexOf(h.rates, rate) >= 0 ? rate : h.defaultRate;
+            renderScale = Math.Max(RenderScaleMin, Math.Min(RenderScaleMax, scale));
+            frameTimeWarningMs = FrameWarningFor(refreshRate);
+            frameTimeCriticalMs = FrameCriticalFor(refreshRate);
+            transparentWarningPercent = TransparentFor(TransparentWarningBase);
+            transparentCriticalPercent = TransparentFor(TransparentCriticalBase);
+        }
+
+        int TransparentFor(int baseValue)
+        {
+            return Math.Max(1, (int)Math.Round(baseValue / PixelFactor));
+        }
+
+        // Frame time or transparent share edited by hand.
+        public bool HeadsetCustom
+        {
+            get
+            {
+                return Math.Abs(frameTimeWarningMs - FrameWarningFor(refreshRate)) > 0.01f || Math.Abs(frameTimeCriticalMs - FrameCriticalFor(refreshRate)) > 0.01f ||
+                       transparentWarningPercent != TransparentFor(TransparentWarningBase) || transparentCriticalPercent != TransparentFor(TransparentCriticalBase);
+            }
+        }
+
         // Fixed limits, kept here so every number of the audit lives in one place.
+        // Frames a second when the headset is not known (a tour plan without one); the thresholds follow the headset rate.
         public const int TargetFps = 90;
-        public const float TargetFrameMs = 1000f / TargetFps;
         public const int MultiMaterialWarning = 4;
         public const int InstancingMinInstances = 3;
         public const int MaxBonesPerVertex = 4;
@@ -152,11 +267,7 @@ namespace UnityTools.SceneOptimization
         // render resolution would (owner, 27.10.2026).
         public const int MinAntiAliasing = 2;
         public const int MaxAntiAliasing = 4;
-        public const float FpsWarning = 89f;
-        public const float FpsCritical = 80f;
-        // Viewpoints: one view frustum for both eyes of the Vive Pro, placement grid and limits.
-        public const float ViewFieldOfView = 110f;
-        public const float ViewAspect = 0.9f;
+        // Viewpoints: one view frustum for both eyes (its field of view is the headset's), placement grid and limits.
         public const float ViewNear = 0.05f;
         public const float ViewFar = 1000f;
         public const int ViewDirections = 8;
@@ -222,6 +333,8 @@ namespace UnityTools.SceneOptimization
             try
             {
                 var json = File.ReadAllText(FilePath);
+                // A file from before headsets could be picked was made for the Vive Pro at 90 Hz: what it lacks is the Vive Pro's.
+                if (json.IndexOf("\"targetHeadset\"", StringComparison.Ordinal) < 0) budgets.ApplyHeadset(LegacyHeadset, 90, 100);
                 JsonUtility.FromJsonOverwrite(json, budgets);
                 // A file from before GPUs could be picked keeps its thresholds as custom ones.
                 if (json.IndexOf("\"targetGpu\"", StringComparison.Ordinal) < 0) budgets.targetGpu = "";

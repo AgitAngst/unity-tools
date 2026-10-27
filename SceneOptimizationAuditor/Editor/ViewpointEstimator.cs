@@ -77,10 +77,22 @@ namespace UnityTools.SceneOptimization
             public int maximumLodLevel;
         }
 
-        // Estimates the viewpoints. The callback gets the viewpoint name and the share done and returns true to stop;
-        // then the set keeps its previous estimate and false comes back.
-        public static bool Estimate(ViewpointSet set, IList<Viewpoint> which, bool walls, Func<string, float, bool> cancelled)
+        // The field of view of the target headset, set by Estimate and Heavy.
+        public static float FieldOfView = 110f;
+        public static float Aspect = 0.9f;
+
+        public static void UseHeadset(HeadsetPreset headset)
         {
+            FieldOfView = headset.fieldOfView;
+            Aspect = headset.aspect;
+        }
+
+        // Estimates the viewpoints in the frustum of the headset of the budgets (the saved ones when none are given). The
+        // callback gets the viewpoint name and the share done and returns true to stop; then the set keeps its previous
+        // estimate and false comes back.
+        public static bool Estimate(ViewpointSet set, IList<Viewpoint> which, bool walls, Func<string, float, bool> cancelled, VRBudgets budgets = null)
+        {
+            UseHeadset((budgets ?? VRBudgets.Load()).Headset);
             var watch = System.Diagnostics.Stopwatch.StartNew();
             var cache = Collect();
             if (walls) Physics.SyncTransforms();
@@ -197,7 +209,7 @@ namespace UnityTools.SceneOptimization
         public static Matrix4x4 ViewProjection(Vector3 eye, float yaw, float far)
         {
             var view = Matrix4x4.Scale(new Vector3(1f, 1f, -1f)) * Matrix4x4.TRS(eye, Quaternion.Euler(0f, yaw, 0f), Vector3.one).inverse;
-            var projection = Matrix4x4.Perspective(VRBudgets.ViewFieldOfView, VRBudgets.ViewAspect, VRBudgets.ViewNear, far);
+            var projection = Matrix4x4.Perspective(FieldOfView, Aspect, VRBudgets.ViewNear, far);
             return projection * view;
         }
 
@@ -250,7 +262,7 @@ namespace UnityTools.SceneOptimization
             for (int g = 0; g < c.groups.Count; g++)
             {
                 var group = c.groups[g];
-                float height = RelativeHeight(group.size, Vector3.Distance(eye, group.reference), VRBudgets.ViewFieldOfView);
+                float height = RelativeHeight(group.size, Vector3.Distance(eye, group.reference), FieldOfView);
                 levels[g] = LodLevel(height, group.transitions, c.lodBias, c.maximumLodLevel);
             }
             return levels;
@@ -314,6 +326,7 @@ namespace UnityTools.SceneOptimization
         // What the direction of the viewpoint sees, grouped by source prefab or model, heaviest first.
         public static List<HeavyEntry> Heavy(Viewpoint p, int directionIndex, VRBudgets budgets, bool walls, bool byDrawCalls)
         {
+            UseHeadset(budgets.Headset);
             var list = new List<HeavyEntry>();
             if (!p.Estimated || directionIndex < 0 || directionIndex >= p.directions.Count) return list;
             var c = Collect();
@@ -347,7 +360,7 @@ namespace UnityTools.SceneOptimization
                 float size = Mathf.Max(it.bounds.size.x, Mathf.Max(it.bounds.size.y, it.bounds.size.z));
                 bool lod0 = it.group < 0 || levels[it.group] == 0;
                 if (lod0 && it.tris > VRBudgets.FarLod0MinTris &&
-                    RelativeHeight(size, Vector3.Distance(eye, it.bounds.center), VRBudgets.ViewFieldOfView) < VRBudgets.FarLod0ScreenShare)
+                    RelativeHeight(size, Vector3.Distance(eye, it.bounds.center), FieldOfView) < VRBudgets.FarLod0ScreenShare)
                     Mark(entry, "far");
                 if (it.group < 0 && it.tris > budgets.objectTrisWarning) Mark(entry, "nolod");
                 if (it.casts && size < VRBudgets.SmallShadowMeters) Mark(entry, "shadow");

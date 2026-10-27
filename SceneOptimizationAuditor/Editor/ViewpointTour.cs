@@ -81,11 +81,13 @@ namespace UnityTools.SceneOptimization
         public TourMover mover;
         public string objectPath = "";
         public bool startedInPlay;
+        // Frames a second the tour is expected to run at: the refresh rate of the headset.
+        public int fps = VRBudgets.TargetFps;
 
         public int Steps { get { return stops.Sum(s => s.yaws.Count); } }
 
-        // Seconds the tour takes at 90 frames per second.
-        public float Seconds { get { return (settle + Steps * (warmup + frames)) / (float)VRBudgets.TargetFps; } }
+        // Seconds the tour takes at the refresh rate of the headset.
+        public float Seconds { get { return (settle + Steps * (warmup + frames)) / (float)fps; } }
     }
 
     public enum TourStepKind { Wait, Move, Done }
@@ -142,7 +144,7 @@ namespace UnityTools.SceneOptimization
             get
             {
                 int left = plan.Steps - StepsDone;
-                return left * (plan.warmup + plan.frames) / (float)VRBudgets.TargetFps;
+                return left * (plan.warmup + plan.frames) / (float)plan.fps;
             }
         }
 
@@ -238,7 +240,7 @@ namespace UnityTools.SceneOptimization
         // A head farther than this from the viewpoint at the end of the warm-up: the game moved the player.
         public const float MovedMetres = 0.5f;
 
-        // Worst direction. With the headset the frame is paced to 90 Hz, so frame time shows no headroom: dropped frames
+        // Worst direction. With the headset the frame is paced to its refresh rate, so frame time shows no headroom: dropped frames
         // first, then the larger of CPU and GPU time. Without it — frame time.
         public static int WorstOf(List<DirectionMeasure> directions, bool headset)
         {
@@ -322,10 +324,12 @@ namespace UnityTools.SceneOptimization
         }
 
         // Plan of a tour over the viewpoints: worst by estimate first, their directions worst first.
-        public static TourPlan PlanOf(ViewpointSet set, IList<Viewpoint> points, int frames, int warmup, int directions, TourMover mover, string objectPath)
+        public static TourPlan PlanOf(ViewpointSet set, IList<Viewpoint> points, int frames, int warmup, int directions, TourMover mover, string objectPath,
+            int fps = VRBudgets.TargetFps)
         {
             var plan = new TourPlan
             {
+                fps = Mathf.Max(1, fps),
                 scenes = set.scenes,
                 frames = Mathf.Max(1, frames),
                 warmup = Mathf.Max(0, warmup),

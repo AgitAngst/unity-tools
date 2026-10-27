@@ -637,7 +637,7 @@ namespace UnityTools.SceneOptimization
             try
             {
                 done = ViewpointEstimator.Estimate(set, which, vpWalls,
-                    (name, share) => EditorUtility.DisplayCancelableProgressBar(Strings.Get("ui.vp.progress"), name, share));
+                    (name, share) => EditorUtility.DisplayCancelableProgressBar(Strings.Get("ui.vp.progress"), name, share), budgets);
             }
             finally
             {
@@ -700,7 +700,7 @@ namespace UnityTools.SceneOptimization
             var settings = new PlacementSettings { navMesh = true, teleports = true, cameras = true, rays = true, step = 6f };
             set.placement = settings;
             set.ReplaceAuto(ViewpointPlacer.Place(settings, out step), step);
-            ViewpointEstimator.Estimate(set, set.points, false, null);
+            ViewpointEstimator.Estimate(set, set.points, false, null, budgets);
             set.Save();
             var worst = SortedViewpoints(set).FirstOrDefault();
             if (worst != null) SelectViewpoint(worst, false);
@@ -741,8 +741,8 @@ namespace UnityTools.SceneOptimization
             {
                 Handles.color = Color.white;
                 Handles.ArrowHandleCap(0, p.position, rotation, handle * 1.1f, EventType.Repaint);
-                float halfHeight = Mathf.Tan(VRBudgets.ViewFieldOfView * 0.5f * Mathf.Deg2Rad) * VpFrustumMeters;
-                float halfWidth = halfHeight * VRBudgets.ViewAspect;
+                float halfHeight = Mathf.Tan(budgets.Headset.fieldOfView * 0.5f * Mathf.Deg2Rad) * VpFrustumMeters;
+                float halfWidth = halfHeight * budgets.Headset.aspect;
                 var corners = new[]
                 {
                     new Vector3(-halfWidth, -halfHeight, VpFrustumMeters), new Vector3(halfWidth, -halfHeight, VpFrustumMeters),

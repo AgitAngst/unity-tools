@@ -65,7 +65,7 @@ namespace UnityTools.SceneOptimization
         void DrawSnapshot(ProfilerSnapshot s, ProfilerSnapshot p)
         {
             var b = budgets;
-            MetricRow("ui.m.fps", Triple(s.avgFPS, s.minFPS, s.maxFPS), FpsColor(s.avgFPS), p != null ? (double?)(s.avgFPS - p.avgFPS) : null, true);
+            MetricRow("ui.m.fps", Triple(s.avgFPS, s.minFPS, s.maxFPS), FpsColor(s.avgFPS, budgets), p != null ? (double?)(s.avgFPS - p.avgFPS) : null, true);
             MetricRow("ui.m.cpu", Pair(s.avgCPUms, s.peakCPUms), FrameColor(s.avgCPUms, b), p != null ? Delta(s.avgCPUms, p.avgCPUms) : null, false);
             MetricRow("ui.m.gpu", Pair(s.avgGPUms, s.peakGPUms), FrameColor(s.avgGPUms, b), p != null ? Delta(s.avgGPUms, p.avgGPUms) : null, false);
             MetricRow("ui.m.drawCalls", FormatNumber(s.drawCalls), RangeColor(s.drawCalls, b.drawCallsWarning, b.drawCallsCritical),
@@ -115,10 +115,10 @@ namespace UnityTools.SceneOptimization
             return current - previous;
         }
 
-        static Color? FpsColor(float fps)
+        static Color? FpsColor(float fps, VRBudgets b)
         {
-            if (fps >= VRBudgets.FpsWarning) return OkColor;
-            return fps >= VRBudgets.FpsCritical ? WarningColor : CriticalColor;
+            if (fps >= b.FpsWarning) return OkColor;
+            return fps >= b.FpsCritical ? WarningColor : CriticalColor;
         }
 
         static Color? FrameColor(float ms, VRBudgets b)

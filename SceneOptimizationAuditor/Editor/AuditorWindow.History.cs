@@ -159,7 +159,7 @@ namespace UnityTools.SceneOptimization
                 var firstFps = points.Skip(from).Take(to - from + 1).FirstOrDefault(p => p.hasProfiler);
                 double value = lastFps != null ? lastFps.avgFPS : double.NaN;
                 double delta = lastFps != null && firstFps != null ? lastFps.avgFPS - firstFps.avgFPS : 0;
-                Trend("ui.m.fps", fps, OkColor, VRBudgets.FpsWarning, value, delta, true);
+                Trend("ui.m.fps", fps, OkColor, budgets.FpsWarning, value, delta, true);
             }
             if (points.Any(p => p.hasViewpoints))
             {

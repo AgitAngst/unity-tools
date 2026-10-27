@@ -32,16 +32,17 @@ namespace UnityTools.SceneOptimization
                 ctx.ReportSetting("PHYS_SOLVER_ITERATIONS", Category.Physics, Severity.Info, "Project/Physics",
                     Physics.defaultSolverIterations, VRBudgets.SolverIterationsInfo);
 
-            // In VR the physics step should match the 90 Hz display, otherwise held objects jitter.
+            // In VR the physics step should match the refresh rate of the headset, otherwise held objects jitter.
+            int rate = ctx.budgets.refreshRate;
             float step = Time.fixedDeltaTime;
-            float target = 1f / VRBudgets.TargetFps;
+            float target = 1f / rate;
             float hz = step > 0f ? 1f / step : 0f;
             if (step > target + VRBudgets.FixedStepTolerance)
                 ctx.ReportSetting("PHYS_FIXED_STEP_SLOW", Category.Physics, Severity.Warning, "Project/Time",
-                    System.Math.Round(step, 4), System.Math.Round(hz, 1), VRBudgets.TargetFps);
+                    System.Math.Round(step, 4), System.Math.Round(hz, 1), rate);
             else if (step < target - VRBudgets.FixedStepTolerance)
                 ctx.ReportSetting("PHYS_FIXED_STEP_FAST", Category.Physics, Severity.Info, "Project/Time",
-                    System.Math.Round(step, 4), System.Math.Round(hz, 1), VRBudgets.TargetFps);
+                    System.Math.Round(step, 4), System.Math.Round(hz, 1), rate);
         }
     }
 }

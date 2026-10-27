@@ -18,7 +18,7 @@ namespace UnityTools.SceneOptimization
             Add("ui.gpu.context.edited", "GPU: {0}, custom thresholds", "Видеокарта: {0}, свои пороги");
             Add("ui.gpu.context.custom", "Custom thresholds", "Пороги: свои");
             Add("ui.b.transparent", "Transparent in frame, % of screen", "Прозрачное в кадре, % экрана");
-            Add("ui.budgets.reset.tip", "Thresholds of the chosen GPU, the others back to defaults.", "Пороги выбранной видеокарты, остальные — по умолчанию.");
+            Add("ui.budgets.reset.tip", "Thresholds of the chosen GPU and headset (its rate and percent stay), the others back to defaults.", "Пороги выбранных видеокарты и шлема (его частота и процент остаются), остальные — по умолчанию.");
 
             // Viewpoints tab.
             Add("ui.tab.viewpoints", "Viewpoints", "Точки обзора");
@@ -169,8 +169,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.vp.mover.Camera", "Camera", "Камера");
             Add("ui.vp.col.frame", "Frame, ms", "Кадр, мс");
             Add("ui.vp.col.frame.short", "Frame", "Кадр");
-            Add("ui.vp.col.frame.tip", "Average frame time from the unscaled delta time. With the headset it stays near 11.1 ms.",
-                "Среднее время кадра по unscaled delta time. Со шлемом держится около 11,1 мс.");
+            Add("ui.vp.col.frame.tip", "Average frame time from the unscaled delta time. With the headset it stays near 1000 / refresh rate (11.1 ms at 90 Hz).",
+                "Среднее время кадра по unscaled delta time. Со шлемом держится около 1000 / частота (11,1 мс на 90 Гц).");
             Add("ui.vp.col.peak", "Peak, ms", "Пик, мс");
             Add("ui.vp.col.peak.tip", "Longest frame of the measured ones.", "Самый долгий кадр из измеренных.");
             Add("ui.vp.col.cpu", "CPU", "CPU");
@@ -197,8 +197,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.vp.cmp.note", "The measurement has batching, instancing and occlusion culling; the estimate is an upper bound without them.",
                 "Замер — с батчингом, instancing и occlusion culling; оценка — верхняя граница без них.");
             Add("ui.vp.tour.footer",
-                "A measurement in the editor is a guide; final numbers come from the profiler on a Development Build. With the headset the frame stays at 11.1 ms, so the worst direction is picked by dropped frames, then by the larger of CPU and GPU.",
-                "Замер в редакторе — ориентир; итоговые цифры — профайлер на Development Build. Со шлемом кадр держится на 11,1 мс, поэтому худшее направление выбирается по пропущенным кадрам, затем по большему из CPU и GPU.");
+                "A measurement in the editor is a guide; final numbers come from the profiler on a Development Build. With the headset the frame stays at 1000 / refresh rate, so the worst direction is picked by dropped frames, then by the larger of CPU and GPU.",
+                "Замер в редакторе — ориентир; итоговые цифры — профайлер на Development Build. Со шлемом кадр держится на 1000 / частота, поэтому худшее направление выбирается по пропущенным кадрам, затем по большему из CPU и GPU.");
             Add("ui.vp.min", "{0} min", "{0} мин");
             Add("ui.vp.minsec", "{0} min {1} s", "{0} мин {1} с");
             Add("ui.vp.sec", "{0} s", "{0} с");

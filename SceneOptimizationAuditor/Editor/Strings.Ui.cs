@@ -141,8 +141,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.h.since", "Since the last point ({0}): Critical {1} · Warnings {2}", "С прошлой точки ({0}): критичных {1} · предупреждений {2}");
             Add("ui.h.since.tip", "Compared with the previous point of the History tab.", "Сравнение с прошлой точкой вкладки «История».");
             Add("ui.empty.title", "VR scene audit", "Аудит VR-сцены");
-            Add("ui.empty.text", "Finds what keeps the level from 90 FPS in the HTC Vive Pro: draw calls, meshes, textures, lighting, particles, shaders, physics, animation, audio and VR settings. Scenes and assets change only when you press Fix and confirm.",
-                "Найдёт, что мешает уровню держать 90 FPS в HTC Vive Pro: draw calls, меши, текстуры, свет, частицы, шейдеры, физику, анимацию, звук и настройки VR. Сцены и ассеты меняются, только когда вы нажмёте «Исправить» и подтвердите.");
+            Add("ui.empty.text", "Finds what keeps the level from the frame rate of the headset: draw calls, meshes, textures, lighting, particles, shaders, physics, animation, audio and VR settings. Scenes and assets change only when you press Fix and confirm.",
+                "Найдёт, что мешает уровню держать частоту кадров шлема: draw calls, меши, текстуры, свет, частицы, шейдеры, физику, анимацию, звук и настройки VR. Сцены и ассеты меняются, только когда вы нажмёте «Исправить» и подтвердите.");
             Add("ui.verdict.critical", "{0} critical problems: fix them first.", "Критичных проблем: {0} — исправьте их в первую очередь.");
             Add("ui.verdict.warning", "No critical problems. {0} warnings are worth a look.", "Критичных проблем нет. Предупреждений: {0} — стоит просмотреть.");
             Add("ui.verdict.clean", "No critical problems and no warnings.", "Нет ни критичных проблем, ни предупреждений.");

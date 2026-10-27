@@ -121,6 +121,7 @@ namespace UnityTools.SceneOptimization
                 XrLine(result.xr), StereoLine(result.xr),
                 Strings.Format(q.isStandaloneDefault ? "ui.quality.default" : "ui.quality.current", q.name),
                 GpuLine(result.budgets),
+                HeadsetLine(result.budgets),
                 ScopeContext()
             };
             EditorGUILayout.BeginHorizontal();

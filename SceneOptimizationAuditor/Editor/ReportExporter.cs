@@ -177,8 +177,13 @@ namespace UnityTools.SceneOptimization
             public string[] scenes;
             public string timestamp;
             public string toolVersion = ToolVersion.Full;
+            // Filled from the target headset by ToJson.
             public string platform = "PC VR - HTC Vive Pro";
             public int targetFPS = VRBudgets.TargetFps;
+            // Id of the target headset, its refresh rate and the SteamVR render resolution in percent.
+            public string headset;
+            public int refreshRate;
+            public int renderScale;
             // Id of the target GPU, or "Custom" when the thresholds differ from its set.
             public string targetGpu;
             public XrDto xr;
@@ -231,6 +236,11 @@ namespace UnityTools.SceneOptimization
                 scenes = result.sceneNames,
                 timestamp = result.time.ToString("o", CultureInfo.InvariantCulture),
                 targetGpu = result.budgets.GpuReportName,
+                platform = "PC VR - " + result.budgets.Headset.name,
+                targetFPS = result.budgets.refreshRate,
+                headset = result.budgets.Headset.id,
+                refreshRate = result.budgets.refreshRate,
+                renderScale = result.budgets.renderScale,
                 xr = new XrDto
                 {
                     system = result.xr.SystemName,

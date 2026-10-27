@@ -46,8 +46,8 @@ namespace UnityTools.SceneOptimization
                 "PHYS_CONCAVE_KINEMATIC", "Non-convex collider on a kinematic body", "Невыпуклый коллайдер на kinematic теле",
                 "PHYS_RENDER_MESH_COLLIDER", "Collider on a heavy render mesh", "Коллайдер на тяжёлом рендер-меше",
                 "PHYS_SOLVER_ITERATIONS", "Many solver iterations", "Много итераций решателя",
-                "PHYS_FIXED_STEP_SLOW", "Physics slower than 90 Hz", "Физика реже 90 Гц",
-                "PHYS_FIXED_STEP_FAST", "Physics faster than 90 Hz", "Физика чаще 90 Гц",
+                "PHYS_FIXED_STEP_SLOW", "Physics slower than the headset", "Физика реже частоты шлема",
+                "PHYS_FIXED_STEP_FAST", "Physics faster than the headset", "Физика чаще частоты шлема",
                 "ANIM_ALWAYS_ANIMATE", "Animator always animates", "Animator анимирует всегда",
                 "ANIM_NO_CONTROLLER", "Animator without controller", "Animator без контроллера",
                 "ANIM_ROOT_MOTION", "Root motion without a handler", "Root motion без обработчика",
@@ -213,8 +213,8 @@ namespace UnityTools.SceneOptimization
             Add("LIGHT_REALTIME.fix", "Bake it or set it to Mixed; every realtime light adds a pass per lit object.",
                 "Запеките его или поставьте Mixed; каждый realtime-источник добавляет проход по освещённым объектам.");
             Add("LIGHT_SHADOWED", "{0} realtime or mixed lights cast shadows (limit {1}): {2}.", "{0} realtime/mixed источников с тенями (порог {1}): {2}.");
-            Add("LIGHT_SHADOWED.fix", "Shadow maps are expensive at the Vive Pro resolution; keep one shadowed light.",
-                "Карты теней дороги при разрешении Vive Pro; оставьте один источник с тенями.");
+            Add("LIGHT_SHADOWED.fix", "Shadow maps are expensive at headset resolutions; keep one shadowed light.",
+                "Карты теней дороги при разрешении шлема; оставьте один источник с тенями.");
             Add("LIGHT_NO_UV1", "Mesh {0} is baked into lightmaps but has no lightmap UVs (UV1).", "Меш {0} запекается в lightmap, но у него нет развёртки под свет (UV1).");
             Add("LIGHT_NO_UV1.fix", "Turn on Generate Lightmap UVs in the model import settings, or add a second UV set in the 3D editor.",
                 "Включите галочку Generate Lightmap UVs в импорте модели или сделайте второй UV-канал в 3D-редакторе.");
@@ -255,10 +255,10 @@ namespace UnityTools.SceneOptimization
             Add("PHYS_SOLVER_ITERATIONS", "Default Solver Iterations is {0} (more than {1}).", "Default Solver Iterations = {0} (больше {1}).");
             Add("PHYS_SOLVER_ITERATIONS.fix", "Lower it if the scene has no complex joints.", "Понизьте, если в сцене нет сложных сочленений.");
             Add("PHYS_FIXED_STEP_SLOW", "Fixed Timestep is {0} s ({1} Hz), slower than the {2} Hz display.", "Fixed Timestep {0} с ({1} Гц) — реже, чем экран {2} Гц.");
-            Add("PHYS_FIXED_STEP_SLOW.fix", "Held objects jitter; set Fixed Timestep to 1/90 (0.0111) or interpolate rigidbodies.",
-                "Предметы в руках дрожат; поставьте Fixed Timestep 1/90 (0.0111) или интерполяцию Rigidbody.");
+            Add("PHYS_FIXED_STEP_SLOW.fix", "Held objects jitter; set Fixed Timestep to 1/{2} s or interpolate rigidbodies.",
+                "Предметы в руках дрожат; поставьте Fixed Timestep 1/{2} с или интерполяцию Rigidbody.");
             Add("PHYS_FIXED_STEP_FAST", "Fixed Timestep is {0} s ({1} Hz), faster than the {2} Hz display.", "Fixed Timestep {0} с ({1} Гц) — чаще, чем экран {2} Гц.");
-            Add("PHYS_FIXED_STEP_FAST.fix", "Extra physics steps cost CPU; 1/90 is enough for VR.", "Лишние шаги физики тратят CPU; для VR хватает 1/90.");
+            Add("PHYS_FIXED_STEP_FAST.fix", "Extra physics steps cost CPU; 1/{2} s is enough for the headset.", "Лишние шаги физики тратят CPU; для шлема хватает 1/{2} с.");
         }
 
         static void AddAnimators()
@@ -305,7 +305,7 @@ namespace UnityTools.SceneOptimization
                 "Если это звук мира — сделайте 3D для погружения; музыка, UI и озвучка — нормально в 2D.");
             Add("AUDIO_2D_SOURCE.do", "Set Spatial Blend to 1 (3D)", "Поставить Spatial Blend = 1 (3D)");
             Add("AUDIO_SOURCE_COUNT", "{0} active AudioSources (limit {1}; real voices {2}).", "{0} активных AudioSource (порог {1}; реальных голосов {2}).");
-            Add("AUDIO_SOURCE_COUNT.fix", "Mixing costs CPU at 90 FPS; pool sources and disable silent ones.", "Микширование тратит CPU при 90 FPS; переиспользуйте источники и выключайте молчащие.");
+            Add("AUDIO_SOURCE_COUNT.fix", "Mixing costs CPU at the frame rate of the headset; pool sources and disable silent ones.", "Микширование тратит CPU на частоте кадров шлема; переиспользуйте источники и выключайте молчащие.");
             Add("AUDIO_PRIORITY_ZERO", "{0} AudioSources have priority 0 (more than {1}).", "У {0} AudioSource приоритет 0 (больше {1}).");
             Add("AUDIO_PRIORITY_ZERO.fix", "Keep the highest priority for a few key sounds.", "Оставьте высший приоритет нескольким ключевым звукам.");
             Add("AUDIO_LISTENERS_MANY", "{0} active AudioListeners in the loaded scenes.", "{0} активных AudioListener в загруженных сценах.");
@@ -318,7 +318,7 @@ namespace UnityTools.SceneOptimization
             Add("AUDIO_DSP_BUFFER", "DSP Buffer Size is {0}.", "DSP Buffer Size = {0}.");
             Add("AUDIO_DSP_BUFFER.fix", "Good Latency is the balance for VR; Best Latency costs CPU.", "Для VR баланс — Good Latency; Best Latency тратит CPU.");
             Add("AUDIO_SPEAKER_MODE", "Default Speaker Mode is {0}.", "Default Speaker Mode = {0}.");
-            Add("AUDIO_SPEAKER_MODE.fix", "Vive Pro headphones are stereo; use Stereo.", "Наушники Vive Pro — стерео; поставьте Stereo.");
+            Add("AUDIO_SPEAKER_MODE.fix", "The headphones of the headset are stereo; use Stereo.", "Наушники шлема — стерео; поставьте Stereo.");
             Add("AUDIO_NO_SPATIALIZER", "No spatializer plugin is selected.", "Не выбран spatializer.");
             Add("AUDIO_NO_SPATIALIZER.fix", "An HRTF spatializer improves sound localization in VR.", "HRTF-spatializer улучшает локализацию звука в VR.");
         }
@@ -329,12 +329,12 @@ namespace UnityTools.SceneOptimization
             Add("VR_NOT_ENABLED.fix", "Enable Virtual Reality Supported with OpenVR, or an OpenVR loader in XR Plug-in Management.",
                 "Включите Virtual Reality Supported с OpenVR или загрузчик OpenVR в XR Plug-in Management.");
             Add("VR_NO_OPENVR", "VR is enabled without OpenVR ({0}).", "VR включён без OpenVR ({0}).");
-            Add("VR_NO_OPENVR.fix", "Add OpenVR: the Vive Pro runs through SteamVR.", "Добавьте OpenVR: Vive Pro работает через SteamVR.");
+            Add("VR_NO_OPENVR.fix", "Add OpenVR: Vive and Index headsets run through SteamVR.", "Добавьте OpenVR: шлемы Vive и Index работают через SteamVR.");
             Add("VR_BOTH_SYSTEMS", "Legacy VR and XR Plug-in Management are both enabled.", "Включены и legacy VR, и XR Plug-in Management.");
             Add("VR_BOTH_SYSTEMS.fix", "Keep only one of them.", "Оставьте только одну систему.");
             Add("VR_STEREO_MODE", "Stereo rendering mode is {0}.", "Режим stereo — {0}.");
-            Add("VR_STEREO_MODE.fix", "Single Pass Instanced is recommended at the Vive Pro resolution; custom shaders need stereo instancing macros (UNITY_VERTEX_INPUT_INSTANCE_ID, UNITY_VERTEX_OUTPUT_STEREO).",
-                "При разрешении Vive Pro рекомендуется Single Pass Instanced; свои шейдеры должны поддерживать stereo instancing (UNITY_VERTEX_INPUT_INSTANCE_ID, UNITY_VERTEX_OUTPUT_STEREO).");
+            Add("VR_STEREO_MODE.fix", "Single Pass Instanced is recommended at headset resolutions; custom shaders need stereo instancing macros (UNITY_VERTEX_INPUT_INSTANCE_ID, UNITY_VERTEX_OUTPUT_STEREO).",
+                "При разрешении шлема рекомендуется Single Pass Instanced; свои шейдеры должны поддерживать stereo instancing (UNITY_VERTEX_INPUT_INSTANCE_ID, UNITY_VERTEX_OUTPUT_STEREO).");
             Add("VR_DEFERRED_TIER", "Standalone graphics tier uses the Deferred rendering path.", "Графический уровень Standalone использует Deferred.");
             Add("VR_DEFERRED_TIER.fix", "Use Forward: MSAA does not work in Deferred and stereo Deferred is expensive.", "Используйте Forward: в Deferred не работает MSAA, а stereo в Deferred дорого.");
             Add("VR_DEFERRED_CAMERA", "VR camera uses the Deferred rendering path.", "VR-камера использует Deferred.");

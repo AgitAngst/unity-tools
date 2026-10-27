@@ -248,7 +248,7 @@ namespace AuditTestsEditor
             });
             group.size = 2f;
             float bias = QualitySnapshot.Capture().lodBias;
-            float distance = group.size * bias / (0.3f * 2f * Mathf.Tan(VRBudgets.ViewFieldOfView * 0.5f * Mathf.Deg2Rad));
+            float distance = group.size * bias / (0.3f * 2f * Mathf.Tan(VRBudgets.FindHeadset("VivePro").fieldOfView * 0.5f * Mathf.Deg2Rad));
             root.transform.position = new Vector3(0f, 1.7f, distance) - group.localReferencePoint;
             EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
 
@@ -354,7 +354,7 @@ namespace AuditTestsEditor
                 var b = VRBudgets.Load();
                 Check(b.targetGpu == "RTX2070" && b.sceneTrisWarning == 3000000 && b.sceneTrisCritical == 6000000 &&
                       b.textureMemoryWarningMB == 1536 && b.textureMemoryCriticalMB == 2048 && !b.IsCustom, "without a budget file: RTX 2070 and its thresholds");
-                Check(b.transparentWarningPercent == 100 && b.transparentCriticalPercent == 200, "transparent in frame: 100 / 200 %");
+                Check(b.transparentWarningPercent == 38 && b.transparentCriticalPercent == 77, "transparent in frame of the default headset: 38 / 77 %");
                 Check(b.drawCallsWarning == 1000 && b.frameTimeCriticalMs == 11.1f, "other thresholds keep their defaults");
 
                 b.ApplyGpu("RTX2060");
@@ -443,7 +443,8 @@ namespace AuditTestsEditor
             set.points.Clear();
             var p = set.AddManual(eye, 0f);
             p.hasYaw = false;
-            ViewpointEstimator.Estimate(set, set.points, walls, null);
+            // The shares below are measured in the frustum of the Vive Pro.
+            ViewpointEstimator.Estimate(set, set.points, walls, null, ViveProBudgets());
             return set;
         }
     }

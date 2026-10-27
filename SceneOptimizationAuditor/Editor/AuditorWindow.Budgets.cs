@@ -66,6 +66,7 @@ namespace UnityTools.SceneOptimization
             GUILayout.Space(8f);
             EditorGUILayout.BeginVertical();
             DrawGpuRow();
+            DrawHeadsetRows();
             var head = EditorGUILayout.GetControlRect();
             float column = (head.width - LabelColumn) / 2f;
             GUI.Label(new Rect(head.x + LabelColumn, head.y, column, head.height), Strings.Get("ui.budgets.warning"), EditorStyles.miniBoldLabel);
@@ -90,7 +91,7 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(new GUIContent(Strings.Get("ui.budgets.reset"), Strings.Get("ui.budgets.reset.tip")), GUILayout.Width(130f)))
-                budgets = VRBudgets.DefaultsFor(budgets.targetGpu);
+                budgets = VRBudgets.DefaultsFor(budgets.targetGpu, budgets.targetHeadset, budgets.refreshRate, budgets.renderScale);
             if (GUILayout.Button(Strings.Get("ui.budgets.save"), GUILayout.Width(130f))) budgets.Save();
             EditorGUILayout.EndHorizontal();
             GUILayout.Label(Strings.Get("ui.budgets.rerun"), wrapMini);
@@ -120,6 +121,57 @@ namespace UnityTools.SceneOptimization
             GUILayout.Label(Strings.Get("ui.gpu.note"), wrapMini);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(4f);
+        }
+
+        // Headset, refresh rate and SteamVR percent; changing any fills the frame time and the transparent share.
+        void DrawHeadsetRows()
+        {
+            var h = budgets.Headset;
+            float width = 0f;
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.LabelField(new Rect(rect.x, rect.y, LabelColumn, rect.height), new GUIContent(Strings.Get("ui.hs"), Strings.Get("ui.hs.tip")));
+            width = Mathf.Min(220f, rect.width - LabelColumn);
+            int index = System.Array.FindIndex(VRBudgets.Headsets, x => x.id == h.id);
+            int chosen = EditorGUI.Popup(new Rect(rect.x + LabelColumn, rect.y, width, rect.height), index, VRBudgets.Headsets.Select(x => x.name).ToArray());
+            if (chosen != index && chosen >= 0)
+            {
+                var next = VRBudgets.Headsets[chosen];
+                budgets.ApplyHeadset(next.id, budgets.refreshRate, budgets.renderScale);
+            }
+            if (budgets.HeadsetCustom)
+                GUI.Label(new Rect(rect.x + LabelColumn + width + 8f, rect.y, rect.width - LabelColumn - width - 8f, rect.height),
+                    new GUIContent(Strings.Get("ui.gpu.custom"), Strings.Get("ui.hs.custom.tip")), EditorStyles.miniLabel);
+
+            h = budgets.Headset;
+            rect = EditorGUILayout.GetControlRect();
+            EditorGUI.LabelField(new Rect(rect.x, rect.y, LabelColumn, rect.height), new GUIContent(Strings.Get("ui.hs.rate"), Strings.Get("ui.hs.rate.tip")));
+            int rateIndex = System.Array.IndexOf(h.rates, budgets.refreshRate);
+            EditorGUI.BeginDisabledGroup(h.rates.Length < 2);
+            int rate = EditorGUI.Popup(new Rect(rect.x + LabelColumn, rect.y, width, rect.height), rateIndex,
+                h.rates.Select(r => Strings.Format("ui.hs.hz", r)).ToArray());
+            EditorGUI.EndDisabledGroup();
+            if (rate != rateIndex && rate >= 0) budgets.ApplyHeadset(h.id, h.rates[rate], budgets.renderScale);
+
+            rect = EditorGUILayout.GetControlRect();
+            EditorGUI.LabelField(new Rect(rect.x, rect.y, LabelColumn, rect.height), new GUIContent(Strings.Get("ui.hs.scale"), Strings.Get("ui.hs.scale.tip")));
+            int scale = EditorGUI.DelayedIntField(new Rect(rect.x + LabelColumn, rect.y, 70f, rect.height), budgets.renderScale);
+            if (scale != budgets.renderScale) budgets.ApplyHeadset(h.id, budgets.refreshRate, scale);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(LabelColumn);
+            var note = Strings.Format("ui.hs.note", FormatNumber(budgets.RenderWidth), FormatNumber(budgets.RenderHeight), budgets.refreshRate,
+                FormatNumber(VRBudgets.FrameCriticalFor(budgets.refreshRate)), FormatNumber(System.Math.Round(budgets.PixelFactor, 1)));
+            // In the note, not beside the rate: a narrow window has no room there.
+            if (h.wireless) note = Strings.Get("ui.hs.wireless") + " " + note;
+            GUILayout.Label(note, wrapMini);
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(4f);
+        }
+
+        // "HTC Vive Pro 2 Wireless, 90 Hz", for the context line.
+        static string HeadsetLine(VRBudgets b)
+        {
+            return Strings.Format(b.HeadsetCustom ? "ui.hs.context.edited" : "ui.hs.context", b.Headset.name, b.refreshRate);
         }
 
         // "RTX 2070 (8 GB)" or "custom thresholds", for the context line.

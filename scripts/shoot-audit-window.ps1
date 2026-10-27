@@ -75,6 +75,7 @@ $shots = @(
     @("gain-narrow-ru-dark", "ru", "dark", @("-shotGain", "on", "-shotWidth", "560")),
     @("budgets-ru-dark", "ru", "dark", @("-shotTab", "5")),
     @("budgets-en-dark", "en", "dark", @("-shotTab", "5")),
+    @("budgets-narrow-ru-dark", "ru", "dark", @("-shotTab", "5", "-shotWidth", "560")),
     @("profiler-en-dark", "en", "dark", @("-shotTab", "6")),
     @("history-ru-dark", "ru", "dark", @("-shotTab", "7", "-shotHistory")),
     @("history-en-dark", "en", "dark", @("-shotTab", "7", "-shotHistory"))

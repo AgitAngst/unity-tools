@@ -51,7 +51,7 @@ namespace UnityTools.SceneOptimization
                 default: points = sorted.Take(ViewpointTourPanel.Count).ToList(); break;
             }
             return TourMath.PlanOf(set, points, ViewpointTourPanel.Frames, ViewpointTourPanel.Warmup, ViewpointTourPanel.Directions,
-                ViewpointTourPanel.Mover, ViewpointTourPanel.ObjectPath);
+                ViewpointTourPanel.Mover, ViewpointTourPanel.ObjectPath, budgets.refreshRate);
         }
 
         // Applied by the tour panel.
@@ -121,7 +121,7 @@ namespace UnityTools.SceneOptimization
                 EditorGUI.DrawRect(bar, Tint(EditorGUIUtility.isProSkin ? Color.black : Color.white, 0.35f));
                 EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01(share), bar.height), AccentColor);
             }
-            GUILayout.Label(Strings.Format("ui.vp.tour.left", Duration(run != null ? run.SecondsLeft + (ViewpointTour.Entering ? run.plan.settle / (float)VRBudgets.TargetFps : 0f) : 0f)), wrapMini);
+            GUILayout.Label(Strings.Format("ui.vp.tour.left", Duration(run != null ? run.SecondsLeft + (ViewpointTour.Entering ? run.plan.settle / (float)run.plan.fps : 0f) : 0f)), wrapMini);
             EditorGUILayout.EndVertical();
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
@@ -357,7 +357,7 @@ namespace UnityTools.SceneOptimization
             }
             else
             {
-                // With the headset the frame is paced to 90 Hz: its time says nothing, CPU, GPU and dropped frames do.
+                // With the headset the frame is paced to its refresh rate: its time says nothing, CPU, GPU and dropped frames do.
                 var frameColor = headset ? null : TimeColor(w.frameMs);
                 var values = new List<KeyValuePair<string, Color?>> { new KeyValuePair<string, Color?>(Ms(w.frameMs), frameColor) };
                 if (!narrow) values.Add(new KeyValuePair<string, Color?>(Ms(w.peakFrameMs), headset ? null : TimeColor(w.peakFrameMs)));
@@ -551,7 +551,7 @@ namespace UnityTools.SceneOptimization
                     {
                         yaw = e.yaw,
                         frames = 30,
-                        frameMs = headset ? 11.1f : Mathf.Max(cpu, gpu) + 0.4f,
+                        frameMs = headset ? VRBudgets.FrameCriticalFor(budgets.refreshRate) : Mathf.Max(cpu, gpu) + 0.4f,
                         peakFrameMs = Mathf.Max(cpu, gpu) + 3f * load,
                         cpuMs = cpu,
                         gpuMs = gpu,

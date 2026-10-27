@@ -92,6 +92,7 @@ namespace UnityTools.SceneOptimization
             AddGain();
             AddHelp();
             AddCheckHelp();
+            AddHeadset();
         }
     }
 }
