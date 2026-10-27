@@ -49,7 +49,7 @@ namespace UnityTools.SceneOptimization
 
             if (anySkinned)
             {
-                if ((int)ctx.quality.skinWeights > (int)SkinWeights.FourBones)
+                if ((int)ctx.quality.skinWeights > (int)SkinWeights.TwoBones)
                     ctx.ReportSetting("MESH_QUALITY_SKIN_WEIGHTS", Category.Meshes, Severity.Info, "Project/Quality", ctx.quality.skinWeights.ToString());
                 if (!PlayerSettings.gpuSkinning)
                     ctx.ReportSetting("MESH_GPU_SKINNING_OFF", Category.Meshes, Severity.Warning, "Project/Player");

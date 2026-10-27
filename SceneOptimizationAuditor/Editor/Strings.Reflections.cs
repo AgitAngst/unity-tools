@@ -5,6 +5,10 @@ namespace UnityTools.SceneOptimization
         static void AddReflections()
         {
             // Reflection probe checks: titles, messages, how to fix.
+            Add("REFL_QUALITY_REALTIME.title", "Realtime reflection probes allowed", "Realtime-пробы разрешены в Quality");
+            Add("REFL_QUALITY_REALTIME", "Realtime Reflection Probes are on in the quality level.", "На уровне качества включены Realtime Reflection Probes.");
+            Add("REFL_QUALITY_REALTIME.fix", "Bake the probes and turn Realtime Reflection Probes off in Quality: a realtime probe that updates every frame or from a script renders its six faces again while the game runs.",
+                "Запеките пробы и выключите Realtime Reflection Probes в Quality: realtime-проба с обновлением каждый кадр или из скрипта снова рисует свои шесть граней во время игры.");
             Add("REFL_RESOLUTION.title", "High reflection probe resolution", "Большое разрешение reflection probe");
             Add("REFL_RESOLUTION", "Reflection probe of {0} × {0} (more than {1}): {2} MB.", "Reflection probe {0} × {0} (больше {1}): {2} МБ.");
             Add("REFL_RESOLUTION.fix", "128 or 256 is enough for most reflections: the cubemap is blurred by roughness anyway. Lower Resolution (and rebake a baked probe).",

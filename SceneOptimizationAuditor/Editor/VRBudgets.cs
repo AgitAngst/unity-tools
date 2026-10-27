@@ -113,7 +113,8 @@ namespace UnityTools.SceneOptimization
         public const long PcmMaxBytes = 1024 * 1024;
         public const float PreloadMaxSeconds = 30f;
         public const int PriorityZeroMax = 5;
-        public const float ShadowDistanceInfo = 50f;
+        // 20–40 m is enough in VR (owner, 27.10.2026: thresholds by the advice for RTX 2070).
+        public const float ShadowDistanceInfo = 40f;
         public const int SolverIterationsInfo = 6;
         public const float FixedStepTolerance = 0.0002f;
         public const float FarClipInfo = 1000f;
@@ -147,7 +148,10 @@ namespace UnityTools.SceneOptimization
         public const long AlphaScanMaxBytes = 16 * 1024 * 1024;
         public const int TransparentQueue = 2501;
         public const float TransparentLargeMeters = 2f;
-        public const int MinAntiAliasing = 4;
+        // MSAA: off is a warning, 2x is the usual setting, 4x when the frame has headroom, 8x costs more than a higher
+        // render resolution would (owner, 27.10.2026).
+        public const int MinAntiAliasing = 2;
+        public const int MaxAntiAliasing = 4;
         public const float FpsWarning = 89f;
         public const float FpsCritical = 80f;
         // Viewpoints: one view frustum for both eyes of the Vive Pro, placement grid and limits.

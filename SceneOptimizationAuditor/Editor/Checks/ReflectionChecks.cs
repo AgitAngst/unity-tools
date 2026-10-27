@@ -38,6 +38,8 @@ namespace UnityTools.SceneOptimization
                 ctx.Report("REFL_MEMORY", Category.Lighting, Severity.Warning, null, mb, VRBudgets.ReflectionMemoryWarningMB, report.reflections.Count);
             if (report.outsideReflection.Count > 0)
                 ctx.Report("REFL_OUTSIDE", Category.Lighting, Severity.Info, null, report.outsideReflection.Count, report.reflections.Count);
+            if (ctx.quality.realtimeReflectionProbes)
+                ctx.ReportSetting("REFL_QUALITY_REALTIME", Category.Lighting, Severity.Info, "Project/Quality");
         }
     }
 }

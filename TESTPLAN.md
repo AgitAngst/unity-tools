@@ -4,7 +4,10 @@
 
 Unity 2019.4.41f2, `scripts\run-audit-tests.ps1` в тестовом сервере (`scripts\audit-server.ps1`: один batch-редактор,
 запущенный один раз, все шаги — командами в нём; шаги `cli-*` — через `ReportExporter.RunWithArgs`, без выхода из
-редактора): **44 шага из 44 зелёные**, версия 2.1.2 (с 2.1.2 шаг `gpu` проверяет RTX 4060 и RTX 2070 по умолчанию). С 2.1.1 — шаг `window-fields` (стили и значки окон не переживают
+редактора): **47 шагов из 47 зелёные**, версия 2.2.0. С 2.2.0 — шаг `quality-checks` (пороги MSAA 0 / 2 / 4 / 8, дальность
+теней 40 / 41 м, Skin Weights, мягкие тени с исправлением и Undo, Realtime Reflection Probes, Soft Particles, VSync, разбор
+скриптов) и пара `frame-rate-script-make` / `frame-rate-script-check` (настоящий скрипт с `targetFrameRate` в проекте —
+одна запись «Сведения», после проверки скрипт удаляется). С 2.1.2 шаг `gpu` проверяет RTX 4060 и RTX 2070 по умолчанию. С 2.1.1 — шаг `window-fields` (стили и значки окон не переживают
 перезагрузку скриптов) и проверка окна в видимом редакторе `scripts\run-window-runs.ps1` (прогоны всех охватов на тяжёлых
 сценах, все группы и карточки открыты, «По категориям», узкое окно, стили после перезагрузки — без исключений; со старой
 логикой стилей она даёт ту же ошибку, что у владельца, `AuditorWindow.Problems.cs:351`). С 2.1.0 — шаг `help`: 30 карточек проверок на двух языках, «Выигрыш»
@@ -167,6 +170,7 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | `Anim/RootMotionScript` — скрипт с `OnAnimatorMove` | | `ANIM_ROOT_MOTION` |
 | `Anim/Offscreen` — SkinnedMeshRenderer, Update When Offscreen | `ANIM_UPDATE_OFFSCREEN` W | |
 | `Anim/Heavy` — SkinnedMesh 16k под Animator | `ANIM_HEAVY_SKIN` W | |
+| `Light/Directional` (realtime) и `Light/SpotMixed` с Soft Shadows; уровень качества — Hard and Soft | `LIGHT_SOFT_SHADOWS` I (у Directional — с исправлением) | `LIGHT_SOFT_SHADOWS` у `Light/PointRealtime` (Hard) |
 | **Audio** | | |
 | `A_35s.wav` (по умолчанию: Decompress On Load, Preload) | `AUDIO_DECOMPRESS_LONG` W, `AUDIO_PRELOAD_LONG` W | |
 | `A_12s_pcm.wav` (PCM, > 1 МБ) | `AUDIO_DECOMPRESS_LONG` W, `AUDIO_PCM_LARGE` W | |
@@ -177,6 +181,7 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | два AudioListener, один не на камере | `AUDIO_LISTENERS_MANY` C ×2, `AUDIO_LISTENER_NO_CAMERA` I | |
 | проект: DSP Default, без spatializer | `AUDIO_DSP_BUFFER` I, `AUDIO_NO_SPATIALIZER` I | `AUDIO_SPEAKER_MODE` |
 | **VR** | | |
+| в проекте нет скриптов, задающих частоту кадров | | `VR_FRAME_RATE_SCRIPT` |
 | VR выключен | `VR_NOT_ENABLED` C | `VR_STEREO_MODE` |
 | Main Camera (HDR по умолчанию) | `VR_CAMERA_HDR` W | |
 | `Cam/Far` (far 2000), `Cam/Near` (near 0.001) | `VR_FAR_CLIP` I, `VR_NEAR_CLIP` I (Unity поднимает near до 0.01, порог 0.05) | |
@@ -210,8 +215,8 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 | `xr-openvr-multipass` | то же, Multi Pass | `VR_STEREO_MODE` W, `DC_BUDGET` W (оценка ×2) |
 | `xr-mock` | XR Management, загрузчик не OpenVR | `VR_NO_OPENVR` W, режим stereo «неизвестно» |
 | `xr-both` | legacy OpenVR и XR Management вместе | `VR_BOTH_SYSTEMS` W |
-| `quality` | Standalone по умолчанию — уровень, отличный от текущего; на нём: AA 2x, Pixel Lights 4, Shadow Resolution Very High, Shadow Distance 150, Anisotropic Disable, Skin Weights Unlimited | `VR_MSAA`, `LIGHT_PIXEL_LIGHTS`, `LIGHT_SHADOW_RESOLUTION` W, `LIGHT_SHADOW_DISTANCE`, `TEX_ANISO_DISABLED`, `MESH_QUALITY_SKIN_WEIGHTS`; текущий уровень после прогона прежний |
-| `project` | GPU Skinning off, Solver Iterations 10, Fixed Timestep 0.005, Realtime GI on, Deferred в Tier 3, Speaker Mode 5.1, DSP Best Latency | `MESH_GPU_SKINNING_OFF`, `ANIM_HEAVY_SKIN_CPU`, `PHYS_SOLVER_ITERATIONS`, `PHYS_FIXED_STEP_FAST`, `LIGHT_REALTIME_GI`, `VR_DEFERRED_TIER`, `AUDIO_SPEAKER_MODE`, `AUDIO_DSP_BUFFER` |
+| `quality` | Standalone по умолчанию — уровень, отличный от текущего; на нём: AA выключен, Pixel Lights 4, Shadow Resolution Very High, Shadow Distance 150, Anisotropic Disable, Skin Weights Unlimited, Soft Particles и Realtime Reflection Probes включены, VSync Every V Blank | `VR_MSAA`, `LIGHT_PIXEL_LIGHTS`, `LIGHT_SHADOW_RESOLUTION` W, `LIGHT_SHADOW_DISTANCE`, `TEX_ANISO_DISABLED`, `MESH_QUALITY_SKIN_WEIGHTS`, `REFL_QUALITY_REALTIME`, `VR_VSYNC`; без `VR_MSAA_HIGH` и `PART_SOFT_PARTICLES` (частиц в сцене нет); текущий уровень после прогона прежний |
+| `project` | GPU Skinning off, Solver Iterations 10, Fixed Timestep 0.005, Realtime GI on, Deferred в Tier 3, Speaker Mode 5.1, DSP Best Latency, Color Space Gamma | `MESH_GPU_SKINNING_OFF`, `ANIM_HEAVY_SKIN_CPU`, `PHYS_SOLVER_ITERATIONS`, `PHYS_FIXED_STEP_FAST`, `LIGHT_REALTIME_GI`, `VR_DEFERRED_TIER`, `AUDIO_SPEAKER_MODE`, `AUDIO_DSP_BUFFER`, `LIGHT_GAMMA_SPACE`; без `TEX_SRGB_DATA` (только в Linear) |
 | `fixed-step-90` | Fixed Timestep 0.0111 | нет `PHYS_FIXED_STEP_*` |
 | `budgets-low` | файл бюджетов с порогами ниже значений сцены | `DC_BUDGET`, `MESH_SCENE_TRIS`, `TEX_MEMORY` — W и C на разных порогах |
 | `counts` | 21 Animator, 33 AudioSource, 101 статичный рендерер без occlusion | `ANIM_COUNT`, `AUDIO_SOURCE_COUNT`, `VR_NO_OCCLUSION` |
@@ -342,6 +347,13 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
       Load Type, Spatial Blend, Event Camera, Rendering Mode.
 - [ ] Подсказка у неактивной карточки «Перед сборкой»; перенос тулбара на ширинах 560–720 в RU и EN; ссылки с якорями
       открывают нужные разделы на GitHub (после пуша).
+
+## 6к. Настройки качества под VR (этап 22, 2.2.0) — вручную, владелец
+
+- [ ] Новые записи на своём проекте: Gamma, мягкие тени (и «Исправить» → Hard Shadows), Realtime Reflection Probes и Soft
+      Particles в Quality, VSync, скрипты с `targetFrameRate`; MSAA 2x без предупреждения.
+- [ ] Названия в Inspector 2019.4: Skin Weights «2 Bones», Shadows «Hard and Soft Shadows» / «Hard Shadows Only», VSync
+      Count «Don't Sync», Anti Aliasing «2x Multi Sampling».
 
 ## 7. Окно — вручную, владелец
 

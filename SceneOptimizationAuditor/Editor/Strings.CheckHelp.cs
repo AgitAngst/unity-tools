@@ -301,16 +301,16 @@ namespace UnityTools.SceneOptimization
                 "Только если canvas не предназначен для шлема (отладочная панель для редактора) и в сборке выключен: выключенные canvas не попадают в проверку.");
 
             Help("VR_MSAA",
-                "Anti Aliasing of the quality level Standalone uses is below 4x (a fixed limit). This is a project setting.",
-                "Anti Aliasing уровня качества, который использует Standalone, ниже 4x (фиксированный предел). Это настройка проекта.",
-                "Edges shimmer in the headset, and 2x is not enough at the Vive Pro resolution.",
-                "Края мерцают в шлеме, а 2x мало для разрешения Vive Pro.",
-                "In Project Settings > Quality pick the level Standalone uses and set Anti Aliasing to 4x Multi Sampling or 8x Multi Sampling. The Settings button opens the page; there is no Fix button.",
-                "В Project Settings > Quality выберите уровень, который использует Standalone, и поставьте Anti Aliasing = 4x Multi Sampling или 8x Multi Sampling. Кнопка «Настройки» открывает страницу; кнопки «Исправить» нет.",
+                "Anti Aliasing of the quality level Standalone uses is off. 8x is reported apart as Info (MSAA 8x). This is a project setting.",
+                "Anti Aliasing уровня качества, который использует Standalone, выключен. 8x — отдельная запись «Сведения» (MSAA 8x). Это настройка проекта.",
+                "Without MSAA edges stair-step and shimmer in the headset. 2x already smooths them; 4x costs about twice as much as 2x in memory and bandwidth of the eye textures.",
+                "Без MSAA края идут лесенкой и мерцают в шлеме. 2x уже сглаживает их; 4x стоит примерно вдвое больше, чем 2x, по памяти и пропускной способности текстур глаз.",
+                "In Project Settings > Quality pick the level Standalone uses and set Anti Aliasing to 2x Multi Sampling; 4x only when the frame time has headroom. MSAA works in Forward only. The Settings button opens the page; there is no Fix button.",
+                "В Project Settings > Quality выберите уровень, который использует Standalone, и поставьте Anti Aliasing = 2x Multi Sampling; 4x — только при запасе по времени кадра. MSAA работает только в Forward. Кнопка «Настройки» открывает страницу; кнопки «Исправить» нет.",
                 "",
                 "",
-                "When the frame is already at its limit and you measured that MSAA is what costs most (the Profiler and Viewpoints tabs): cut other costs first, lower MSAA last.",
-                "Когда кадр уже на пределе и вы измерили, что дороже всего именно MSAA (вкладки «Профайлер» и «Точки обзора»): сначала сократите другое, MSAA снижайте в последнюю очередь.");
+                "When the render resolution and other costs are already lowered and a measurement shows that even 2x does not fit in the frame (the Profiler and Viewpoints tabs).",
+                "Когда разрешение рендера и другие расходы уже снижены, а замер показывает, что даже 2x не укладывается в кадр (вкладки «Профайлер» и «Точки обзора»).");
 
             Help("VR_NO_OCCLUSION",
                 "More than 100 active renderers are marked Occluder Static or Occludee Static (a fixed limit), but the open scene has no baked occlusion culling data.",

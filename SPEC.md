@@ -29,6 +29,7 @@
 | 19 | Охват проверки: выделенное, сцены сборки, папка ассетов, несколько сцен в командной строке (владелец, 25.10.2026) — `add-audit-scope` | 1.9.0 |
 | 20 | Оценка выигрыша у записей (МБ, draw calls, треугольники) и сортировка «что даст больше всего» (владелец, 25.10.2026: «делай оценку выйгрыша») — `add-fix-gain` | 2.0.0 |
 | 21 | Справка в окне: кнопка «Справка» с меню, «С чего начать», «Подробнее о проверке» у 30 проверок (владелец, 25.10.2026) — `add-window-help` | 2.1.0 |
+| 22 | Настройки качества под VR: Linear, мягкие тени, realtime-пробы и Soft Particles в Quality, VSync и targetFrameRate; пороги MSAA, дальности теней и Skin Weights по советам для RTX 2070 (владелец, 27.10.2026) — `add-quality-checks` | 2.2.0 |
 
 Terrain не проверяется и в планах его нет (владелец, 24.10.2026).
 
@@ -171,7 +172,7 @@ Critical / Warning / Info с подсказкой, как исправить.
   ParticleSystem → Info: может быть нужен.
 - `ModelImporter.meshOptimizationFlags` не `Everything` → Info.
 - Больше 4 костей на вершину (`Mesh.GetBonesPerVertex`) → Warning: дороже скиннинг. `QualitySettings.skinWeights`
-  уровня выше FourBones → Info.
+  уровня выше FourBones → Info (с 2.2.0 — выше TwoBones, этап 22).
 - `PlayerSettings.gpuSkinning` выключен → Warning: на ПК скиннинг на GPU снимает нагрузку с CPU.
 
 **3. Текстуры** (из материалов сцены по всем текстурным свойствам, UI, lightmaps, probes, skybox;
@@ -197,7 +198,7 @@ Critical / Warning / Info с подсказкой, как исправить.
 - Realtime / Mixed источники с тенями — по порогу.
 - Объекты с `ContributeGI` и `receiveGI == Lightmaps` без UV1 (`mesh.uv2` пуст и `generateSecondaryUV`
   выключен) → Warning.
-- `shadowResolution` уровня VeryHigh → Warning, High → Info; `shadowDistance` > 50 м → Info.
+- `shadowResolution` уровня VeryHigh → Warning, High → Info; `shadowDistance` > 50 м → Info (с 2.2.0 — > 40 м, этап 22).
 - `pixelLightCount` > 1 → Warning: в Forward каждый дополнительный источник — ещё проход по объектам.
 - Realtime GI (`Lightmapping.realtimeGI`) включён → Info.
 
@@ -244,7 +245,7 @@ Critical / Warning / Info с подсказкой, как исправить.
   должны поддерживать stereo instancing (`UNITY_VERTEX_INPUT_INSTANCE_ID`, `UNITY_VERTEX_OUTPUT_STEREO`).
 - Rendering path Deferred (у камер или в tier settings Standalone) → Warning: MSAA не работает, stereo
   дорого.
-- `antiAliasing` уровня < 4 → Warning; у VR-камеры выключен `allowMSAA` → Warning.
+- `antiAliasing` уровня < 4 → Warning (с 2.2.0 — только выключен, 8x — Info, этап 22); у VR-камеры выключен `allowMSAA` → Warning.
 - VR-камеры — включённые Camera с `stereoTargetEye != None` и без `targetTexture`. Ни одной → Info
   (rig может создаваться в рантайме).
 - `allowHDR` → Warning: память и пропускная способность на два глаза (нужен ли PP с HDR);
@@ -961,3 +962,38 @@ https://claude.ai/artifact/5rYUsiTnTkFuqLNtSC6Bui (идеи 1, 3 и 4); руко
 переживают перезагрузку скриптов; после обновления утилиты с открытым окном старые стили вернулись, новые (выигрыш из
 2.0.0) остались пустыми, а стили делались заново, только если пуст первый. Теперь стили и значки окон — `[NonSerialized]`,
 создаются по флагу `stylesReady`; тесты — шаг `window-fields` и `scripts\run-window-runs.ps1`.
+
+### Этап 22 — настройки качества под VR (2.2.0)
+
+Изменение OpenSpec `add-quality-checks`. Владелец 27.10.2026: «Делай этапом: новые проверки Linear, Soft Shadows, Real-time Reflection Probes в Quality, Soft Particles, VSync и targetFrameRate; пороги MSAA, дальности теней и Skin Weights — по советам для RTX 2070». Советы — разбор
+настроек под Vive Pro 2 на RTX 2070 (Built-in), который владелец прислал в разговоре.
+
+- **Новые проверки** (все — «Сведения»):
+  - `LIGHT_GAMMA_SPACE` — Color Space в Player Settings — Gamma («Настройки» → Player); исправления нет: смена пространства
+    меняет вид света и требует перезапекания.
+  - `LIGHT_SOFT_SHADOWS` — включённый realtime- или mixed-источник с Shadow Type = Soft Shadows, когда уровень качества
+    разрешает мягкие тени (Shadows = Hard and Soft); исправление по просмотру — Shadow Type = Hard Shadows (объект сцены,
+    Undo).
+  - `REFL_QUALITY_REALTIME` — на уровне качества включены Realtime Reflection Probes («Настройки» → Quality).
+  - `PART_SOFT_PARTICLES` — на уровне качества включены Soft Particles, а в сценах есть включённые системы частиц.
+  - `VR_VSYNC` — VSync Count уровня качества не Don't Sync: в VR частоту кадров ведёт рантайм шлема.
+  - `VR_FRAME_RATE_SCRIPT` — скрипт в `Assets/` присваивает `Application.targetFrameRate` или `QualitySettings.vSyncCount`;
+    одна запись на скрипт, комментарии не считаются. По документации Unity 2019.4 с VR частоту задаёт SDK шлема, а эти
+    значения игнорируются; действуют они без шлема и в Game view редактора, где искажают замер без шлема — поэтому
+    «Сведения», а не предупреждение (по сверке судьёй, 27.10.2026).
+- **Пороги по советам для RTX 2070:**
+  - `VR_MSAA` — предупреждение, только когда MSAA выключен (было — ниже 4x): 2x — нормальная настройка, 4x — при запасе по
+    времени кадра; новое `VR_MSAA_HIGH` (Info) — 8x: дороже, чем поднять разрешение рендера.
+  - `LIGHT_SHADOW_DISTANCE` — дальше 40 м (было 50).
+  - `MESH_QUALITY_SKIN_WEIGHTS` — больше Two Bones (было — больше Four Bones), когда есть skinned-меши.
+- Карточка «Подробнее о проверке» у `VR_MSAA` — по новому порогу.
+
+**Готово, когда:** тест `quality-checks` (каждая новая проверка и её отсутствие, пороги MSAA 0 / 2 / 4 / 8, дальность 40 / 41,
+Skin Weights Two / Four Bones, разбор скриптов на строках и файлах), варианты `quality` и `project` под новые пороги;
+`run-audit-tests.ps1` зелёный; страница утилиты, TESTPLAN, HANDOFF; версия 2.2.0.
+
+Сделано 27.10.2026: тесты `quality-checks`, `frame-rate-script-make` / `frame-rate-script-check`, варианты `quality` и
+`project` под новые пороги; 47 шагов из 47. По сверке судьёй: `VR_FRAME_RATE_SCRIPT` — «Сведения» (Unity в VR значения
+игнорирует), подписи «2 Bones», мягче тексты Soft Particles и realtime-проб, старые пороги в справочнике и этапе 1 SPEC.
+`REFL_QUALITY_REALTIME` срабатывает и без realtime-проб в сценах (флаг в Unity включён по умолчанию) — так попросил
+владелец. Не проверено вживую: TESTPLAN 6к.

@@ -19,6 +19,14 @@ namespace UnityTools.SceneOptimization
             "Valve.VR.SteamVR_TrackedObject", "SteamVR_TrackedObject"
         };
 
+        // The names of the Quality page; 3 and 4 exist only in the API.
+        static string VSyncName(int count)
+        {
+            if (count == 1) return "Every V Blank";
+            if (count == 2) return "Every Second V Blank";
+            return count.ToString();
+        }
+
         static void AuditVRSpecific(AuditContext ctx)
         {
             var xr = ctx.xr;
@@ -52,6 +60,18 @@ namespace UnityTools.SceneOptimization
 
             if (q.antiAliasing < VRBudgets.MinAntiAliasing)
                 ctx.ReportSetting("VR_MSAA", Category.VRSpecific, Severity.Warning, "Project/Quality", q.antiAliasing);
+            else if (q.antiAliasing > VRBudgets.MaxAntiAliasing)
+                ctx.ReportSetting("VR_MSAA_HIGH", Category.VRSpecific, Severity.Info, "Project/Quality", q.antiAliasing);
+            // In VR the SDK of the headset sets the frame rate; VSync and targetFrameRate still cap the Game view of the
+            // editor and the build without a headset, and so the tour without a headset.
+            if (q.vSyncCount != 0)
+                ctx.ReportSetting("VR_VSYNC", Category.VRSpecific, Severity.Info, "Project/Quality", VSyncName(q.vSyncCount));
+            foreach (var found in FrameRateScripts.Find(FrameRateScripts.ProjectScripts()))
+            {
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(found.Key);
+                if (script == null) continue;
+                ctx.Report("VR_FRAME_RATE_SCRIPT", Category.VRSpecific, Severity.Info, script, string.Join(", ", found.Value));
+            }
 
             var cameras = new List<Camera>();
             foreach (var camera in ctx.All<Camera>())

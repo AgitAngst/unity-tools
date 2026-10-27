@@ -62,6 +62,10 @@ $steps = @(
     @("gain", "AuditTestsEditor.AuditTestViewpoints.RunGain", @()),
     @("help", "AuditTestsEditor.AuditTestViewpoints.RunHelp", @("-helpDocs", (Join-Path (Split-Path $PSScriptRoot) "docs"))),
     @("window-fields", "AuditTestsEditor.AuditTestViewpoints.RunWindowFields", @()),
+    @("quality-checks", "AuditTestsEditor.AuditTestViewpoints.RunQualityChecks", @()),
+    # Writes a script that sets the frame rate; the next command runs after the reload and deletes it.
+    @("frame-rate-script-make", "AuditTestsEditor.AuditTestViewpoints.RunFrameRateScriptMake", @()),
+    @("frame-rate-script-check", "AuditTestsEditor.AuditTestViewpoints.RunFrameRateScriptCheck", @()),
     @("steamvr-on", "AuditTestsEditor.AuditTests.EnableSteamVrStub", @()),
     @("viewpoints-teleports", "AuditTestsEditor.AuditTestViewpoints.RunTeleports", @()),
     @("steamvr-not-in-scene", "AuditTestsEditor.AuditTests.Run", @("-auditVariant", "steamvr-not-in-scene")),

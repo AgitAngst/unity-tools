@@ -21,6 +21,9 @@ namespace UnityTools.SceneOptimization
         public SkinWeights skinWeights;
         public float lodBias = 1f;
         public int maximumLODLevel;
+        public bool softParticles;
+        public bool realtimeReflectionProbes;
+        public int vSyncCount;
 
         public static QualitySnapshot Capture()
         {
@@ -49,6 +52,9 @@ namespace UnityTools.SceneOptimization
                 snapshot.skinWeights = QualitySettings.skinWeights;
                 snapshot.lodBias = QualitySettings.lodBias;
                 snapshot.maximumLODLevel = QualitySettings.maximumLODLevel;
+                snapshot.softParticles = QualitySettings.softParticles;
+                snapshot.realtimeReflectionProbes = QualitySettings.realtimeReflectionProbes;
+                snapshot.vSyncCount = QualitySettings.vSyncCount;
             }
             finally
             {

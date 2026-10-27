@@ -32,7 +32,7 @@ namespace AuditTestsEditor
 
             StandaloneLevel = QualitySettings.GetQualityLevel();
             SetStandaloneDefault(StandaloneLevel);
-            ConfigureLevel(StandaloneLevel, 4, 1, ShadowResolution.Medium, 40f, AnisotropicFiltering.Enable, SkinWeights.FourBones);
+            ConfigureLevel(StandaloneLevel, 4, 1, ShadowResolution.Medium, 40f, AnisotropicFiltering.Enable, SkinWeights.TwoBones, false, false, 0);
         }
 
         public static void SetLegacyVr(string[] sdks, StereoRenderingPath path)
@@ -49,7 +49,7 @@ namespace AuditTestsEditor
         {
             int current = QualitySettings.GetQualityLevel();
             int other = current == 0 ? 1 : 0;
-            ConfigureLevel(other, 2, 4, ShadowResolution.VeryHigh, 150f, AnisotropicFiltering.Disable, SkinWeights.Unlimited);
+            ConfigureLevel(other, 0, 4, ShadowResolution.VeryHigh, 150f, AnisotropicFiltering.Disable, SkinWeights.Unlimited, true, true, 1);
             QualitySettings.SetQualityLevel(current, false);
             SetStandaloneDefault(other);
             return other;
@@ -58,6 +58,7 @@ namespace AuditTestsEditor
         public static void ApplyProjectVariant()
         {
             PlayerSettings.gpuSkinning = false;
+            PlayerSettings.colorSpace = ColorSpace.Gamma;
             Physics.defaultSolverIterations = 10;
             Time.fixedDeltaTime = 0.005f;
             SetTierPath(RenderingPath.DeferredShading);
@@ -65,8 +66,14 @@ namespace AuditTestsEditor
             SetAudio("m_RequestedDSPBufferSize", 256);
         }
 
+        // By reflection: the test sources must not assign it, or the check of frame rate scripts would find them.
+        public static void SetVSync(int count)
+        {
+            typeof(QualitySettings).GetProperty("vSyncCount").SetValue(null, count, null);
+        }
+
         static void ConfigureLevel(int level, int aa, int pixelLights, ShadowResolution resolution, float distance,
-            AnisotropicFiltering aniso, SkinWeights weights)
+            AnisotropicFiltering aniso, SkinWeights weights, bool softParticles, bool realtimeProbes, int vSync)
         {
             QualitySettings.SetQualityLevel(level, false);
             QualitySettings.antiAliasing = aa;
@@ -78,6 +85,9 @@ namespace AuditTestsEditor
             QualitySettings.anisotropicFiltering = aniso;
             QualitySettings.skinWeights = weights;
             QualitySettings.streamingMipmapsActive = true;
+            QualitySettings.softParticles = softParticles;
+            QualitySettings.realtimeReflectionProbes = realtimeProbes;
+            SetVSync(vSync);
         }
 
         static void SetStandaloneDefault(int level)

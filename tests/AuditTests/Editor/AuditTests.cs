@@ -339,7 +339,9 @@ namespace AuditTestsEditor
             // With anisotropic filtering off for the whole level the per-texture setting does not matter.
             if (variant != "quality") Has("TEX_ANISO_LOW", Severity.Info, "T_Wall.png", fixable: true);
             Not("TEX_ANISO_LOW", "T_Dense.png");
-            Has("TEX_SRGB_DATA", Severity.Warning, "T_Metal.png", fixable: true);
+            // sRGB on a data map matters only in the Linear color space; the project variant is Gamma.
+            if (variant == "project") Not("TEX_SRGB_DATA", "T_Metal.png");
+            else Has("TEX_SRGB_DATA", Severity.Warning, "T_Metal.png", fixable: true);
             Not("TEX_SRGB_DATA", "T_Small.png");
             Has("TEX_STREAMING_OFF", Severity.Info, "T_4096.png", fixable: true);
             Not("TEX_STREAMING_OFF", "T_Small.png");
@@ -499,11 +501,20 @@ namespace AuditTestsEditor
                 Has("LIGHT_SHADOW_DISTANCE", Severity.Info);
                 Has("TEX_ANISO_DISABLED", Severity.Info);
                 Has("MESH_QUALITY_SKIN_WEIGHTS", Severity.Info);
+                Has("REFL_QUALITY_REALTIME", Severity.Info);
+                Has("VR_VSYNC", Severity.Info, contains: "Every V Blank");
+                Not("VR_MSAA_HIGH|PART_SOFT_PARTICLES");
             }
             else
             {
-                Not("VR_MSAA|LIGHT_PIXEL_LIGHTS|LIGHT_SHADOW_RESOLUTION|LIGHT_SHADOW_DISTANCE|TEX_ANISO_DISABLED|MESH_QUALITY_SKIN_WEIGHTS");
+                Not("VR_MSAA|VR_MSAA_HIGH|LIGHT_PIXEL_LIGHTS|LIGHT_SHADOW_RESOLUTION|LIGHT_SHADOW_DISTANCE|TEX_ANISO_DISABLED|MESH_QUALITY_SKIN_WEIGHTS");
+                Not("REFL_QUALITY_REALTIME|VR_VSYNC|PART_SOFT_PARTICLES");
             }
+            // The quality level allows soft shadows: soft realtime and mixed lights, not hard ones.
+            Has("LIGHT_SOFT_SHADOWS", Severity.Info, "Light/Directional", fixable: true);
+            Has("LIGHT_SOFT_SHADOWS", Severity.Info, "Light/SpotMixed");
+            Not("LIGHT_SOFT_SHADOWS", "Light/PointRealtime");
+            Not("VR_FRAME_RATE_SCRIPT");
 
             if (variant == "project")
             {
@@ -517,10 +528,12 @@ namespace AuditTestsEditor
                 Has("VR_DEFERRED_TIER", Severity.Warning);
                 Has("AUDIO_SPEAKER_MODE", Severity.Warning);
                 Has("AUDIO_DSP_BUFFER", Severity.Info, contains: "Best Latency");
+                Has("LIGHT_GAMMA_SPACE", Severity.Info);
             }
             else
             {
                 Not("MESH_GPU_SKINNING_OFF|ANIM_HEAVY_SKIN_CPU|PHYS_SOLVER_ITERATIONS|LIGHT_REALTIME_GI|VR_DEFERRED_TIER|AUDIO_SPEAKER_MODE");
+                Not("LIGHT_GAMMA_SPACE");
                 Has("AUDIO_DSP_BUFFER", Severity.Info, contains: "Default");
                 if (variant == "fixed-step-90") Not("PHYS_FIXED_STEP_SLOW|PHYS_FIXED_STEP_FAST");
                 else

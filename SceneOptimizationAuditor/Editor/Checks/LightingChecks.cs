@@ -23,7 +23,16 @@ namespace UnityTools.SceneOptimization
                     ctx.Report("LIGHT_REALTIME", Category.Lighting, Severity.Warning, light, light.type.ToString());
                 if (light.shadows != LightShadows.None && light.lightmapBakeType != LightmapBakeType.Baked)
                     shadowed.Add(light.name);
+                // Soft shadows filter every shadow map; the quality level may allow hard ones only.
+                if (light.shadows == LightShadows.Soft && light.lightmapBakeType != LightmapBakeType.Baked && q.shadows == ShadowQuality.All)
+                {
+                    var target = light;
+                    ctx.Report("LIGHT_SOFT_SHADOWS", Category.Lighting, Severity.Info, light, light.type.ToString())
+                        .SetFix(FixKind.Review, target, false, () => target.shadows = LightShadows.Hard);
+                }
             }
+            if (PlayerSettings.colorSpace == ColorSpace.Gamma)
+                ctx.ReportSetting("LIGHT_GAMMA_SPACE", Category.Lighting, Severity.Info, "Project/Player");
             if (shadowed.Count > b.shadowLightsCritical)
                 ctx.Report("LIGHT_SHADOWED", Category.Lighting, Severity.Critical, null, shadowed.Count, b.shadowLightsCritical, string.Join(", ", shadowed.ToArray()));
             else if (shadowed.Count > b.shadowLightsWarning)

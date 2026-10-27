@@ -5,11 +5,11 @@
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 Эта страница — справочник; как работать с утилитой по шагам — [руководство](scene-optimization-auditor-guide.md).
 
-**Состояние:** код этапов 1–21 из `SPEC.md` написан (версия 2.1.0). Автотесты в Unity 2019.4.41f2 зелёные (25.10.2026,
-`scripts\run-audit-tests.ps1`, 44 шага в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
+**Состояние:** код этапов 1–22 из `SPEC.md` написан (версия 2.2.0). Автотесты в Unity 2019.4.41f2 зелёные (25.10.2026,
+`scripts\run-audit-tests.ps1`, 47 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
 замер в Play Mode): проверки, бюджеты, экспорт, исправления и Undo, точки обзора, замер, свет, копии префабов,
-«Тяжёлые», частицы, шейдеры, reflection probes, охват проверки, оценка выигрыша и справка в окне. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
-22.10.2026; этапы 5–21 вживую не смотрены.
+«Тяжёлые», частицы, шейдеры, reflection probes, охват проверки, оценка выигрыша, справка в окне и настройки качества под VR. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
+22.10.2026; этапы 5–22 вживую не смотрены.
 Не проверены настоящий OpenVR XR Plugin (в тестах — заглушки) и замер со шлемом — см. [TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
@@ -382,7 +382,11 @@ Critical / Warning / Info / допустимых, треугольники и п
   lightmaps, reflection probes, клипы AudioSource, плюс всё из `EditorUtility.CollectDependencies` по
   корням сцен. Проблема ассета — одна запись с числом использований.
 - Уровень качества — тот, что Standalone использует по умолчанию (`m_PerPlatformDefaultQuality`); на
-  время чтения уровень переключается и сразу возвращается.
+  время чтения уровень переключается и сразу возвращается. С 2.2.0 читаются и Soft Particles, Realtime Reflection Probes,
+  VSync Count.
+- Скрипты (2.2.0): все `.cs` в `Assets/` (Editor и сторонние тоже) при любом охвате — текст без комментариев (строки в
+  кавычках не отбрасываются) ищется на присваивание `Application.targetFrameRate` и `QualitySettings.vSyncCount`; результат
+  хранится по времени изменения файла, так что следующий прогон читает только изменённые скрипты.
 - XR: legacy — `PlayerSettings.GetVirtualRealitySDKs(Standalone)`, флаг `m_BuildTargetVRSettings`,
   `PlayerSettings.stereoRenderingPath`; XR Plug-in Management — `XRGeneralSettingsPerBuildTarget` для
   Standalone и его загрузчики; режим stereo OpenVR — из ассета `OpenVRSettings` (только читается).
@@ -458,8 +462,8 @@ GTX 1070, треугольники — по скорости карты):
 
 Неизменяемые пределы (`VRBudgets`, константы): больше 4 материалов на рендерере, больше 3 одинаковых
 объектов для instancing, больше 4 костей на вершину, Decompress On Load дольше 10 с, PCM больше 1 МБ,
-Preload дольше 30 с, priority 0 больше чем у 5 источников, shadow distance больше 50 м, solver
-iterations больше 6, far clip больше 1000, near clip меньше 0.05, MSAA меньше 4x, occlusion — больше 100
+Preload дольше 30 с, priority 0 больше чем у 5 источников, shadow distance больше 40 м, solver
+iterations больше 6, far clip больше 1000, near clip меньше 0.05, MSAA выключен (Warning) или больше 4x (8x — Info), occlusion — больше 100
 статичных рендереров, глубина иерархии больше 10, FPS: зелёный от 89, жёлтый от 80; допуск Fixed Timestep
 0.0002 с; развёртка под свет — допуск 0–1 0.001, наложения от 1 % на сетке 256 × 256; исправление Load Type — Streaming для клипов от 60 с;
 свет — «мелкий» в lightmap меньше 0,5 м, «много атласа» больше 20 %, широкий реалтайм-источник — больше 50 объектов в
@@ -491,7 +495,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `MESH_READ_WRITE_NEEDED` | I | Read/Write, меш у MeshCollider или ParticleSystem | — |
 | `MESH_NOT_OPTIMIZED` | I | Optimize Mesh не Everything | — |
 | `MESH_BONES_PER_VERTEX` | W | больше 4 костей на вершину | — |
-| `MESH_QUALITY_SKIN_WEIGHTS` | I | Skin Weights уровня больше Four Bones (есть skinned) | — |
+| `MESH_QUALITY_SKIN_WEIGHTS` | I | Skin Weights уровня больше Two Bones (есть skinned; до 2.2.0 — больше Four Bones) | — |
 | `MESH_GPU_SKINNING_OFF` | W | GPU Skinning выключен (есть skinned) | — |
 | `MESH_UNUSED_CHANNELS` | I | меш несёт цвета вершин, касательные без карты нормалей или UV2–UV7, а все его материалы — Standard, Legacy или Mobile | — |
 | `MESH_SPLIT_VERTICES` | I | больше 1,5 вершины на треугольник при 500+ треугольниках (рваная сетка) | — |
@@ -548,7 +552,9 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `LIGHT_UV1_OUT_OF_RANGE` | W | UV1 меша под lightmap выходит за 0–1 (допуск 0.001), доля вершин | — |
 | `LIGHT_UV1_OVERLAP` | W | треугольники UV1 накладываются: больше 1 % занятых текселей на сетке 256 × 256 (общие рёбра не в счёт) | — |
 | `LIGHT_SHADOW_RESOLUTION` | W / I | VeryHigh / High | — |
-| `LIGHT_SHADOW_DISTANCE` | I | дальше 50 м | — |
+| `LIGHT_SHADOW_DISTANCE` | I | дальше 40 м (до 2.2.0 — 50 м) | — |
+| `LIGHT_SOFT_SHADOWS` | I | включённый realtime- или mixed-источник с Shadow Type = Soft Shadows, когда уровень качества разрешает мягкие тени (Shadows = Hard and Soft Shadows); исправление — Shadow Type = Hard Shadows | R |
+| `LIGHT_GAMMA_SPACE` | I | Color Space в Player Settings — Gamma (смена на Linear меняет вид света и требует перезапекания) | — |
 | `LIGHT_PIXEL_LIGHTS` | W | Pixel Light Count больше 1 | — |
 | `LIGHT_REALTIME_GI` | I | Realtime GI включён | — |
 | `LIGHT_LIGHTMAP_MEMORY` | W / C | память lightmaps (цвет + направление + shadowmask) больше порога | — |
@@ -569,6 +575,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `REFL_NO_BOX` | I | без Box Projection, коробка до 30 м по большей стороне (исправление — включить Box Projection) | R |
 | `REFL_DUPLICATE` | W | две пробы почти совпадают: общая часть больше 80 % объёма каждой (запись на меньшую; при равных — на позднюю); малая проба внутри большой — не дубликат | — |
 | `REFL_OUTSIDE` | I | MeshRenderer и SkinnedMeshRenderer с Reflection Probes ≠ Off вне всех проб (по центру bounds), когда пробы есть; одна запись на прогон | — |
+| `REFL_QUALITY_REALTIME` | I | на уровне качества включены Realtime Reflection Probes | — |
 | **Particles** | | | |
 | `PART_MAX_PARTICLES` | W / C | частиц одновременно больше 1000 / 5000 (оценка — в «Оценках») | — |
 | `PART_TOTAL` | W | оценки всех систем вместе больше 20 000 (одна запись на прогон) | — |
@@ -578,6 +585,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `PART_SHADOWS` | W | включённый рендерер частиц с Cast Shadows не Off (исправление — Off) | R |
 | `PART_MESH_NO_INSTANCING` | I | рендерер включён, Render Mode = Mesh, меш задан, Enable GPU Instancing выключен (исправление — включить) | R |
 | `PART_NOISE_HIGH` | I | модуль Noise с Quality High | — |
+| `PART_SOFT_PARTICLES` | I | на уровне качества включены Soft Particles, а в сценах есть включённые системы частиц (мягким частицам нужна текстура глубины камеры) | — |
 | **Physics** | | | |
 | `PHYS_CONCAVE_DYNAMIC` | C | невыпуклый MeshCollider под не-kinematic Rigidbody (и у предков) | — |
 | `PHYS_CONCAVE_KINEMATIC` | I | то же, Rigidbody kinematic | — |
@@ -613,7 +621,10 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `VR_STEREO_MODE` | W | режим stereo известен и не Single Pass Instanced | — |
 | `VR_DEFERRED_TIER` | W | Tier 3 Standalone — Deferred | — |
 | `VR_DEFERRED_CAMERA` | W | VR-камера явно Deferred | — |
-| `VR_MSAA` | W | Anti Aliasing уровня меньше 4x | — |
+| `VR_MSAA` | W | Anti Aliasing уровня выключен (до 2.2.0 — меньше 4x); 2x — нормальная настройка, 4x — при запасе по времени кадра | — |
+| `VR_MSAA_HIGH` | I | Anti Aliasing уровня — 8x: дороже, чем поднять разрешение рендера | — |
+| `VR_VSYNC` | I | VSync Count уровня — не Don't Sync: в VR частоту задаёт SDK шлема, а VSync ограничивает Game view редактора и искажает замер без шлема | — |
+| `VR_FRAME_RATE_SCRIPT` | I | скрипт в `Assets/` присваивает `Application.targetFrameRate` или `QualitySettings.vSyncCount` (значение не проверяется; комментарии не считаются, строки в кавычках — считаются); с VR Unity эти значения игнорирует, действуют они без шлема и в Game view; одна запись на скрипт | — |
 | `VR_NO_CAMERA` | I | нет VR-камеры (Target Eye ≠ None, без Target Texture) | — |
 | `VR_CAMERA_NO_MSAA` | W | у VR-камеры выключен Allow MSAA | — |
 | `VR_CAMERA_HDR` | W | у VR-камеры включён HDR | — |
@@ -876,6 +887,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `AuditIssue.cs` | модель проблемы, уровни, категории, виды исправления |
 | `VRBudgets.cs` | пороги и константы, файл бюджетов |
 | `XrInfo.cs`, `QualitySnapshot.cs` | XR и уровень качества |
+| `FrameRateScripts.cs` | скрипты `Assets/`, задающие частоту кадров (`VR_FRAME_RATE_SCRIPT`): разбор без комментариев, кэш по времени файла |
 | `TextureMemory.cs` | оценка памяти текстуры |
 | `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs`, `Strings.Particles.cs`, `Strings.Shaders.cs`, `Strings.Reflections.cs`, `Strings.Scope.cs`, `Strings.Gain.cs`, `Strings.Help.cs`, `Strings.CheckHelp.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые»; проверки частиц; проверки шейдеров; reflection probes и «Отражения»; охват; выигрыш; справка окна; карточки 30 проверок |
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |

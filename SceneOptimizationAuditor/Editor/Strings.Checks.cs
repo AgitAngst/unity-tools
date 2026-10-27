@@ -21,7 +21,7 @@ namespace UnityTools.SceneOptimization
                 "MESH_READ_WRITE_NEEDED", "Model with Read/Write (used by colliders or particles)", "Модель с Read/Write (нужен коллайдерам или частицам)",
                 "MESH_NOT_OPTIMIZED", "Mesh not fully optimized", "Меш оптимизирован не полностью",
                 "MESH_BONES_PER_VERTEX", "More than 4 bones per vertex", "Больше 4 костей на вершину",
-                "MESH_QUALITY_SKIN_WEIGHTS", "Skin Weights above 4 bones", "Skin Weights больше 4 костей",
+                "MESH_QUALITY_SKIN_WEIGHTS", "Skin Weights above 2 bones", "Skin Weights больше 2 костей",
                 "MESH_GPU_SKINNING_OFF", "GPU Skinning is off", "Выключен GPU Skinning",
                 "TEX_SIZE", "Texture too large", "Слишком большая текстура",
                 "TEX_NOT_NORMAL_MAP", "Normal map of the wrong type", "Карта нормалей не того типа",
@@ -38,6 +38,8 @@ namespace UnityTools.SceneOptimization
                 "LIGHT_UV1_OVERLAP", "Overlapping lightmap UVs", "Наложения в развёртке под свет",
                 "LIGHT_SHADOW_RESOLUTION", "High shadow resolution", "Высокое разрешение теней",
                 "LIGHT_SHADOW_DISTANCE", "Long shadow distance", "Большая дальность теней",
+                "LIGHT_SOFT_SHADOWS", "Soft shadows of a realtime or mixed light", "Мягкие тени realtime- или mixed-источника",
+                "LIGHT_GAMMA_SPACE", "Gamma color space", "Цветовое пространство Gamma",
                 "LIGHT_PIXEL_LIGHTS", "More than one pixel light", "Больше одного pixel light",
                 "LIGHT_REALTIME_GI", "Realtime GI is on", "Включён Realtime GI",
                 "PHYS_CONCAVE_DYNAMIC", "Non-convex collider on a dynamic body", "Невыпуклый коллайдер на динамическом теле",
@@ -72,7 +74,10 @@ namespace UnityTools.SceneOptimization
                 "VR_STEREO_MODE", "Stereo mode is not Single Pass Instanced", "Режим stereo не Single Pass Instanced",
                 "VR_DEFERRED_TIER", "Deferred rendering for Standalone", "Deferred для Standalone",
                 "VR_DEFERRED_CAMERA", "VR camera in Deferred", "VR-камера в Deferred",
-                "VR_MSAA", "MSAA below 4x", "MSAA ниже 4x",
+                "VR_MSAA", "MSAA is off", "MSAA выключен",
+                "VR_MSAA_HIGH", "MSAA 8x", "MSAA 8x",
+                "VR_VSYNC", "VSync is on", "Включён VSync",
+                "VR_FRAME_RATE_SCRIPT", "A script sets the frame rate", "Скрипт задаёт частоту кадров",
                 "VR_NO_CAMERA", "No VR camera", "Нет VR-камеры",
                 "VR_CAMERA_NO_MSAA", "VR camera without MSAA", "VR-камера без MSAA",
                 "VR_CAMERA_HDR", "HDR on a VR camera", "HDR на VR-камере",
@@ -169,8 +174,9 @@ namespace UnityTools.SceneOptimization
             Add("MESH_NOT_OPTIMIZED.fix", "Set Optimize Mesh to Everything in the model import settings.", "Поставьте Optimize Mesh = Everything в импорте модели.");
             Add("MESH_BONES_PER_VERTEX", "Up to {0} bones per vertex: skinning costs more.", "До {0} костей на вершину: скиннинг дороже.");
             Add("MESH_BONES_PER_VERTEX.fix", "Limit skin weights to 4 bones in the model import settings.", "Ограничьте веса 4 костями в импорте модели.");
-            Add("MESH_QUALITY_SKIN_WEIGHTS", "Quality Skin Weights is {0} (more than four bones).", "Skin Weights уровня качества — {0} (больше четырёх костей).");
-            Add("MESH_QUALITY_SKIN_WEIGHTS.fix", "Use Four Bones or fewer.", "Используйте Four Bones или меньше.");
+            Add("MESH_QUALITY_SKIN_WEIGHTS", "Quality Skin Weights is {0} (more than two bones).", "Skin Weights уровня качества — {0} (больше двух костей).");
+            Add("MESH_QUALITY_SKIN_WEIGHTS.fix", "Set Skin Weights to 2 Bones in Quality: skinning is cheaper; check that characters still bend well.",
+                "Поставьте Skin Weights = 2 Bones в Quality: скиннинг дешевле; проверьте, что персонажи по-прежнему хорошо гнутся.");
             Add("MESH_GPU_SKINNING_OFF", "GPU Skinning is off: skinned meshes are processed on the CPU.", "GPU Skinning выключен: скиннинг идёт на CPU.");
             Add("MESH_GPU_SKINNING_OFF.fix", "Enable GPU Skinning in Player Settings.", "Включите GPU Skinning в Player Settings.");
         }
@@ -222,7 +228,15 @@ namespace UnityTools.SceneOptimization
             Add("LIGHT_SHADOW_RESOLUTION", "Shadow resolution is {0}.", "Разрешение теней — {0}.");
             Add("LIGHT_SHADOW_RESOLUTION.fix", "Lower it to save GPU time and memory.", "Понизьте, чтобы сберечь время GPU и память.");
             Add("LIGHT_SHADOW_DISTANCE", "Shadow distance is {0} m (more than {1} m).", "Дальность теней {0} м (больше {1} м).");
-            Add("LIGHT_SHADOW_DISTANCE.fix", "A shorter distance gives sharper and cheaper shadows.", "Меньшая дальность — чётче и дешевле тени.");
+            Add("LIGHT_SHADOW_DISTANCE.fix", "20–40 m is enough in VR: a shorter distance gives sharper and cheaper shadows.",
+                "В VR хватает 20–40 м: меньшая дальность — чётче и дешевле тени.");
+            Add("LIGHT_SOFT_SHADOWS", "{0} light with Soft Shadows.", "Источник {0} с Soft Shadows.");
+            Add("LIGHT_SOFT_SHADOWS.fix", "Soft shadows cost more on every shadow map: use Hard Shadows (or Hard Shadows Only in Quality); keep Soft for the main light only when the frame has headroom.",
+                "Мягкие тени дороже на каждой карте теней: поставьте Hard Shadows (или Hard Shadows Only в Quality); Soft оставьте только главному источнику, если есть запас по времени кадра.");
+            Add("LIGHT_SOFT_SHADOWS.do", "Set Shadow Type to Hard Shadows", "Поставить Shadow Type = Hard Shadows");
+            Add("LIGHT_GAMMA_SPACE", "Color Space is Gamma.", "Color Space — Gamma.");
+            Add("LIGHT_GAMMA_SPACE.fix", "Linear gives correct lighting and blending: set Color Space to Linear in Player Settings, then rebake the lighting and check the colors of textures and materials.",
+                "Linear даёт правильный свет и смешивание: поставьте Color Space = Linear в Player Settings, затем перезапеките свет и проверьте цвета текстур и материалов.");
             Add("LIGHT_PIXEL_LIGHTS", "Pixel Light Count is {0}.", "Pixel Light Count = {0}.");
             Add("LIGHT_PIXEL_LIGHTS.fix", "In Forward each extra pixel light is another pass over every lit object; use 1.",
                 "В Forward каждый лишний pixel light — ещё проход по освещённым объектам; поставьте 1.");
@@ -325,8 +339,17 @@ namespace UnityTools.SceneOptimization
             Add("VR_DEFERRED_TIER.fix", "Use Forward: MSAA does not work in Deferred and stereo Deferred is expensive.", "Используйте Forward: в Deferred не работает MSAA, а stereo в Deferred дорого.");
             Add("VR_DEFERRED_CAMERA", "VR camera uses the Deferred rendering path.", "VR-камера использует Deferred.");
             Add("VR_DEFERRED_CAMERA.fix", "Use Forward: MSAA does not work in Deferred.", "Используйте Forward: в Deferred не работает MSAA.");
-            Add("VR_MSAA", "Anti Aliasing is {0}x.", "Anti Aliasing = {0}x.");
-            Add("VR_MSAA.fix", "Use 4x MSAA or more: 2x is not enough at the Vive Pro resolution.", "Поставьте 4x MSAA и выше: 2x мало для разрешения Vive Pro.");
+            Add("VR_MSAA", "Anti Aliasing is off.", "Anti Aliasing выключен.");
+            Add("VR_MSAA.fix", "Use 2x MSAA; 4x when the frame time has headroom (Forward only).", "Поставьте 2x MSAA; 4x — если есть запас по времени кадра (только в Forward).");
+            Add("VR_MSAA_HIGH", "Anti Aliasing is {0}x.", "Anti Aliasing = {0}x.");
+            Add("VR_MSAA_HIGH.fix", "8x costs much more than 4x for little gain: keep 2x–4x and raise the render resolution instead.",
+                "8x намного дороже 4x при малой пользе: оставьте 2x–4x, а вместо этого поднимите разрешение рендера.");
+            Add("VR_VSYNC", "VSync Count is {0}.", "VSync Count — {0}.");
+            Add("VR_VSYNC.fix", "In VR the SDK of the headset sets the frame rate; VSync still caps the Game view of the editor at the monitor rate and skews the tour without a headset. Set VSync Count to Don't Sync.",
+                "В VR частоту кадров задаёт SDK шлема; VSync же ограничивает Game view редактора частотой монитора и искажает замер без шлема. Поставьте VSync Count = Don't Sync.");
+            Add("VR_FRAME_RATE_SCRIPT", "The script assigns {0}.", "Скрипт присваивает {0}.");
+            Add("VR_FRAME_RATE_SCRIPT.fix", "With VR, Unity takes the frame rate from the SDK of the headset and ignores these values; they act without a headset — in the build window and in the Game view of the editor, where they skew the tour without a headset. Remove the assignment or make it only without VR.",
+                "С VR Unity берёт частоту кадров у SDK шлема и эти значения игнорирует; действуют они без шлема — в окне сборки и в Game view редактора, где искажают замер без шлема. Уберите присваивание или делайте его только без VR.");
             Add("VR_NO_CAMERA", "No active VR camera (Target Eye set, no Target Texture).", "Нет активной VR-камеры (Target Eye задан, без Target Texture).");
             Add("VR_NO_CAMERA.fix", "Fine if the VR rig is created at runtime.", "Нормально, если VR-rig создаётся в рантайме.");
             Add("VR_CAMERA_NO_MSAA", "MSAA is off on the VR camera.", "У VR-камеры выключен MSAA.");

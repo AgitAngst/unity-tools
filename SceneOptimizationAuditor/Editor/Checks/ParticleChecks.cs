@@ -76,6 +76,9 @@ namespace UnityTools.SceneOptimization
             }
             if (total > VRBudgets.ParticlesTotalWarning)
                 ctx.Report("PART_TOTAL", Category.Particles, Severity.Warning, null, total, VRBudgets.ParticlesTotalWarning, systems);
+            // Soft particles need the depth texture of the camera: an extra pass in Forward.
+            if (systems > 0 && ctx.quality.softParticles)
+                ctx.ReportSetting("PART_SOFT_PARTICLES", Category.Particles, Severity.Info, "Project/Quality", systems);
         }
 
         // Systems emitted by other systems: their own emission settings do not bound them.

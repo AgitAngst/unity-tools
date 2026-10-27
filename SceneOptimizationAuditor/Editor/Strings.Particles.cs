@@ -43,6 +43,10 @@ namespace UnityTools.SceneOptimization
             Add("PART_MESH_NO_INSTANCING.fix", "With Enable GPU Instancing the meshes are drawn in one call (the Particles/Standard shaders support it).",
                 "С Enable GPU Instancing меши рисуются одним вызовом (шейдеры Particles/Standard это умеют).");
             Add("PART_MESH_NO_INSTANCING.do", "Turn on GPU Instancing", "Включить GPU Instancing");
+            Add("PART_SOFT_PARTICLES.title", "Soft Particles on", "Включены Soft Particles");
+            Add("PART_SOFT_PARTICLES", "Soft Particles are on in the quality level; the scenes have {0} particle systems.", "На уровне качества включены Soft Particles; систем частиц в сценах: {0}.");
+            Add("PART_SOFT_PARTICLES.fix", "Soft particles need the depth texture of the camera, which in Forward can take an extra pass: turn Soft Particles off in Quality unless particles must fade into walls.",
+                "Мягким частицам нужна текстура глубины камеры, а в Forward она может стоить отдельного прохода: выключите Soft Particles в Quality, если частицам не нужно мягко уходить в стены.");
             Add("PART_NOISE_HIGH.title", "Noise of High quality", "Noise качества High");
             Add("PART_NOISE_HIGH", "The Noise module is of High quality.", "Модуль Noise качества High.");
             Add("PART_NOISE_HIGH.fix", "Medium or Low is cheaper on the CPU and looks almost the same.", "Medium или Low дешевле на CPU и выглядят почти так же.");
