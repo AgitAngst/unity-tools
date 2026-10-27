@@ -198,7 +198,11 @@ namespace UnityTools.SceneOptimization
                 EditorUtility.DisplayDialog(Strings.Get("ui.acc.section"), Strings.Get("ui.acc.clearAll.ask"), Strings.Get("ui.acc.clearAll"), Strings.Get("ui.fix.cancel")))
             {
                 list.Clear();
-                if (result != null) list.Apply(result.issues);
+                if (result != null)
+                {
+                    list.Apply(result.issues);
+                    ListChanged();
+                }
             }
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();
@@ -212,7 +216,11 @@ namespace UnityTools.SceneOptimization
                 if (GUILayout.Button(Strings.Get("ui.acc.enable"), EditorStyles.miniButton, GUILayout.Width(120f)))
                 {
                     list.Enable(id);
-                    if (result != null) list.Apply(result.issues);
+                    if (result != null)
+                    {
+                        list.Apply(result.issues);
+                        ListChanged();
+                    }
                 }
                 EditorGUILayout.EndHorizontal();
             }

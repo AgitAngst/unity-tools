@@ -53,8 +53,8 @@ namespace UnityTools.SceneOptimization
                 "Отключить эти проверки во всём проекте?\n\n{0}\n\nВключить их снова можно на вкладке «Бюджеты».");
             Add("ui.acc.disable.yes", "Turn off", "Отключить");
             Add("ui.acc.section", "Acceptable problems and turned-off checks", "Допустимые проблемы и отключённые проверки");
-            Add("ui.acc.section.note", "Marks are kept per object or asset and survive renames; problems without an object (budgets, settings) are marked for the whole project.",
-                "Пометки хранятся по объекту или ассету и переживают переименование; проблемы без объекта (бюджеты, настройки) помечаются для всего проекта.");
+            Add("ui.acc.section.note", "Marks are kept per object or asset and survive renames; a problem of a whole scene (budgets, counts) is marked for its scene, project settings and several open scenes checked together — for the whole project.",
+                "Пометки хранятся по объекту или ассету и переживают переименование; проблема всей сцены (бюджеты, счётчики) помечается для своей сцены, настройки проекта и несколько открытых сцен вместе — для всего проекта.");
             Add("ui.acc.marked", "Marked as acceptable: {0}", "Помечено допустимыми: {0}");
             Add("ui.acc.clearAll", "Remove all marks", "Снять все пометки");
             Add("ui.acc.clearAll.ask", "Remove every acceptable mark and turn every check on again?", "Снять все пометки и снова включить все проверки?");
@@ -62,8 +62,9 @@ namespace UnityTools.SceneOptimization
             Add("ui.acc.enable", "Turn on", "Включить");
             Add("ui.acc.file", "Saved in {0} — commit it to share with the team.", "Хранится в {0} — закоммитьте, чтобы команда видела то же.");
             Add("ui.sel.all", "Select all", "Выбрать все");
-            Add("ui.sel.all.tip", "Picks every shown problem that has an object or a fix.", "Выбирает все показанные проблемы с объектом или исправлением.");
-            Add("ui.sel.group.tip", "Pick every object of this problem.", "Выбрать все объекты этой проблемы.");
+            Add("ui.sel.all.tip", "Picks every shown row.", "Выбирает все показанные строки.");
+            Add("ui.sel.allProblems.tip", "Picks every shown problem.", "Выбирает все показанные проблемы.");
+            Add("ui.sel.group.tip", "Pick every row of this problem.", "Выбрать все записи этой проблемы.");
             Add("ui.sel.pick.tip", "Add to the selection.", "Добавить в выбор.");
             Add("ui.lm.onlyProblems", "Problems only", "Только проблемные");
             Add("ui.lm.notScanned", "Press Scan Models to list the models of the loaded scenes.", "Нажмите «Проверить модели», чтобы увидеть модели загруженных сцен.");

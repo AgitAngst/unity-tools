@@ -145,6 +145,7 @@ namespace UnityTools.SceneOptimization
                 lighting = ctx.lighting,
                 heavy = HeavyReport.Build(ctx.roots, ctx.budgets.objectTrisWarning)
             };
+            if (ctx.scenes.Count == 1) AcceptedList.KeepScene(result.issues, ctx.scenes[0].path);
             AcceptedList.Load().Apply(result.issues);
             return result;
         }

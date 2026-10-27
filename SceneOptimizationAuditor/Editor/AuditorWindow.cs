@@ -307,7 +307,7 @@ namespace UnityTools.SceneOptimization
         void PickForShot()
         {
             var first = groups.FirstOrDefault(IsShown);
-            if (first != null) foreach (var issue in first.issues) if (MultiSelect.CanPick(issue)) picked.Add(issue);
+            if (first != null) foreach (var issue in first.issues) picked.Add(issue);
             if (lmRows != null) foreach (var row in lmRows.Take(3)) lmPicked.Add(row);
         }
 

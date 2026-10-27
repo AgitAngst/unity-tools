@@ -926,8 +926,10 @@ namespace AuditTestsEditor
                 (i.checkId == "DC_STATIC_CANDIDATE" && (i.objectPath == "DC/Candidate" || i.objectPath == "Gen/Mirrored")) ||
                 (i.checkId == "TEX_READ_WRITE" && i.assetPath.EndsWith("T_Readable.png"))).ToList();
             var setting = result.issues.FirstOrDefault(i => i.checkId == "AUDIO_DSP_BUFFER");
-            Check(picked.Count == 3 && picked.All(MultiSelect.CanPick), "three rows can be picked");
-            Check(setting != null && !MultiSelect.CanPick(setting), "a settings row without a fix cannot be picked");
+            Check(picked.Count == 3, "three rows picked");
+            // Since 2.5.0 every row can be picked (to mark it acceptable): a settings row has nothing to select or fix.
+            Check(setting != null && MultiSelect.SelectionOf(new[] { setting }).Length == 0 && MultiSelect.Fixable(new[] { setting }).Count == 0,
+                "a settings row without a fix: nothing to select or fix");
             var selection = MultiSelect.SelectionOf(picked);
             Check(selection.Length == 3 && selection.Count(o => o is GameObject) == 2 && selection.Any(o => o is Texture),
                 "selection: 2 scene objects and 1 texture asset");

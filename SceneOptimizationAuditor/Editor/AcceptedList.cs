@@ -17,7 +17,9 @@ namespace UnityTools.SceneOptimization
         public sealed class Entry
         {
             public string checkId;
-            // GlobalObjectId of the object or asset; "*" for problems without an object (budgets, settings).
+            // GlobalObjectId of the object or asset; "scene:<guid>" for a problem of a whole scene (budgets, counts) when
+            // one scene was checked; "*" for project settings and for scenes checked together (before 2.5.0 — every
+            // problem without an object, for the whole project).
             public string key;
             // Where it was, for people reading the file.
             public string location;
@@ -59,7 +61,10 @@ namespace UnityTools.SceneOptimization
             File.WriteAllText(FilePath, JsonUtility.ToJson(this, true));
         }
 
+        public const string SceneKey = "scene:";
+
         // Scene objects and assets by GlobalObjectId: it survives renames and moves. Components count as their GameObject.
+        // A problem without an object gets the key of its scene from the run (KeepScene), else "*".
         public static string KeyOf(AuditIssue issue)
         {
             if (!string.IsNullOrEmpty(issue.acceptKey)) return issue.acceptKey;
@@ -70,11 +75,35 @@ namespace UnityTools.SceneOptimization
             return issue.acceptKey;
         }
 
+        // Problems without an object that are about the project, not the scene.
+        static readonly string[] ProjectChecks = { "VR_STEAMVR_MISSING" };
+
+        // A run of one scene: its problems without an object (budgets, counts, lighting of the scene) belong to that scene by
+        // its guid, which survives moving the scene. Project settings stay "*"; so does a scene never saved.
+        public static void KeepScene(IEnumerable<AuditIssue> issues, string scenePath)
+        {
+            var guid = string.IsNullOrEmpty(scenePath) ? "" : AssetDatabase.AssetPathToGUID(scenePath);
+            if (string.IsNullOrEmpty(guid)) return;
+            foreach (var issue in issues)
+                if (issue.target == null && string.IsNullOrEmpty(issue.acceptKey) && !issue.settingsPath.StartsWith("Project/", StringComparison.Ordinal) &&
+                    Array.IndexOf(ProjectChecks, issue.checkId) < 0)
+                {
+                    issue.acceptKey = SceneKey + guid;
+                    issue.acceptScene = scenePath;
+                }
+        }
+
+        // A mark "*" of a problem without an object holds for every scene: marks made before 2.5.0 stay as they were.
+        static bool Matches(Entry e, string checkId, string key)
+        {
+            return e.checkId == checkId && (e.key == key || (e.key == "*" && key.StartsWith(SceneKey, StringComparison.Ordinal)));
+        }
+
         public bool IsAccepted(AuditIssue issue)
         {
             if (disabledChecks.Contains(issue.checkId)) return true;
             var key = KeyOf(issue);
-            return entries.Any(e => e.checkId == issue.checkId && e.key == key);
+            return entries.Any(e => Matches(e, issue.checkId, key));
         }
 
         public void Apply(IEnumerable<AuditIssue> issues)
@@ -88,20 +117,22 @@ namespace UnityTools.SceneOptimization
             {
                 var key = KeyOf(issue);
                 if (!entries.Any(e => e.checkId == issue.checkId && e.key == key))
-                    entries.Add(new Entry { checkId = issue.checkId, key = key, location = issue.Location, date = DateTime.Now.ToString("yyyy-MM-dd") });
+                    entries.Add(new Entry { checkId = issue.checkId, key = key, location = issue.acceptScene.Length == 0 ? issue.Location : issue.Location.Length > 0 ? issue.acceptScene + ": " + issue.Location : issue.acceptScene,
+                        date = DateTime.Now.ToString("yyyy-MM-dd") });
                 issue.accepted = true;
             }
             Save();
             Debug.Log("[SceneAudit] Accepted problems saved: " + entries.Count + " in " + FilePath);
         }
 
-        // Releases the per-object marks; a problem of a disabled check stays accepted until the check is enabled.
+        // Releases the per-object marks; a problem of a disabled check stays accepted until the check is enabled. Releasing
+        // a scene row held by an old project-wide mark "*" removes that mark: the problem counts again in every scene.
         public void Release(IEnumerable<AuditIssue> issues)
         {
             foreach (var issue in issues)
             {
                 var key = KeyOf(issue);
-                entries.RemoveAll(e => e.checkId == issue.checkId && e.key == key);
+                entries.RemoveAll(e => Matches(e, issue.checkId, key));
                 issue.accepted = disabledChecks.Contains(issue.checkId);
             }
             Save();

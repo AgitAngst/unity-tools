@@ -37,6 +37,8 @@ namespace UnityTools.SceneOptimization
         public bool accepted;
         // Key of the target in the accepted list, kept from the run: the object may be gone since (a closed scene).
         public string acceptKey = "";
+        // The scene of a problem without an object in a run of one scene, for people reading the accepted list.
+        public string acceptScene = "";
         // Scenes an asset problem was found in when several scenes were checked one by one.
         public int inScenes;
         // Set when the fix was applied; a check of several scenes drops such rows of the closed scenes.

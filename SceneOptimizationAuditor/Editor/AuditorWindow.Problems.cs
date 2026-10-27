@@ -173,10 +173,10 @@ namespace UnityTools.SceneOptimization
             GUILayout.FlexibleSpace();
             showAccepted = GUILayout.Toggle(showAccepted, new GUIContent(Strings.Format("ui.acc.show", result != null ? result.AcceptedCount : 0), Strings.Get("ui.acc.show.tip")),
                 EditorStyles.toolbarButton, GUILayout.ExpandWidth(false));
-            if (GUILayout.Button(new GUIContent(Strings.Get("ui.sel.all"), Strings.Get("ui.sel.all.tip")), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
+            if (GUILayout.Button(new GUIContent(Strings.Get("ui.sel.all"), Strings.Get("ui.sel.allProblems.tip")), EditorStyles.toolbarButton, GUILayout.ExpandWidth(false)))
                 foreach (var g in groups)
                     if (IsShown(g))
-                        foreach (var issue in Visible(g)) if (MultiSelect.CanPick(issue)) picked.Add(issue);
+                        foreach (var issue in Visible(g)) picked.Add(issue);
             EditorGUILayout.EndHorizontal();
             DrawSelectionBar();
         }
@@ -356,14 +356,13 @@ namespace UnityTools.SceneOptimization
 
             var head = new Rect(rect.x + 8f, rect.y, right - rect.x - 8f, rect.height);
             bool toggled = EditorGUI.Foldout(new Rect(head.x, head.y + 5f, 14f, 16f), open, GUIContent.none, true);
-            var pickable = visible.Where(MultiSelect.CanPick).ToList();
-            if (pickable.Count > 0)
+            if (visible.Count > 0)
             {
-                bool all = pickable.All(picked.Contains);
+                bool all = visible.All(picked.Contains);
                 bool now = GUI.Toggle(new Rect(head.x + 16f, head.y + 5f, 16f, 16f), all, new GUIContent("", Strings.Get("ui.sel.group.tip")));
                 if (now != all)
                 {
-                    foreach (var issue in pickable)
+                    foreach (var issue in visible)
                         if (now) picked.Add(issue);
                         else picked.Remove(issue);
                 }
@@ -422,11 +421,10 @@ namespace UnityTools.SceneOptimization
                 if (now) openCopies.Add(key);
                 else openCopies.Remove(key);
             }
-            var pickable = row.issues.Where(MultiSelect.CanPick).ToList();
-            bool all = pickable.Count > 0 && pickable.All(picked.Contains);
+            bool all = row.issues.Count > 0 && row.issues.All(picked.Contains);
             bool on = GUILayout.Toggle(all, new GUIContent("", Strings.Get("ui.copies.pick.tip")), GUILayout.Width(18f));
             if (on != all)
-                foreach (var issue in pickable)
+                foreach (var issue in row.issues)
                     if (on) picked.Add(issue);
                     else picked.Remove(issue);
             EditorGUILayout.BeginVertical();
@@ -481,14 +479,11 @@ namespace UnityTools.SceneOptimization
         {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(indent);
-            if (MultiSelect.CanPick(issue))
-            {
-                bool on = picked.Contains(issue);
-                bool now = GUILayout.Toggle(on, new GUIContent("", Strings.Get("ui.sel.pick.tip")), GUILayout.Width(18f));
-                if (now && !on) picked.Add(issue);
-                else if (!now && on) picked.Remove(issue);
-            }
-            else GUILayout.Space(22f);
+            // Every row can be picked: to fix it, select its object or mark it acceptable (settings and scene-wide rows too).
+            bool on = picked.Contains(issue);
+            bool now = GUILayout.Toggle(on, new GUIContent("", Strings.Get("ui.sel.pick.tip")), GUILayout.Width(18f));
+            if (now && !on) picked.Add(issue);
+            else if (!now && on) picked.Remove(issue);
             EditorGUILayout.BeginVertical();
             var location = RowLocation(issue);
             if (issue.users > 0) location += (location.Length > 0 ? "  ·  " : "") + Strings.Format("ui.users", issue.users);

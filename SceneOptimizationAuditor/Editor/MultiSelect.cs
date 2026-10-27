@@ -9,12 +9,6 @@ namespace UnityTools.SceneOptimization
     // What the window does with several picked rows: fix them together or select them for the Inspector.
     public static class MultiSelect
     {
-        // A problem row can be picked when it can be fixed or points to an object or asset.
-        public static bool CanPick(AuditIssue issue)
-        {
-            return issue.AutoFixable || issue.target != null;
-        }
-
         public static List<AuditIssue> Fixable(IEnumerable<AuditIssue> issues)
         {
             return issues.Where(i => i.AutoFixable).ToList();
