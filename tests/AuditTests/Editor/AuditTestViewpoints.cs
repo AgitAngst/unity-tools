@@ -161,8 +161,8 @@ namespace AuditTestsEditor
 
             var result = SceneAuditor.RunFullAudit(new VRBudgets(), false);
             var withPoints = JsonUtility.FromJson<ReportExporter.ReportDto>(ReportExporter.ToJson(result, null, set));
-            Check(withPoints.hasViewpoints && withPoints.viewpoints.points.Length == set.points.Count && withPoints.targetGpu == "RTX3060",
-                "JSON: hasViewpoints, every viewpoint and targetGpu RTX3060");
+            Check(withPoints.hasViewpoints && withPoints.viewpoints.points.Length == set.points.Count && withPoints.targetGpu == "RTX2070",
+                "JSON: hasViewpoints, every viewpoint and targetGpu RTX2070");
             var without = JsonUtility.FromJson<ReportExporter.ReportDto>(ReportExporter.ToJson(result, null, null));
             Check(!without.hasViewpoints, "JSON without an estimate: hasViewpoints false");
 
@@ -352,8 +352,8 @@ namespace AuditTestsEditor
             {
                 if (File.Exists(file)) File.Delete(file);
                 var b = VRBudgets.Load();
-                Check(b.targetGpu == "RTX3060" && b.sceneTrisWarning == 3000000 && b.sceneTrisCritical == 6000000 &&
-                      b.textureMemoryWarningMB == 2304 && b.textureMemoryCriticalMB == 3072 && !b.IsCustom, "without a budget file: RTX 3060 and its thresholds");
+                Check(b.targetGpu == "RTX2070" && b.sceneTrisWarning == 3000000 && b.sceneTrisCritical == 6000000 &&
+                      b.textureMemoryWarningMB == 1536 && b.textureMemoryCriticalMB == 2048 && !b.IsCustom, "without a budget file: RTX 2070 and its thresholds");
                 Check(b.transparentWarningPercent == 100 && b.transparentCriticalPercent == 200, "transparent in frame: 100 / 200 %");
                 Check(b.drawCallsWarning == 1000 && b.frameTimeCriticalMs == 11.1f, "other thresholds keep their defaults");
 
@@ -367,7 +367,11 @@ namespace AuditTestsEditor
                 Check(again.IsCustom && again.GpuReportName == "Custom", "an edited threshold makes the set custom");
                 Check(VRBudgets.DefaultsFor("RTX2060").textureMemoryWarningMB == 1152, "Defaults bring the values of the chosen GPU back");
                 foreach (var gpu in VRBudgets.Gpus) log.AppendLine("info: " + gpu.id + " " + gpu.trisWarning + "/" + gpu.trisCritical + " tris, " + gpu.textureMemoryWarningMB + "/" + gpu.textureMemoryCriticalMB + " MB");
-                Check(VRBudgets.Gpus.Select(g => g.id).SequenceEqual(new[] { "RTX2060", "RTX2070", "RTX2080", "RTX3060" }), "GPUs to pick: RTX 2060, 2070, 2080, 3060");
+                Check(VRBudgets.Gpus.Select(g => g.id).SequenceEqual(new[] { "RTX2060", "RTX2070", "RTX2080", "RTX3060", "RTX4060" }), "GPUs to pick: RTX 2060, 2070, 2080, 3060, 4060");
+                var rtx4060 = VRBudgets.DefaultsFor("RTX4060");
+                Check(rtx4060.targetGpu == "RTX4060" && rtx4060.sceneTrisWarning == 3500000 && rtx4060.sceneTrisCritical == 7000000 &&
+                      rtx4060.textureMemoryWarningMB == 1536 && rtx4060.textureMemoryCriticalMB == 2048 && !rtx4060.IsCustom,
+                    "RTX 4060: 3.5 / 7 million triangles, 1536 / 2048 MB of textures");
 
                 File.WriteAllText(file, "{ \"drawCallsWarning\": 1000, \"sceneTrisWarning\": 2000000, \"textureMemoryWarningMB\": 1536, \"textureMemoryCriticalMB\": 2048 }");
                 var old = VRBudgets.Load();

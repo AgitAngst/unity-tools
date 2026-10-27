@@ -114,7 +114,7 @@ namespace UnityTools.SceneOptimization
             GUILayout.Space(4f);
         }
 
-        // "RTX 3060 (12 GB)" or "custom thresholds", for the context line.
+        // "RTX 2070 (8 GB)" or "custom thresholds", for the context line.
         static string GpuLine(VRBudgets b)
         {
             var gpu = b.Gpu;

@@ -16,7 +16,7 @@ namespace UnityTools.SceneOptimization
         public int textureMemoryCriticalMB;
     }
 
-    // Thresholds of the audit. Defaults are starting values for HTC Vive Pro on the target GPU (RTX 3060 unless
+    // Thresholds of the audit. Defaults are starting values for HTC Vive Pro on the target GPU (RTX 2070 unless
     // the project picks another); projects override them in ProjectSettings/SceneOptimizationAuditor.json.
     [Serializable]
     public sealed class VRBudgets
@@ -29,8 +29,10 @@ namespace UnityTools.SceneOptimization
             new GpuPreset { id = "RTX2070", name = "RTX 2070", memoryGB = 8, trisWarning = 3000000, trisCritical = 6000000, textureMemoryWarningMB = 1536, textureMemoryCriticalMB = 2048 },
             new GpuPreset { id = "RTX2080", name = "RTX 2080", memoryGB = 8, trisWarning = 3500000, trisCritical = 7000000, textureMemoryWarningMB = 1536, textureMemoryCriticalMB = 2048 },
             new GpuPreset { id = "RTX3060", name = "RTX 3060", memoryGB = 12, trisWarning = 3000000, trisCritical = 6000000, textureMemoryWarningMB = 2304, textureMemoryCriticalMB = 3072 },
+            // About as fast as an RTX 2080 (owner, 27.10.2026: "add 2070 and 4060, 2070 by default").
+            new GpuPreset { id = "RTX4060", name = "RTX 4060", memoryGB = 8, trisWarning = 3500000, trisCritical = 7000000, textureMemoryWarningMB = 1536, textureMemoryCriticalMB = 2048 },
         };
-        public const string DefaultGpu = "RTX3060";
+        public const string DefaultGpu = "RTX2070";
 
         // Id of the target GPU; empty in a budget file saved before GPUs could be picked.
         public string targetGpu = DefaultGpu;
@@ -40,8 +42,8 @@ namespace UnityTools.SceneOptimization
         public int sceneTrisCritical = 6000000;
         public int objectTrisWarning = 10000;
         public int objectTrisCritical = 25000;
-        public int textureMemoryWarningMB = 2304;
-        public int textureMemoryCriticalMB = 3072;
+        public int textureMemoryWarningMB = 1536;
+        public int textureMemoryCriticalMB = 2048;
         public int textureSizeWarning = 2048;
         public int textureSizeCritical = 4096;
         public int shadowLightsWarning = 1;
