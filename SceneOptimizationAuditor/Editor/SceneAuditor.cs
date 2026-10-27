@@ -89,6 +89,7 @@ namespace UnityTools.SceneOptimization
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Audio, AuditAudio),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.VRSpecific, AuditVRSpecific),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.General, AuditGeneral),
+                new KeyValuePair<Category, Action<AuditContext>>(Category.Terrain, AuditTerrain),
             };
 
             try

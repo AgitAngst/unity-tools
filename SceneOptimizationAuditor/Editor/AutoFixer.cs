@@ -108,7 +108,7 @@ namespace UnityTools.SceneOptimization
         {
             if (fixes.Count == 0) return 0;
             int applied = 0;
-            bool materials = false;
+            bool save = false;
             AssetDatabase.StartAssetEditing();
             try
             {
@@ -123,10 +123,11 @@ namespace UnityTools.SceneOptimization
                     try
                     {
                         issue.fixAction();
-                        if (issue.fixTarget is Material)
+                        // Materials and terrain data are saved here; importers reimport themselves.
+                        if (issue.fixTarget is Material || issue.fixTarget is TerrainData)
                         {
                             EditorUtility.SetDirty(issue.fixTarget);
-                            materials = true;
+                            save = true;
                         }
                         Debug.Log("[SceneAudit] Fixed " + issue.checkId + ": " + path);
                         issue.applied = true;
@@ -142,7 +143,7 @@ namespace UnityTools.SceneOptimization
             {
                 AssetDatabase.StopAssetEditing();
             }
-            if (materials) AssetDatabase.SaveAssets();
+            if (save) AssetDatabase.SaveAssets();
             return applied;
         }
 

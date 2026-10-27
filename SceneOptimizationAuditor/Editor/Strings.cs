@@ -93,6 +93,7 @@ namespace UnityTools.SceneOptimization
             AddHelp();
             AddCheckHelp();
             AddHeadset();
+            AddTerrain();
         }
     }
 }

@@ -49,6 +49,7 @@ $steps = @(
     @("history", "AuditTestsEditor.AuditTests.RunHistory", @()),
     @("gpu", "AuditTestsEditor.AuditTestViewpoints.RunGpu", @()),
     @("headset", "AuditTestsEditor.AuditTestViewpoints.RunHeadset", @()),
+    @("terrain", "AuditTestsEditor.AuditTestViewpoints.RunTerrain", @()),
     @("viewpoints", "AuditTestsEditor.AuditTestViewpoints.RunViewpoints", @()),
     @("viewpoints-tour", "AuditTestsEditor.AuditTestViewpoints.RunTour", @()),
     # Starts a short tour in Play Mode; the next command waits for Play Mode to end and checks what it measured.

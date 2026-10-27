@@ -5,11 +5,11 @@
 как исправить. Замысел и этапы — [SPEC.md](../SPEC.md); вид окна — [ui-guideline.md](ui-guideline.md).
 Эта страница — справочник; как работать с утилитой по шагам — [руководство](scene-optimization-auditor-guide.md).
 
-**Состояние:** код этапов 1–23 из `SPEC.md` написан (версия 2.3.0). Автотесты в Unity 2019.4.41f2 зелёные (25.10.2026,
-`scripts\run-audit-tests.ps1`, 48 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
+**Состояние:** код этапов 1–24 из `SPEC.md` написан (версия 2.4.0). Автотесты в Unity 2019.4.41f2 зелёные (27.10.2026,
+`scripts\run-audit-tests.ps1`, 49 шагов в одном открытом редакторе, из них 4 — XR Plug-in Management, 2 — короткий
 замер в Play Mode): проверки, бюджеты, экспорт, исправления и Undo, точки обзора, замер, свет, копии префабов,
-«Тяжёлые», частицы, шейдеры, reflection probes, охват проверки, оценка выигрыша, справка в окне, настройки качества под VR и целевой шлем. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
-22.10.2026; этапы 5–23 вживую не смотрены.
+«Тяжёлые», частицы, шейдеры, reflection probes, охват проверки, оценка выигрыша, справка в окне, настройки качества под VR, целевой шлем, трава и террейн. Окно, исправления, снимок профайлера и прогон на настоящей сцене (этапы 1–4) владелец проверил вживую
+22.10.2026; этапы 5–24 вживую не смотрены.
 Не проверены настоящий OpenVR XR Plugin (в тестах — заглушки) и замер со шлемом — см. [TESTPLAN.md](../TESTPLAN.md).
 
 ## Подключение
@@ -394,6 +394,8 @@ Critical / Warning / Info / допустимых, треугольники и п
   `.shader` в `Assets/` — без комментариев, первый SubShader (и внутри `Category`), проходы и их LightMode, UsePass,
   GrabPass, AlphaToMask, `#pragma vertex` и `#include` из `Assets/` (до 8 уровней, путь — от папки включающего
   файла или от `Assets/`); встроенные `.cginc` не читаются. Встроенные и пакетные шейдеры — только ошибки и alpha-test.
+- Террейны (2.4.0): включённые Terrain со своими данными; карты деталей читаются полосами по 256 строк (на всю карту
+  4096² ушло бы 64 МБ на слой). Деревья террейна не проверяются.
 - Ассеты вне `Assets/` (пакеты, встроенные) и меши без импортёра — без проверок импорта и без
   исправлений.
 
@@ -671,6 +673,12 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `GEN_MISSING_SCRIPTS` | W | пропавшие скрипты | — |
 | `GEN_INACTIVE_HEAVY_MESH` | I | неактивный объект с мешем выше порога объекта | — |
 | `GEN_INACTIVE_HEAVY_TEXTURE` | I | неактивный объект с текстурой больше порога Warning | — |
+| **Terrain** (2.4.0, в окне — «Террейн»; пороги — предложение сессии, уточнить по профайлеру) | | | |
+| `TERRAIN_DETAIL_INSTANCES` | W / C | ≈ больше 100 000 / 300 000 травинок и деталей вокруг игрока: сумма карт деталей всех слоёв × Detail Density × доля террейна в круге Detail Distance (не больше 1). В сообщении — и треугольники: трава и Grass Billboard — 2 на травинку (квад; допущение), сетка детали — её треугольники. Только у включённого террейна со слоями деталей, «Draw» деталей и Detail Density больше 0 | — |
+| `TERRAIN_DETAIL_DISTANCE` | I | Detail Distance больше 60 м (детали рисуются — те же условия, что выше); исправление — 60 м (объект сцены, Undo) | R |
+| `TERRAIN_GRASS_BILLBOARD` | W | слой деталей Grass Billboard (детали рисуются), запись на слой; исправление — Render Mode = Grass в данных террейна (ассет: меняется во всех сценах, Undo не откатывает; у данных террейна, что хранятся только в сцене, исправления нет) | R |
+| `TERRAIN_DRAW_INSTANCED` | I | Draw Instanced выключен; исправление — включить (объект сцены, Undo) | R |
+| `TERRAIN_PIXEL_ERROR` | I | Pixel Error меньше 5 | — |
 
 ## Оценка выигрыша
 
@@ -727,7 +735,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
   «Ассеты — меняются во всём проекте, Undo их не откатывает, ассет переимпортируется»; объекты в
   экземплярах префабов помечены «станет override префаба».
 - Сцена: одна группа Undo «Scene Audit Fix», сцены помечаются изменёнными. Ассеты: импорт одним пакетом
-  (`StartAssetEditing`), материалы сохраняются; ассеты вне `Assets/` пропускаются с предупреждением в
+  (`StartAssetEditing`), материалы и данные террейна сохраняются; ассеты вне `Assets/` пропускаются с предупреждением в
   консоли. Каждое изменение — строка `[SceneAudit] Fixed <checkId>: <путь>`; каждый прогон — строка
   `[SceneAudit] Audit <версия>: N issues in M scene(s), T s (slow: …).` — время прогона и категории дольше 0,5 с. После применения аудит
   запускается снова.
@@ -770,7 +778,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
   `gainTris` (суммы без допустимых, оценки под 0,05 МБ без других не в счёт); `sceneBudgets` —
   `isEstimate`, `totalTris`, `trisLimit`, `estimatedDrawCalls`, `drawCallLimit`, `textureMemoryMB`,
   `textureMemoryLimitMB`; `category` — `DrawCalls`, `Meshes`, `Textures`, `Materials`, `Shaders`, `Lighting`, `Particles`, `Physics`, `Animators`,
-  `Audio`, `VRSpecific`, `General`; поля `profilerSnapshot` — в разделе о снимке ниже.
+  `Audio`, `VRSpecific`, `General`, `Terrain`; поля `profilerSnapshot` — в разделе о снимке ниже.
 - **CSV** (UTF-8 с BOM, RFC 4180): `CheckId, Category, Severity, Scene, ObjectPath, AssetPath, Message,
   Suggestion, AutoFixable, Accepted, ScenePath, GainMB, GainDrawCalls, GainTris` (числа — с точкой).
 - `checkId`, `category`, `severity`, `xr` — всегда по-английски; `message`, `suggestion` — на языке окна.
@@ -915,7 +923,7 @@ Unity.exe -batchmode -quit -projectPath <проект> -executeMethod UnityTools
 | `XrInfo.cs`, `QualitySnapshot.cs` | XR и уровень качества |
 | `FrameRateScripts.cs` | скрипты `Assets/`, задающие частоту кадров (`VR_FRAME_RATE_SCRIPT`): разбор без комментариев, кэш по времени файла |
 | `TextureMemory.cs` | оценка памяти текстуры |
-| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs`, `Strings.Particles.cs`, `Strings.Shaders.cs`, `Strings.Reflections.cs`, `Strings.Scope.cs`, `Strings.Gain.cs`, `Strings.Help.cs`, `Strings.CheckHelp.cs`, `Strings.Headset.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые»; проверки частиц; проверки шейдеров; reflection probes и «Отражения»; охват; выигрыш; справка окна; карточки 30 проверок; шлем |
+| `Strings.cs`, `Strings.Ui.cs`, `Strings.Checks.cs`, `Strings.Viewpoints.cs`, `Strings.Light.cs`, `Strings.Heavy.cs`, `Strings.Particles.cs`, `Strings.Shaders.cs`, `Strings.Reflections.cs`, `Strings.Scope.cs`, `Strings.Gain.cs`, `Strings.Help.cs`, `Strings.CheckHelp.cs`, `Strings.Headset.cs`, `Strings.Terrain.cs` | все тексты RU/EN (`partial class`): язык и `Get`/`Format`; тексты окна; тексты проверок; видеокарта, точки обзора и замер; вкладка «Свет» и проверки света; копии и «Тяжёлые»; проверки частиц; проверки шейдеров; reflection probes и «Отражения»; охват; выигрыш; справка окна; карточки 30 проверок; шлем; террейн |
 | `AutoFixer.cs`, `FixConfirmWindow.cs` | исправления и подтверждение |
 | `ReportExporter.cs` | JSON, CSV, командная строка |
 | `ProfilerCapture.cs` | снимок профайлера |

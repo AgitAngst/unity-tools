@@ -69,6 +69,11 @@ namespace UnityTools.SceneOptimization
         // The transparent share was set for the Vive Pro at 90 Hz and 100 %; other headsets divide it by their pixel rate.
         public const int TransparentWarningBase = 100;
         public const int TransparentCriticalBase = 200;
+        // Terrain (the owner asked for the check, 27.10.2026; the numbers are proposals of the session, not his).
+        public const long TerrainDetailsWarning = 100000;
+        public const long TerrainDetailsCritical = 300000;
+        public const float TerrainDetailDistanceInfo = 60f;
+        public const float TerrainPixelErrorInfo = 5f;
 
         // Id of the target GPU; empty in a budget file saved before GPUs could be picked.
         public string targetGpu = DefaultGpu;
