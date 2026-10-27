@@ -1,6 +1,6 @@
 # unity-tools — документация
 
-Версия программы: 2.1.0
+Версия программы: 2.1.1
 
 Это документация того, что есть сейчас. Правила для сессий — [CLAUDE.md](../CLAUDE.md); замысел и
 этапы — [SPEC.md](../SPEC.md); что осталось проверить — [TESTPLAN.md](../TESTPLAN.md).
@@ -60,6 +60,11 @@
   сцен, слияние, обновление после исправления), командная строка с несколькими сценами, сборкой и папкой, папка ассетов. `gain` — выигрыш исправлений на
   известных ассетах, порядок «По выигрышу», итог, JSON и CSV. `help` — справка: тексты 30 проверок на двух языках,
   меню «Справка» и якоря руководства (шаг читает `docs\` репозитория, `-helpDocs`), действия «С чего начать».
+  `window-fields` — стили и значки окон не переживают перезагрузку скриптов (`[NonSerialized]`).
+- `scripts\run-window-runs.ps1` — окно SceneOptimizationAuditor в видимом редакторе тестового сервера
+  (`tests/AuditTests/Editor/AuditTestWindowRuns.cs`): прогоны всех охватов на тяжёлых сценах, пока окно перерисовывается,
+  все группы и карточки открыты, «По категориям», узкое окно, стили заново после перезагрузки скриптов; любое исключение
+  при отрисовке — провал; отчёт — `unity-tools-scratch\reports\audit-tests\window-runs.txt`, код выхода 0 — без ошибок.
 - `scripts\shoot-audit-window.ps1 [-Only problems-ru-dark] [-Out …]` — снимки окна SceneOptimizationAuditor в
   тестовом сервере (`-Only`: `empty-ru-dark`, `problems-ru-dark`, `problems-en-dark`, `viewpoints-empty-ru-dark`,
   `viewpoints-ru-dark`, `viewpoints-en-dark`, `viewpoints-narrow-ru-dark`, `tour-ru-dark`, `tour-en-dark`,

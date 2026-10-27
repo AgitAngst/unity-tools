@@ -118,28 +118,32 @@ namespace UnityTools.SceneOptimization
         readonly Dictionary<string, int> limits = new Dictionary<string, int>();
         readonly HashSet<Category> closedCategories = new HashSet<Category>();
 
-        GUIStyle wrapMini;
+        // Private fields of an editor window survive a script reload, and fields added by a newer version come back
+        // null: styles and icons are never kept, and are made again once per load (an update with the window open broke
+        // the list on the styles of 2.0.0).
+        [NonSerialized] bool stylesReady;
+        [NonSerialized] GUIStyle wrapMini;
         // Gains in the colour of "better": a row, a group header, the total.
-        GUIStyle gainRow;
-        GUIStyle gainHead;
-        GUIStyle gainTotal;
-        GUIStyle hint;
-        GUIStyle link;
+        [NonSerialized] GUIStyle gainRow;
+        [NonSerialized] GUIStyle gainHead;
+        [NonSerialized] GUIStyle gainTotal;
+        [NonSerialized] GUIStyle hint;
+        [NonSerialized] GUIStyle link;
         // A link in a table cell: one line, cut at the cell (the full text is in the tooltip).
-        GUIStyle linkClipped;
-        GUIStyle bigNumber;
-        GUIStyle verdictStyle;
-        GUIStyle emptyTitle;
-        GUIStyle emptyText;
-        GUIStyle chip;
-        GUIStyle centeredMini;
-        GUIStyle boldFoldout;
-        GUIStyle searchField;
-        GUIStyle searchCancel;
-        Texture errorIcon;
-        Texture warnIcon;
-        Texture infoIcon;
-        Texture playIcon;
+        [NonSerialized] GUIStyle linkClipped;
+        [NonSerialized] GUIStyle bigNumber;
+        [NonSerialized] GUIStyle verdictStyle;
+        [NonSerialized] GUIStyle emptyTitle;
+        [NonSerialized] GUIStyle emptyText;
+        [NonSerialized] GUIStyle chip;
+        [NonSerialized] GUIStyle centeredMini;
+        [NonSerialized] GUIStyle boldFoldout;
+        [NonSerialized] GUIStyle searchField;
+        [NonSerialized] GUIStyle searchCancel;
+        [NonSerialized] Texture errorIcon;
+        [NonSerialized] Texture warnIcon;
+        [NonSerialized] Texture infoIcon;
+        [NonSerialized] Texture playIcon;
 
         [MenuItem("Tools/VR Scene Optimization Audit")]
         public static void Open()
@@ -170,7 +174,7 @@ namespace UnityTools.SceneOptimization
 
         void InitStyles()
         {
-            if (wrapMini != null) return;
+            if (stylesReady) return;
             bool pro = EditorGUIUtility.isProSkin;
             wrapMini = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true };
             hint = new GUIStyle(EditorStyles.helpBox) { wordWrap = true, fontSize = 11, padding = new RectOffset(8, 8, 6, 6) };
@@ -196,12 +200,13 @@ namespace UnityTools.SceneOptimization
             gainHead.normal.textColor = TextOk;
             gainTotal = new GUIStyle(EditorStyles.boldLabel) { wordWrap = true };
             gainTotal.normal.textColor = TextOk;
+            InitHelpStyles();
+            stylesReady = true;
         }
 
         void OnGUI()
         {
             InitStyles();
-            InitHelpStyles();
             titleContent = new GUIContent(Strings.Get("ui.title"));
             DrawToolbar();
             DrawTabs();

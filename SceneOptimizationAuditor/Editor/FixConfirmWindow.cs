@@ -12,8 +12,8 @@ namespace UnityTools.SceneOptimization
         bool[] selected;
         Action<List<AuditIssue>> onApply;
         Vector2 scroll;
-        GUIStyle wrapLabel;
-        GUIStyle wrapMini;
+        [NonSerialized] GUIStyle wrapLabel;
+        [NonSerialized] GUIStyle wrapMini;
 
         public static void Show(List<AuditIssue> items, Action<List<AuditIssue>> onApply)
         {

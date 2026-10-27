@@ -14,8 +14,8 @@ namespace UnityTools.SceneOptimization
         // The table shows the tour instead of the estimate.
         [SerializeField] bool vpMeasured;
         Rect vpTourButton;
-        GUIStyle vpRight;
-        GUIStyle vpRightHead;
+        [NonSerialized] GUIStyle vpRight;
+        [NonSerialized] GUIStyle vpRightHead;
 
         static Color AccentColor { get { return EditorGUIUtility.isProSkin ? new Color32(0x4A, 0x8B, 0xD0, 0xFF) : new Color32(0x3A, 0x72, 0xB0, 0xFF); } }
 

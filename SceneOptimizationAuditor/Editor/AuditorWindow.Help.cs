@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -21,16 +22,16 @@ namespace UnityTools.SceneOptimization
         // Groups with their card "More about the check" open.
         readonly HashSet<string> helpOpen = new HashSet<string>();
 
-        Texture helpIcon;
-        GUIStyle hintText;
-        GUIStyle linkMini;
-        GUIStyle taskCard;
+        [NonSerialized] Texture helpIcon;
+        [NonSerialized] GUIStyle hintText;
+        [NonSerialized] GUIStyle linkMini;
+        [NonSerialized] GUIStyle taskCard;
         // Text of a step card: from the top, so the texts of one row start on one line.
-        GUIStyle stepText;
+        [NonSerialized] GUIStyle stepText;
 
+        // Part of InitStyles.
         void InitHelpStyles()
         {
-            if (hintText != null) return;
             helpIcon = EditorGUIUtility.IconContent("_Help").image;
             hintText = new GUIStyle(EditorStyles.label) { wordWrap = true, fontSize = 11 };
             linkMini = new GUIStyle(link) { wordWrap = false, fontSize = 11 };
@@ -203,7 +204,7 @@ namespace UnityTools.SceneOptimization
             EditorGUILayout.EndScrollView();
         }
 
-        void StartStep(int n, string title, string text, float width, float textHeight, System.Action button)
+        void StartStep(int n, string title, string text, float width, float textHeight, Action button)
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Width(width));
             GUILayout.Label(n + ". " + title, EditorStyles.boldLabel);
