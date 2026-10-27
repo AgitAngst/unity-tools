@@ -111,7 +111,11 @@
 
 ## Осталось
 
-- Активных изменений OpenSpec нет. Доски «Бюджеты: шлем» и «Тени» приняты 27.10.2026.
+- Активное изменение — `add-quick-recheck` (этап 27, 2.7.0: запуск внизу, прогон не слетает при перезагрузке
+  скриптов, перепроверка записи). Владелец 27.10.2026: «Сначала сделай макет на всё, прежде чем кода делать» — доски
+  «Запуск и перепроверка» на холсте https://claude.ai/artifact/5rYUsiTnTkFuqLNtSC6Bui ждут его слова; кода ещё нет.
+  Причина «слетает»: `AuditResult` не сохраняется, перезагрузка скриптов сбрасывает `AuditorWindow.result`.
+- Доски «Бюджеты: шлем» и «Тени» приняты 27.10.2026.
 - Архивированы: 27.10.2026 по слову владельца («Архивируй все шесть изменений OpenSpec») — `update-gpu-presets`,
   `add-quality-checks`, `add-target-headset`, `add-terrain-grass`, `accept-any-issue`, `add-shadow-zone`; требования
   перенесены в `openspec/specs/scene-audit`, `-lighting`, `-viewpoints`, `-viewpoint-tour`. `add-shadow-zone` ушёл в
