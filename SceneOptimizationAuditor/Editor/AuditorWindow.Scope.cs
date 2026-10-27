@@ -36,17 +36,6 @@ namespace UnityTools.SceneOptimization
             return slash >= 0 ? folder.Substring(slash + 1) : folder;
         }
 
-        void ScopeButton()
-        {
-            var content = new GUIContent(Strings.Format("ui.scope.button", ScopeLabel()), Strings.Get("ui.scope.tip"));
-            if (GUILayout.Button(content, EditorStyles.toolbarDropDown, GUILayout.ExpandWidth(false))) ScopeMenu();
-        }
-
-        static float ScopeWidth()
-        {
-            return EditorStyles.toolbarDropDown.CalcSize(new GUIContent(Strings.Format("ui.scope.button", ScopeLabel()))).x;
-        }
-
         // A check at the current scope; a scope with nothing to check is greyed out.
         void ScopeMenu()
         {

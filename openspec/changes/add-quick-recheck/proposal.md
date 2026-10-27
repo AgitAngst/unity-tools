@@ -27,9 +27,11 @@
 
 ## Impact
 
-- Код (после слова владельца по доскам): `AuditorWindow.cs` (нижняя полоса, тулбар, хранение прогона),
-  `AuditorWindow.Problems.cs` (значок у строк и групп, полоса выбора), `AuditorWindow.Help.cs` («С чего начать»),
-  `AuditorWindow.Scope.cs` (кнопка охвата внизу), `SceneAuditor.cs` и `AuditContext.cs` (прогон по объектам),
-  `AuditScope.cs`, новый `Recheck.cs`, `Strings.Ui.cs` и новый `Strings.Recheck.cs`.
+- Код: `AuditorWindow.cs` (тулбар без запуска, область над нижней полосой, `Show` без точки истории), новые
+  `AuditorWindow.Run.cs` (нижняя полоса, хранение и повтор прогона, полоса сброшенного прогона) и
+  `AuditorWindow.Recheck.cs` (значок, «Перепроверить выбранное», итог), `AuditorWindow.Problems.cs` (значки, полоса
+  выбора, метка), `AuditorWindow.Scope.cs` (кнопка охвата из тулбара убрана), новый `Recheck.cs` (что перепроверяется,
+  проверки по всей сцене, замена записей), `AuditContext.cs` (`Focus`), `SceneAuditor.cs` (`Steps()`, поля `AuditResult`),
+  `AuditIssue.cs` (`recheckedAt`), `Strings.cs` (`Count`), новый `Strings.Recheck.cs`.
 - Тесты: новые шаги `recheck` и `keep-result` в `scripts/run-audit-tests.ps1`; снимки нижней полосы в
   `scripts/shoot-audit-window.ps1`.

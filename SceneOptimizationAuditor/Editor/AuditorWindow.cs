@@ -148,6 +148,8 @@ namespace UnityTools.SceneOptimization
         [NonSerialized] Texture warnIcon;
         [NonSerialized] Texture infoIcon;
         [NonSerialized] Texture playIcon;
+        [NonSerialized] Texture refreshIcon;
+        [NonSerialized] GUIStyle runButton;
 
         [MenuItem("Tools/VR Scene Optimization Audit")]
         public static void Open()
@@ -167,10 +169,12 @@ namespace UnityTools.SceneOptimization
             // The scope button counts the selected objects.
             Selection.selectionChanged += Repaint;
             ViewpointsEnable();
+            RestoreKept();
         }
 
         void OnDisable()
         {
+            KeepOpenGroups();
             ProfilerCapture.Changed -= Repaint;
             Selection.selectionChanged -= Repaint;
             ViewpointsDisable();
@@ -206,6 +210,8 @@ namespace UnityTools.SceneOptimization
             gainHead.normal.textColor = TextOk;
             gainTotal = new GUIStyle(EditorStyles.boldLabel) { wordWrap = true };
             gainTotal.normal.textColor = TextOk;
+            runButton = new GUIStyle(GUI.skin.button) { fontStyle = FontStyle.Bold, fixedHeight = 0f };
+            refreshIcon = EditorGUIUtility.IconContent("Refresh").image;
             InitHelpStyles();
             stylesReady = true;
         }
@@ -214,6 +220,9 @@ namespace UnityTools.SceneOptimization
         {
             InitStyles();
             titleContent = new GUIContent(Strings.Get("ui.title"));
+            RunKeptWhenDue();
+            // The tabs above, the run bar at the bottom of the window on every tab (owner, 27.10.2026).
+            GUILayout.BeginArea(new Rect(0f, 0f, position.width, Mathf.Max(0f, position.height - RunBarHeight)));
             DrawToolbar();
             DrawTabs();
             switch (tab)
@@ -249,6 +258,8 @@ namespace UnityTools.SceneOptimization
                     DrawProblemsTab();
                     break;
             }
+            GUILayout.EndArea();
+            DrawRunBar(new Rect(0f, position.height - RunBarHeight, position.width, RunBarHeight));
         }
 
         // ---- run ----
@@ -256,20 +267,30 @@ namespace UnityTools.SceneOptimization
         // Long work starts after the GUI pass, so progress bars and dialogs do not break the layout.
         void Run()
         {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
             var r = AuditScope.Run(budgets);
             if (r == null) return;
+            r.seconds = watch.Elapsed.TotalSeconds;
             Show(r, false);
         }
 
         // openOnly: a refresh of a check of several scenes after fixes; only the open scenes are new history points.
         void Show(AuditResult r, bool openOnly)
         {
+            Show(r, openOnly, true);
+        }
+
+        // record: false for the run that only brings the list back after a script reload.
+        void Show(AuditResult r, bool openOnly, bool record)
+        {
             result = r;
+            Keep(r);
             startShown = false;
             xrPreview = r.xr;
             groups = IssueGroup.Build(r.issues);
             acceptedList = AcceptedList.Load();
-            if (r.scope == ScopeKind.Loaded) RecordHistory(r);
+            if (!record) prevPoint = PreviousPoint(r);
+            else if (r.scope == ScopeKind.Loaded) RecordHistory(r);
             else RecordParts(r, openOnly);
             // A lighting check already on the tab follows the new run.
             if (ltReport != null)
@@ -299,8 +320,11 @@ namespace UnityTools.SceneOptimization
                     Run();
                     return;
                 }
+                var watch = System.Diagnostics.Stopwatch.StartNew();
                 var r = AuditScope.Rerun(result, budgets);
-                if (r != null) Show(r, r.parts != null);
+                if (r == null) return;
+                r.seconds = watch.Elapsed.TotalSeconds;
+                Show(r, r.parts != null);
             };
         }
 
@@ -320,28 +344,18 @@ namespace UnityTools.SceneOptimization
 
         // ---- toolbar and tabs ----
 
+        // Run and scope are in the run bar at the bottom (2.7.0).
         void DrawToolbar()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            var run = new GUIContent(" " + Strings.Get(result == null ? "ui.run" : "ui.rerun"), playIcon, Strings.Get("ui.run.tip"));
-            if (GUILayout.Button(run, EditorStyles.toolbarButton, GUILayout.Width(170f)))
-                EditorApplication.delayCall += Run;
-            ScopeButton();
-
             var safe = SafeFixes();
             var fix = new GUIContent(Strings.Format("ui.autoFix", safe.Count), Strings.Get("ui.autoFix.tip"));
             var export = new GUIContent(Strings.Get("ui.export"), Strings.Get("ui.export.tip"));
             var version = new GUIContent(Strings.Format("ui.version", ToolVersion.Full), Strings.Get("ui.version.tip"));
-            // A narrow window, or a row that does not fit, gets the fixes, the report, the help, the version and the
-            // language on a second row.
-            float row = 170f + ScopeWidth() + EditorStyles.toolbarButton.CalcSize(fix).x + EditorStyles.toolbarDropDown.CalcSize(export).x +
+            // A row that does not fit puts the help, the version and the language on a second row.
+            float row = EditorStyles.toolbarButton.CalcSize(fix).x + EditorStyles.toolbarDropDown.CalcSize(export).x +
                         EditorStyles.toolbarDropDown.CalcSize(HelpContent()).x + EditorStyles.miniLabel.CalcSize(version).x + 70f + 12f;
-            if (position.width < 640f || row > position.width)
-            {
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            }
+            bool wrap = row > position.width;
 
             EditorGUI.BeginDisabledGroup(safe.Count == 0);
             if (GUILayout.Button(fix, EditorStyles.toolbarButton))
@@ -357,6 +371,12 @@ namespace UnityTools.SceneOptimization
                 menu.ShowAsContext();
             }
             EditorGUI.EndDisabledGroup();
+            if (wrap)
+            {
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            }
 
             GUILayout.FlexibleSpace();
             HelpButton();

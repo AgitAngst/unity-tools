@@ -75,6 +75,9 @@ namespace UnityTools.SceneOptimization
         public Object source;
         public bool sourceKnown;
 
+        // When a quick re-check confirmed the row (default: not re-checked since the full run).
+        public DateTime recheckedAt;
+
         public string Message { get { return Strings.Format(messageKey, args); } }
 
         public string Suggestion

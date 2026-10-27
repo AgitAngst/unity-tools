@@ -42,6 +42,13 @@ namespace UnityTools.SceneOptimization
         public int planned;
         // Every issue of the run before the selection filter, so that copies of a prefab count all copies.
         public List<AuditIssue> allIssues;
+        // How long the run took (0: not measured), whether it only brought the list back after a script reload, and the
+        // last quick re-check: how many objects, assets and settings, and when (2.7.0).
+        public double seconds;
+        public bool afterReload;
+        public int rechecked;
+        public bool recheckedObjects;
+        public DateTime recheckTime;
 
         // Counts leave accepted problems out.
         public int Count(Severity severity)
@@ -72,10 +79,10 @@ namespace UnityTools.SceneOptimization
             return RunFullAudit(budgets, showProgress, null, null);
         }
 
-        // only: the scenes to check (null: every loaded scene); extraAssets: loose assets to check too.
-        public static AuditResult RunFullAudit(VRBudgets budgets, bool showProgress, IList<Scene> only, IList<UnityEngine.Object> extraAssets)
+        // The steps of a run, a category each, in the order of the progress bar; a quick re-check runs them too.
+        internal static KeyValuePair<Category, Action<AuditContext>>[] Steps()
         {
-            var steps = new KeyValuePair<Category, Action<AuditContext>>[]
+            return new KeyValuePair<Category, Action<AuditContext>>[]
             {
                 new KeyValuePair<Category, Action<AuditContext>>(Category.DrawCalls, AuditDrawCalls),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Meshes, AuditMeshes),
@@ -91,6 +98,12 @@ namespace UnityTools.SceneOptimization
                 new KeyValuePair<Category, Action<AuditContext>>(Category.General, AuditGeneral),
                 new KeyValuePair<Category, Action<AuditContext>>(Category.Terrain, AuditTerrain),
             };
+        }
+
+        // only: the scenes to check (null: every loaded scene); extraAssets: loose assets to check too.
+        public static AuditResult RunFullAudit(VRBudgets budgets, bool showProgress, IList<Scene> only, IList<UnityEngine.Object> extraAssets)
+        {
+            var steps = Steps();
 
             try
             {

@@ -95,6 +95,21 @@ namespace UnityTools.SceneOptimization
             AddHeadset();
             AddTerrain();
             AddShadows();
+            AddRecheck();
+        }
+
+        // A number with its noun: "{0} row|{0} rows" in English, three forms in Russian (1 · 2–4 · 5–20).
+        public static string Count(string key, long n)
+        {
+            var forms = Get(key).Split('|');
+            int form;
+            if (Current == Lang.Ru && forms.Length >= 3)
+            {
+                long ones = Math.Abs(n) % 10, tens = Math.Abs(n) % 100;
+                form = ones == 1 && tens != 11 ? 0 : ones >= 2 && ones <= 4 && (tens < 12 || tens > 14) ? 1 : 2;
+            }
+            else form = n == 1 ? 0 : forms.Length - 1;
+            return string.Format(CultureInfo.InvariantCulture, forms[Math.Min(form, forms.Length - 1)], n);
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -103,6 +104,41 @@ namespace UnityTools.SceneOptimization
             CollectMeshesAndClips();
             CollectDependencies();
             CollectExtraAssets();
+        }
+
+        // Quick re-check (2.7.0): after a full Collect the checks see only these objects with their children, and the asset
+        // tables keep only what those objects use and the assets named — with the use counted over the whole scenes.
+        public void Focus(IEnumerable<GameObject> picked, IEnumerable<Object> assets)
+        {
+            var set = new HashSet<GameObject>(picked.Where(g => g != null));
+            roots.Clear();
+            // An object under another picked one is checked once, with its parent.
+            foreach (var go in set)
+            {
+                bool nested = false;
+                for (var t = go.transform.parent; t != null && !nested; t = t.parent) nested = set.Contains(t.gameObject);
+                if (!nested) roots.Add(go);
+            }
+            objects.Clear();
+            foreach (var root in roots)
+                foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                    objects.Add(t.gameObject);
+            componentCache.Clear();
+
+            var keep = new HashSet<Object>(assets.Where(a => a != null));
+            if (roots.Count > 0)
+                foreach (var dependency in EditorUtility.CollectDependencies(roots.ToArray()))
+                {
+                    if (dependency == null) continue;
+                    keep.Add(dependency);
+                    var sprite = dependency as Sprite;
+                    if (sprite != null && sprite.texture != null) keep.Add(sprite.texture);
+                }
+            foreach (var texture in textures.Keys.Where(k => !keep.Contains(k)).ToList()) textures.Remove(texture);
+            foreach (var clip in clips.Keys.Where(k => !keep.Contains(k)).ToList()) clips.Remove(clip);
+            foreach (var mesh in meshes.Keys.Where(k => !keep.Contains(k)).ToList()) meshes.Remove(mesh);
+            colliderMeshes.RemoveWhere(m => !keep.Contains(m));
+            particleMeshes.RemoveWhere(m => !keep.Contains(m));
         }
 
         // Loose textures and clips of a checked folder: assets nothing in the scenes uses.

@@ -17,7 +17,7 @@ namespace AuditTestsEditor
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     //     [-shotLight atlases|objects|lights|probes|reflections|shadows] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
-    //     [-shotHelp <checkId>] [-shotStart] [-shotBars]
+    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -45,6 +45,8 @@ namespace AuditTestsEditor
                 SwitchSkin();
             }
 
+            // The run kept by the window of the previous shot would show up in this one.
+            typeof(AuditorWindow).GetField("kept", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, null);
             window = ScriptableObject.CreateInstance<AuditorWindow>();
             window.titleContent = new GUIContent(Strings.Get("ui.title"));
             window.ShowUtility();
@@ -93,6 +95,15 @@ namespace AuditTestsEditor
                 Invoke("ScanLightmapUvs");
             }
             if (HasArg("-shotPick")) Invoke("PickForShot");
+            if (HasArg("-shotRecheck")) Invoke("RecheckForShot");
+            if (HasArg("-shotDropped"))
+            {
+                SetField("hadRun", true);
+                SetField("keptScope", ScopeKind.BuildScenes);
+                SetField("keptScenes", 6);
+                SetField("keptTime", "14:32");
+                SetField("dropped", true);
+            }
             if (HasArg("-shotHelp")) Invoke("HelpForShot", Arg("-shotHelp"));
             if (HasArg("-shotStart")) Invoke("ShowStart");
             if (HasArg("-shotHistory")) SetField("histFixedOpen", true);

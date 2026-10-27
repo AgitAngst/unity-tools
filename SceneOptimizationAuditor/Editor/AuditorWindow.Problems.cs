@@ -15,6 +15,7 @@ namespace UnityTools.SceneOptimization
         {
             if (result == null || startShown)
             {
+                DrawDroppedBar();
                 DrawStart();
                 return;
             }
@@ -227,6 +228,12 @@ namespace UnityTools.SceneOptimization
             if (GUILayout.Button(new GUIContent(Strings.Format("ui.sel.select", objects.Length), Strings.Get("ui.sel.select.tip")), GUILayout.ExpandWidth(false)))
                 MultiSelect.Select(objects);
             EditorGUI.EndDisabledGroup();
+            var recheck = picked.Where(CanRecheck).ToList();
+            EditorGUI.BeginDisabledGroup(recheck.Count == 0);
+            if (GUILayout.Button(new GUIContent(" " + Strings.Format("ui.rc.picked", recheck.Count), refreshIcon, Strings.Get("ui.rc.picked.tip")),
+                    GUILayout.ExpandWidth(false), GUILayout.Height(18f)))
+                EditorApplication.delayCall += () => RecheckRows(recheck);
+            EditorGUI.EndDisabledGroup();
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
 
@@ -314,6 +321,9 @@ namespace UnityTools.SceneOptimization
             }
 
             float right = rect.xMax - 4f;
+            var recheck = new Rect(right - RecheckIconWidth, rect.y + 4f, RecheckIconWidth, 18f);
+            RecheckIcon(recheck, visible, "ui.rc.tip.group");
+            right = recheck.x - 4f;
             // With copies together a copies row is fixed once in its prefab: the count is that of fix entries.
             int fixCount = CopiesTogether ? PlanCountOf(GroupRows(g, visible)) : visible.Count(i => i.AutoFixable && !i.accepted);
             if (fixCount > 0)
@@ -436,7 +446,7 @@ namespace UnityTools.SceneOptimization
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
             var first = row.issues[0];
-            GUILayout.Label(new GUIContent(first.Message, first.Suggestion), wrapMini);
+            GUILayout.Label(new GUIContent(first.Message + RecheckMark(first), first.Suggestion), wrapMini);
             EditorGUILayout.EndVertical();
             var rowGain = FixGain.Sum(row.issues);
             if (rowGain.Any)
@@ -457,6 +467,7 @@ namespace UnityTools.SceneOptimization
                 if (GUILayout.Button(new GUIContent(Strings.Format("ui.fix.copies", fixable.Count), Strings.Get("ui.fix.copies.tip")), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                     EditorApplication.delayCall += () => AutoFixer.Confirm(fixable, AfterFix);
             }
+            RecheckIcon(GUILayoutUtility.GetRect(RecheckIconWidth, 18f, GUILayout.Width(RecheckIconWidth), GUILayout.Height(18f)), row.issues, "ui.rc.tip.copies");
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(2f);
@@ -497,7 +508,7 @@ namespace UnityTools.SceneOptimization
                 if (GUILayout.Button(new GUIContent(location, Strings.Get(tip)), link)) SelectOrOpen(issue);
                 EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
             }
-            var message = issue.accepted ? Strings.Get("ui.acc.tag") + "  ·  " + issue.Message : issue.Message;
+            var message = (issue.accepted ? Strings.Get("ui.acc.tag") + "  ·  " + issue.Message : issue.Message) + RecheckMark(issue);
             GUILayout.Label(new GUIContent(message, issue.Suggestion), wrapMini);
             EditorGUILayout.EndVertical();
             if (issue.HasGain)
@@ -520,6 +531,7 @@ namespace UnityTools.SceneOptimization
                     EditorApplication.delayCall += () => OpenSceneOf(scenePath, objectPath);
                 }
             }
+            RecheckIcon(issue);
             GUILayout.Space(8f);
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(2f);

@@ -44,6 +44,10 @@ $shots = @(
     @("lightmap-ru-dark", "ru", "dark", @("-shotTab", "2", "-shotScan")),
     @("lightmap-en-dark", "en", "dark", @("-shotTab", "2", "-shotScan")),
     @("picked-ru-dark", "ru", "dark", @("-shotExpand", "critical", "-shotPick")),
+    @("problems-narrow-ru-dark", "ru", "dark", @("-shotExpand", "critical", "-shotWidth", "560")),
+    @("recheck-ru-dark", "ru", "dark", @("-shotExpand", "critical", "-shotRecheck")),
+    @("recheck-en-dark", "en", "dark", @("-shotExpand", "critical", "-shotRecheck")),
+    @("dropped-ru-dark", "ru", "dark", @("-shotEmpty", "-shotDropped")),
     @("lightmap-picked-ru-dark", "ru", "dark", @("-shotTab", "2", "-shotScan", "-shotPick")),
     # The Lighting tab on made-up lightmaps: every segment, narrow, and before the first check.
     @("light-empty-ru-dark", "ru", "dark", @("-shotTab", "3")),
