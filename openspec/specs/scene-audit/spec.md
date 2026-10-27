@@ -225,9 +225,9 @@ render with the built-in Default-Material.
 - **THEN** an Info issue offers to disable the keyword
 
 ### Requirement: Picking several rows
-The window SHALL let the user pick several rows with checkboxes. On the Problems tab a row SHALL be pickable
-when it has a fix or points to an object or asset; a group checkbox SHALL pick or release all pickable rows
-of the group and "Select all" SHALL pick every shown pickable row. While rows are picked, a bar SHALL show
+The window SHALL let the user pick several rows with checkboxes. On the Problems tab every row SHALL be pickable
+(since 2.5.0 project settings and problems of a whole scene without a fix too); a group checkbox SHALL pick or release
+all shown rows of the group and "Select all" SHALL pick every shown row. While rows are picked, a bar SHALL show
 their number, how many of them a severity filter hides, "Clear selection", "Fix selected" for the fixable
 ones through the confirmation window, and "Select in Unity" that selects their objects and assets so they can
 be edited together in the Inspector. On the Lightmap UVs tab every row SHALL have a checkbox and the header a
@@ -245,15 +245,18 @@ A new audit run or scan SHALL clear the picks.
 
 #### Scenario: Settings row
 - **WHEN** a row is a project setting without a fix
-- **THEN** it has no checkbox
+- **THEN** it has a checkbox, and picking it adds nothing to "Fix selected" and "Select in Unity"
 
 ### Requirement: Acceptable problems
 The user SHALL be able to mark picked problems as acceptable and remove the mark. A mark SHALL be stored per
 project in `ProjectSettings/SceneOptimizationAuditorAccepted.json`, keyed by the check and the GlobalObjectId of
-the object (a component counts as its GameObject) or asset, or by the check alone for problems without an
-object, so it survives renames, moves and new runs. Acceptable problems SHALL NOT be counted in the verdict,
-the severity cards, the tab count, the safe batch fix or the report summary, SHALL be hidden by default and
-shown, tagged as acceptable, with an "Acceptable (N)" toggle. The file SHALL be removed when nothing is marked.
+the object (a component counts as its GameObject) or asset, so it survives renames, moves and new runs. A problem
+without an object SHALL be keyed by the guid of its scene when the run checked one saved scene (one open scene, or
+scenes one by one), and by the check alone (`*`, for the whole project) for project settings, for several open scenes
+checked together and for a scene never saved; a mark `*` SHALL hold for the problems of every scene, and releasing a
+scene's row SHALL remove it. Acceptable problems SHALL NOT be counted in the verdict, the severity cards, the tab
+count, the safe batch fix or the report summary, SHALL be hidden by default and shown, tagged as acceptable, with an
+"Acceptable (N)" toggle. The file SHALL be removed when nothing is marked.
 
 #### Scenario: Large houses
 - **WHEN** the user marks the extreme-scale problem of a house as acceptable and runs the audit again
@@ -262,6 +265,18 @@ shown, tagged as acceptable, with an "Acceptable (N)" toggle. The file SHALL be 
 #### Scenario: Moved object
 - **WHEN** a marked object is moved in the scene
 - **THEN** its problem stays acceptable
+
+#### Scenario: A scene-wide row in one scene of two
+- **WHEN** two empty scenes are checked one by one and the row "no VR camera" of the first is marked acceptable
+- **THEN** after a new run it is acceptable in the first scene and counts in the second
+
+#### Scenario: An old project-wide mark
+- **WHEN** the accepted list holds a mark `*` of that check
+- **THEN** the row is acceptable in both scenes, and releasing it in one scene removes the mark
+
+#### Scenario: Open scenes
+- **WHEN** one open scene is checked
+- **THEN** its scene-wide rows get the same key as when the scene is checked alone; with two open scenes together or a scene never saved the key is `*`
 
 ### Requirement: Turned-off checks
 The user SHALL be able to turn off the checks of the picked rows for the whole project after a confirmation;
@@ -285,15 +300,15 @@ Every audit run from the window SHALL be recorded as a point of the history of t
 `SceneAuditHistory/<scene>-<hash>.json` next to `Assets/`. A point SHALL hold the time, the tool version, an
 optional note, the counts of Critical, Warning, Info and acceptable problems, the scene triangles, the draw call
 estimate, the texture memory, the count of problems per check, the list of problems (check and location) and,
-when a profiler snapshot newer than the previous point exists, its FPS, CPU and GPU times. Runs of the same day
-SHALL replace the last point of that day unless it has a note. A history SHALL keep at most 200 points.
+when a profiler snapshot newer than the previous point exists, its FPS, CPU and GPU times. Every run SHALL be a
+new point, runs of the same day too. A history SHALL keep at most 200 points.
 
 #### Scenario: A week of work
 - **WHEN** the user runs the audit on Monday, fixes problems and runs it again on Monday and on the next Monday
-- **THEN** the history has two points: the last run of each day
+- **THEN** the history has three points, and the second Monday run shows the difference from the first
 
 #### Scenario: Noted point
-- **WHEN** the user writes a note to today's point and runs the audit again the same day
+- **WHEN** the user writes a note to a point and runs the audit again
 - **THEN** the noted point stays and the run adds a new point
 
 ### Requirement: History tab
@@ -323,8 +338,8 @@ The command-line export SHALL record a history point when `-auditHistory` is giv
 - **THEN** the history of the scene gets a point with the note "nightly"
 
 ### Requirement: Target GPU
-The Budgets tab SHALL offer a "Target GPU" choice of RTX 2060 (6 GB), RTX 2070 (8 GB), RTX 2080 (8 GB) and RTX 3060
-(12 GB), RTX 3060 being the default when the project has no budget file. Each GPU SHALL have its own starting
+The Budgets tab SHALL offer a "Target GPU" choice of RTX 2060 (6 GB), RTX 2070 (8 GB), RTX 2080 (8 GB), RTX 3060
+(12 GB) and RTX 4060 (8 GB), RTX 2070 being the default when the project has no budget file. Each GPU SHALL have its own starting
 thresholds of scene triangles and texture memory (Warning / Critical):
 
 | GPU | Triangles | Texture memory, MB |
@@ -333,6 +348,7 @@ thresholds of scene triangles and texture memory (Warning / Critical):
 | RTX 2070 | 3 000 000 / 6 000 000 | 1536 / 2048 |
 | RTX 2080 | 3 500 000 / 7 000 000 | 1536 / 2048 |
 | RTX 3060 | 3 000 000 / 6 000 000 | 2304 / 3072 |
+| RTX 4060 | 3 500 000 / 7 000 000 | 1536 / 2048 |
 
 The other thresholds SHALL be the same for every GPU. Choosing a GPU SHALL fill the threshold table with its
 values; "Default" SHALL restore the values of the chosen GPU; "Save" SHALL store the GPU as `targetGpu` in
@@ -342,7 +358,7 @@ chosen GPU SHALL be shown in the context line of the Problems tab.
 
 #### Scenario: New project
 - **WHEN** a project without a budget file runs the audit and its scene has 2 500 000 triangles
-- **THEN** the target GPU is RTX 3060 and there is no triangle budget warning
+- **THEN** the target GPU is RTX 2070 and there is no triangle budget warning
 
 #### Scenario: Weaker GPU
 - **WHEN** the user chooses RTX 2060 and saves
@@ -526,3 +542,65 @@ lighting setting with the largest of their estimates in each unit.
 #### Scenario: Ordered by gain
 - **WHEN** "By gain" is on and one group frees 100 MB while another frees 10 draw calls
 - **THEN** the group with the larger share of its budget comes first
+
+### Requirement: Quality and frame rate settings for VR
+The audit SHALL report, as Info unless stated: the Gamma color space of the Player settings; active realtime or mixed
+lights with soft shadows while the quality level allows soft shadows, with a reviewed fix that sets hard shadows; Realtime
+Reflection Probes enabled on the quality level; Soft Particles enabled on the quality level while the scenes have active
+particle systems; a VSync Count other than Don't Sync; and every script in `Assets/` that assigns
+`Application.targetFrameRate` or `QualitySettings.vSyncCount`, comments not counted (with VR Unity ignores both; they cap
+the Game view and the build without a headset). MSAA SHALL be a Warning
+only when it is off and Info at 8x; the shadow distance SHALL be reported above 40 m; the quality Skin Weights SHALL be
+reported above Two Bones when skinned meshes exist.
+
+#### Scenario: MSAA 2x on the target GPU
+- **WHEN** the quality level Standalone uses has Anti Aliasing 2x
+- **THEN** no MSAA issue is reported
+
+#### Scenario: A script caps the frame rate
+- **WHEN** a script in `Assets/` contains `Application.targetFrameRate = 60;` outside a comment
+- **THEN** an Info row names the script
+
+#### Scenario: Soft shadows
+- **WHEN** the quality level allows soft shadows and a realtime directional light has Soft Shadows
+- **THEN** an Info row names the light and offers to set Hard Shadows
+
+### Requirement: Target headset
+The Budgets tab SHALL offer a target headset (HTC Vive Pro, HTC Vive Pro 2, HTC Vive Pro 2 Wireless, Valve Index), its
+refresh rate among the rates of the headset and the SteamVR render resolution in percent, and SHALL show the per-eye
+render resolution, the frame time and the pixel rate against the Vive Pro. The frame time thresholds (Critical 1000 / rate
+ms, Warning 90 % of it), the FPS colors, the physics step expected by the physics checks, the field of view of viewpoints
+and the transparent share thresholds (scaled by the pixel rate) SHALL follow the headset; edited values SHALL be marked as
+custom. A project without a budget file SHALL start with Vive Pro 2 Wireless at 90 Hz and 100 %; a budget file without a
+headset SHALL keep HTC Vive Pro at 90 Hz. The context line and the report SHALL name the headset and its rate.
+
+#### Scenario: 120 Hz
+- **WHEN** the user picks HTC Vive Pro 2 at 120 Hz
+- **THEN** the frame time thresholds are 7.5 / 8.3 ms and a fixed timestep of 1/90 s is reported as slower than the display
+
+#### Scenario: Old budget file
+- **WHEN** a budget file saved before 2.3.0 is loaded
+- **THEN** the headset is HTC Vive Pro at 90 Hz and its thresholds are not marked as custom
+
+### Requirement: Terrain and grass
+For every active terrain the audit SHALL estimate the grass and detail instances drawn around the player (the detail
+maps of all layers × Detail Density × the share of the terrain inside the circle of Detail Distance) with their triangles
+and report more than 100 000 as Warning and more than 300 000 as Critical; it SHALL report a Grass Billboard detail layer
+as Warning with a reviewed fix to Grass in the terrain data asset, a Detail Distance above 60 m as Info with a reviewed fix to 60 m, Draw Instanced
+off as Info with a reviewed fix, and a Pixel Error below 5 as Info.
+
+#### Scenario: Dense grass
+- **WHEN** a 100 × 100 m terrain has two grass layers of 8 per cell on a 128 × 128 detail map, Detail Density 1 and Detail Distance 80 m
+- **THEN** about 262 000 instances are reported as Warning with about 524 000 triangles
+
+#### Scenario: Very dense grass
+- **WHEN** the same terrain has 16 per cell in both layers
+- **THEN** about 524 000 instances are reported as Critical
+
+#### Scenario: Details not drawn
+- **WHEN** Draw of trees and details is off or Detail Density is 0
+- **THEN** there are no rows of grass, Detail Distance or Grass Billboard for that terrain
+
+#### Scenario: Billboard grass
+- **WHEN** a detail layer is Grass Billboard
+- **THEN** a Warning names the layer and its fix sets Grass in the terrain data

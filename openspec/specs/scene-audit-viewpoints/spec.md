@@ -33,8 +33,8 @@ scenes like the audit history. Placing, moving and estimating SHALL NOT change t
 
 ### Requirement: Viewpoint estimate
 For each viewpoint the tool SHALL evaluate 8 directions 45° apart at zero pitch (plus the own direction of manual
-and camera viewpoints) with one view frustum for both eyes (110° vertical field of view, aspect 0.9, near plane
-0.05, far plane of the scene VR camera or 1000) and, when a VR camera exists, its culling mask and per-layer cull
+and camera viewpoints) with one view frustum for both eyes (the field of view of the target headset — 110° vertical and aspect 0.9 for
+the Vive Pro and the Index, 116° and 1 for the Vive Pro 2 and the Vive Pro 2 Wireless —, near plane 0.05, far plane of the scene VR camera or 1000) and, when a VR camera exists, its culling mask and per-layer cull
 distances. A renderer SHALL count when it is active and its bounds intersect the frustum. A LOD group SHALL show the
 level Unity would pick from the group size and scale, the distance to its reference point, the field of view,
 `QualitySettings.lodBias` and `maximumLODLevel`, and nothing below its last transition. Per direction the tool SHALL

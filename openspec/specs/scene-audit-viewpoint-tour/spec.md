@@ -38,7 +38,7 @@ Play Mode changes and SHALL NOT reach the scene on disk.
 Per direction the tour SHALL average over the measured frames the frame time (from the unscaled delta time) with its
 peak, the CPU main thread time, the GPU time (from the XR runtime when a headset is active, otherwise from frame
 timing when the editor provides it, −1 when unknown), the dropped frames reported by the XR runtime, draw calls,
-batches, SetPass calls and triangles. With the headset the frame is paced to 90 Hz, so the result of a viewpoint SHALL
+batches, SetPass calls and triangles. With the headset the frame is paced to the refresh rate of the headset, so the result of a viewpoint SHALL
 be its worst direction by dropped frames, then by the larger of CPU and GPU time; without the headset — by frame time.
 The tour SHALL record whether an XR device was active; without one it SHALL mark the tour "without headset".
 
@@ -53,7 +53,7 @@ The tour SHALL record whether an XR device was active; without one it SHALL mark
 ### Requirement: Tour results on the Viewpoints tab
 The Viewpoints tab SHALL switch between "Estimate" and "Measured" with segments. "Measured" SHALL show the columns
 frame time, peak, CPU, GPU, dropped frames, draw calls and SetPass, times coloured by the frame time thresholds, and a
-summary with the tour date, whether the headset was active and how many viewpoints are slower than 11.1 ms (by the
+summary with the tour date, whether the headset was active and how many viewpoints are slower than the Critical frame time (11.1 ms at 90 Hz) (by the
 larger of CPU and GPU time with the headset) or dropped frames. The selected viewpoint SHALL
 show its estimated and measured draw calls and triangles side by side. The tab SHALL say that the editor measurement
 is a guide and the final numbers come from the profiler on a Development Build.
