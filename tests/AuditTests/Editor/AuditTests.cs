@@ -774,14 +774,14 @@ namespace AuditTestsEditor
             AuditHistory.Record(first, "", monday);
             Check(File.Exists(path) && path.StartsWith(AuditHistory.Folder), "history file next to Assets: " + path);
             AuditHistory.Record(first, "", monday.AddHours(2));
-            Check(AuditHistory.Load(path).points.Count == 1, "runs of one day make one point");
+            Check(AuditHistory.Load(path).points.Count == 2, "every run is a point, runs of one day too");
 
             var h = AuditHistory.Load(path);
             h.points[0].note = "LOD on houses";
             h.Save(path);
             AuditHistory.Record(first, "", monday.AddHours(3));
             h = AuditHistory.Load(path);
-            Check(h.points.Count == 2 && h.points[0].note == "LOD on houses", "a noted point stays, the next run adds a point");
+            Check(h.points.Count == 3 && h.points[0].note == "LOD on houses", "a noted point stays, the next run adds a point");
             var p0 = h.points[0];
             Check(p0.critical == first.Count(Severity.Critical) && p0.warning == first.Count(Severity.Warning) && p0.sceneTris == first.sceneTris,
                 "point keeps the counts and budgets");
@@ -793,8 +793,8 @@ namespace AuditTestsEditor
             var later = SceneAuditor.RunFullAudit(new VRBudgets(), false);
             AuditHistory.Record(later, "", monday.AddDays(7));
             h = AuditHistory.Load(path);
-            Check(h.points.Count == 3, "next week is a new point");
-            var diff = AuditHistory.Compare(h.points[0], h.points[2]);
+            Check(h.points.Count == 4, "next week is a new point");
+            var diff = AuditHistory.Compare(h.points[0], h.points[3]);
             var key = huge.checkId + "|" + huge.Location;
             Check(diff.problemsKnown && diff.fixedProblems.Contains(key), "the huge object is in Fixed");
             Check(!diff.newProblems.Contains(key), "and not in New");
@@ -809,9 +809,9 @@ namespace AuditTestsEditor
             var marked = SceneAuditor.RunFullAudit(new VRBudgets(), false);
             AuditHistory.Record(marked, "", monday.AddDays(8));
             h = AuditHistory.Load(path);
-            var diff2 = AuditHistory.Compare(h.points[2], h.points[3]);
+            var diff2 = AuditHistory.Compare(h.points[3], h.points[4]);
             Check(diff2.acceptedSince == 1 && !diff2.fixedProblems.Contains(sound.checkId + "|" + sound.Location), "acceptable is counted apart from fixed");
-            Check(h.points[3].accepted == h.points[2].accepted + 1, "acceptable count grows by one");
+            Check(h.points[4].accepted == h.points[3].accepted + 1, "acceptable count grows by one");
             list.Clear();
 
             // Other scenes go to another file; the history keeps 200 points, old ones without problems.
@@ -820,7 +820,7 @@ namespace AuditTestsEditor
                 "scene order does not matter");
             var big = new AuditHistory();
             for (int i = 0; i < 205; i++)
-                big.Add(AuditHistory.PointOf(first, null, null, "", monday.AddDays(i)), monday.AddDays(i));
+                big.Add(AuditHistory.PointOf(first, null, null, "", monday.AddDays(i)));
             Check(big.points.Count == AuditHistory.MaxPoints, "at most " + AuditHistory.MaxPoints + " points");
             Check(!big.points[0].problemsKept && big.points[0].problems.Count == 0 && big.points[AuditHistory.MaxPoints - 1].problemsKept,
                 "old points keep numbers only");

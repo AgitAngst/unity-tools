@@ -10,7 +10,7 @@ namespace UnityTools.SceneOptimization
     // Applies fixes after the user confirms them: scene changes in one Undo group, asset changes in one import batch.
     public static class AutoFixer
     {
-        const string UndoName = "Scene Audit Fix";
+        public const string UndoName = "Scene Audit Fix";
 
         public static void Confirm(IList<AuditIssue> issues, Action onApplied)
         {

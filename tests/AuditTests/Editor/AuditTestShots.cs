@@ -16,7 +16,7 @@ namespace AuditTestsEditor
     //   Unity.exe -projectPath <test project> -executeMethod AuditTestsEditor.AuditTestShots.Shot
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
-    //     [-shotLight atlases|objects|lights|probes|reflections] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
+    //     [-shotLight atlases|objects|lights|probes|reflections|shadows] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
     //     [-shotHelp <checkId>] [-shotStart] [-shotBars]
     public static class AuditTestShots
     {
@@ -122,7 +122,7 @@ namespace AuditTestsEditor
                 var noLod = p.checks.FirstOrDefault(c => c.checkId == "MESH_NO_LOD");
                 if (noLod == null) p.checks.Add(noLod = new CheckCount { checkId = "MESH_NO_LOD" });
                 noLod.count += extra;
-                history.Add(p, time);
+                history.Add(p);
             }
             history.Save(AuditHistory.FileFor(result.scenePaths));
         }

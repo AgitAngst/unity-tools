@@ -276,6 +276,7 @@ namespace UnityTools.SceneOptimization
             {
                 ltReport = LightReport.Build();
                 ltPicked.Clear();
+                shRows = null;
             }
             // The run already collected the sources (a folder has none: the tab keeps its own).
             if (hvReport != null && r.heavy != null) hvReport = r.heavy;

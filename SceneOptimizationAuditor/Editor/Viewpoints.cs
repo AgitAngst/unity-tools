@@ -93,6 +93,8 @@ namespace UnityTools.SceneOptimization
         public bool estimateWalls;
         // Last tour in Play Mode (ViewpointTour).
         public TourMeasure tour = new TourMeasure();
+        // The point and the radius of "Shadows" on the Lighting tab (2.6.0).
+        public ShadowZone shadows = new ShadowZone();
 
         [NonSerialized] public string filePath = "";
 

@@ -55,6 +55,9 @@ $shots = @(
     @("light-refl-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "reflections")),
     @("light-refl-en-dark", "en", "dark", @("-shotTab", "3", "-shotLight", "reflections")),
     @("light-refl-narrow-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "reflections", "-shotWidth", "560")),
+    @("light-shadows-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "shadows")),
+    @("light-shadows-en-dark", "en", "dark", @("-shotTab", "3", "-shotLight", "shadows")),
+    @("light-shadows-narrow-ru-dark", "ru", "dark", @("-shotTab", "3", "-shotLight", "shadows", "-shotWidth", "560")),
     # Copies of a prefab as one row, and the Heaviest tab on forty houses.
     @("copies-ru-dark", "ru", "dark", @("-shotCopies")),
     @("copies-en-dark", "en", "dark", @("-shotCopies")),

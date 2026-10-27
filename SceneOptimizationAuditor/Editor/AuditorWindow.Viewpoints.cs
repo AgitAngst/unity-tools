@@ -37,6 +37,7 @@ namespace UnityTools.SceneOptimization
         void ViewpointsEnable()
         {
             SceneView.duringSceneGui += OnViewpointsSceneGui;
+            SceneView.duringSceneGui += OnShadowsSceneGui;
             Undo.undoRedoPerformed += OnViewpointsUndo;
             ViewpointTour.Changed += OnTourChanged;
         }
@@ -44,6 +45,7 @@ namespace UnityTools.SceneOptimization
         void ViewpointsDisable()
         {
             SceneView.duringSceneGui -= OnViewpointsSceneGui;
+            SceneView.duringSceneGui -= OnShadowsSceneGui;
             Undo.undoRedoPerformed -= OnViewpointsUndo;
             ViewpointTour.Changed -= OnTourChanged;
             if (vpSet != null) DestroyImmediate(vpSet);

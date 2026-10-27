@@ -30,6 +30,8 @@ namespace UnityTools.SceneOptimization
         {
             ltReport = LightReport.Build();
             ltPicked.Clear();
+            shRows = null;
+            shShown = LtPageSize;
             ltShown = LtPageSize;
             ltOutsideShown = LtPageSize;
             ltReflOutsideShown = LtPageSize;
@@ -57,7 +59,7 @@ namespace UnityTools.SceneOptimization
                 return;
             }
             pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
-            var labels = new[] { "ui.lt.seg.atlases", "ui.lt.seg.objects", "ui.lt.seg.lights", "ui.lt.seg.probes", "ui.lt.seg.reflections" }
+            var labels = new[] { "ui.lt.seg.atlases", "ui.lt.seg.objects", "ui.lt.seg.lights", "ui.lt.seg.probes", "ui.lt.seg.reflections", "ui.lt.seg.shadows" }
                 .Select(k => new GUIContent(Strings.Get(k), Strings.Get("ui.lt.seg.tip"))).ToArray();
             string summary, sub, footer;
             LightTexts(out summary, out sub, out footer);
@@ -66,6 +68,8 @@ namespace UnityTools.SceneOptimization
             {
                 ltSeg = seg;
                 ltShown = LtPageSize;
+                // The point and the radius are drawn in the Scene view only with "Shadows".
+                SceneView.RepaintAll();
             }
             GUILayout.Space(4f);
             switch (ltSeg)
@@ -74,6 +78,7 @@ namespace UnityTools.SceneOptimization
                 case LtLights: DrawLightSources(); break;
                 case LtProbes: DrawLightProbes(); break;
                 case LtReflections: DrawLightReflections(); break;
+                case LtShadows: DrawLightShadows(); break;
                 default: DrawLightAtlases(); break;
             }
             GUILayout.Space(8f);
@@ -163,6 +168,9 @@ namespace UnityTools.SceneOptimization
                     summary = Strings.Format("ui.lt.probes.summary", FormatNumber(r.probes), r.groups.Count, r.probeObjects, r.outside.Count);
                     sub = Strings.Format("ui.lt.probes.sub", FormatNumber(VRBudgets.ProbeAreaMargin));
                     footer = Strings.Get("ui.lt.probes.footer");
+                    return;
+                case LtShadows:
+                    ShadowTexts(out summary, out sub, out footer);
                     return;
                 case LtReflections:
                     var probes = r.reflections.Where(p => p.probe != null).ToList();
@@ -640,8 +648,16 @@ namespace UnityTools.SceneOptimization
         void LightForShot(string segment)
         {
             ScanLight();
-            int index = Array.IndexOf(new[] { "atlases", "objects", "lights", "probes", "reflections" }, segment);
+            int index = Array.IndexOf(new[] { "atlases", "objects", "lights", "probes", "reflections", "shadows" }, segment);
             ltSeg = index >= 0 ? index : 0;
+            // The shot puts the point at the centre of the scene for this window only; the file is not written.
+            if (ltSeg == LtShadows && !Viewpoints().shadows.placed)
+            {
+                var zone = Viewpoints().shadows;
+                zone.placed = true;
+                zone.center = Vector3.zero;
+                zone.radius = 10f;
+            }
             if (ltSeg == LtObjects) foreach (var o in LightObjectRows().Where(o => o.small).Take(3)) ltPicked.Add(o);
         }
     }

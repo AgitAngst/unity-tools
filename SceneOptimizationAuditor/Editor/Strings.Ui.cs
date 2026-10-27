@@ -92,8 +92,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.tab.profiler", "Profiler", "Профайлер");
             Add("ui.tab.history", "History", "История");
             Add("ui.h.title", "Progress over time", "Прогресс во времени");
-            Add("ui.h.intro", "Every audit run is a point of the scene history. Runs of one day make one point (the last one); a point with a note stays, and the next run adds a new one. Pick points A and B in the table to compare them.",
-                "Каждый прогон аудита — точка истории сцены. Прогоны одного дня — одна точка (последний); точка с заметкой остаётся, и следующий прогон добавит новую. Отметьте в таблице точки A и B, чтобы сравнить их.");
+            Add("ui.h.intro", "Every audit run is a point of the scene history, runs of one day too. Pick points A and B in the table to compare them.",
+                "Каждый прогон аудита — точка истории сцены, и прогоны одного дня тоже. Отметьте в таблице точки A и B, чтобы сравнить их.");
             Add("ui.h.scene", "Scenes", "Сцены");
             Add("ui.h.scene.tip", "History of the audited scenes or of another scene set recorded in this project.", "История проверенных сцен или другого набора сцен этого проекта.");
             Add("ui.h.scene.current", "{0} (current)", "{0} (текущие)");
@@ -123,8 +123,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.h.col.a.tip", "Point A of the comparison.", "Точка A для сравнения.");
             Add("ui.h.col.b.tip", "Point B of the comparison; its note can be edited below.", "Точка B для сравнения; её заметку можно изменить ниже.");
             Add("ui.h.noteOf", "Note to point B ({0})", "Заметка к точке B ({0})");
-            Add("ui.h.note.hint", "What was done before this run, e.g. \"LODs on the houses, atlas for props\". A noted point is not replaced by later runs of the same day.",
-                "Что сделано перед этим прогоном, например «LOD у домов, атлас для мелочи». Точку с заметкой поздние прогоны того же дня не заменят.");
+            Add("ui.h.note.hint", "What was done before this run, e.g. \"LODs on the houses, atlas for props\".",
+                "Что сделано перед этим прогоном, например «LOD у домов, атлас для мелочи».");
             Add("ui.h.note.save", "Save note", "Сохранить заметку");
             Add("ui.h.version", "Audited by v{0}", "Проверено v{0}");
             Add("ui.h.delete", "Remove point", "Удалить точку");

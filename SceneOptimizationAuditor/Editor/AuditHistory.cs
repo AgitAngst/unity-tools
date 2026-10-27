@@ -150,17 +150,16 @@ namespace UnityTools.SceneOptimization
             File.WriteAllText(path, JsonUtility.ToJson(this, true));
         }
 
-        // Adds the run to the history of its scenes and returns the point. Runs of one day replace the last point
-        // of that day, unless it has a note.
+        // Adds the run to the history of its scenes and returns the point. Every run is a point (owner, 27.10.2026: runs of
+        // one day used to replace each other, so a run after fixes had nothing to compare with).
         public static HistoryPoint Record(AuditResult result, string note, DateTime now)
         {
             var path = FileFor(result.scenePaths);
             var history = Load(path);
             history.scenes = result.scenePaths;
-            var replaced = history.Replaceable(now);
-            var before = history.points.Where(p => p != replaced).LastOrDefault();
+            var before = history.points.LastOrDefault();
             var point = PointOf(result, ProfilerCapture.LoadLast(result.activeScenePath), before, note, now);
-            history.Add(point, now);
+            history.Add(point);
             history.Save(path);
             return point;
         }
@@ -170,17 +169,8 @@ namespace UnityTools.SceneOptimization
             return Record(result, note, DateTime.Now);
         }
 
-        HistoryPoint Replaceable(DateTime now)
+        public void Add(HistoryPoint point)
         {
-            var last = points.LastOrDefault();
-            if (last == null || !string.IsNullOrEmpty(last.note)) return null;
-            return last.Time.Date == now.Date ? last : null;
-        }
-
-        public void Add(HistoryPoint point, DateTime now)
-        {
-            var replaced = Replaceable(now);
-            if (replaced != null) points.Remove(replaced);
             points.Add(point);
             while (points.Count > MaxPoints) points.RemoveAt(0);
             for (int i = 0; i < points.Count - PointsWithProblems; i++)
