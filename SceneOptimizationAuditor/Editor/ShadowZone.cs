@@ -112,9 +112,13 @@ namespace UnityTools.SceneOptimization
             return string.IsNullOrEmpty(search) || row.path.IndexOf(search.Trim(), StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        // A baked object keeps Cast Shadows for its shadow in the lightmaps only while it stays baked: with Contribute GI
+        // turned off too it is baked no more, and keeping Cast Shadows would leave it half done (owner, 28.10.2026: "turning
+        // off shadows does not work on nested objects" — the nested parts of a level are baked).
         public static bool CastOff(ShadowRow row, ShadowZone zone)
         {
-            return zone.offCast && row.Casts && !(zone.keepBaked && row.Baked);
+            bool kept = zone.keepBaked && row.Baked && !GIOff(row, zone);
+            return zone.offCast && row.Casts && !kept;
         }
 
         public static bool ReceiveOff(ShadowRow row, ShadowZone zone)

@@ -259,7 +259,7 @@ namespace UnityTools.SceneOptimization
                     if (!row.far) break;
                     if (row.renderer == null) continue;
                     bool change = ShadowReport.WillChange(row, zone);
-                    bool kept = !change && zone.offCast && zone.keepBaked && row.Baked && row.Casts;
+                    bool kept = !change && zone.offCast && zone.keepBaked && row.Baked && row.Casts && !ShadowReport.GIOff(row, zone);
                     if (!change && !kept) continue;
                     var p = row.renderer.bounds.center;
                     float size = HandleUtility.GetHandleSize(p) * 0.05f;

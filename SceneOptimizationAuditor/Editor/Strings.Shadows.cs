@@ -31,8 +31,8 @@ namespace UnityTools.SceneOptimization
                 "Статичный флаг Contribute GI снят: объект выпадает из lightmap и отражённого света; после перезапекания освещается пробами.");
             Add("ui.sh.radius", "Radius, m", "Радиус, м");
             Add("ui.sh.keepBaked", "Keep Cast Shadows on baked", "Запекаемым оставить Cast Shadows");
-            Add("ui.sh.keepBaked.tip", "Objects with Contribute GI lit from lightmaps keep Cast Shadows: without it their baked shadow goes too after a rebake.",
-                "Объекты с Contribute GI и светом из lightmap оставляют Cast Shadows: без него после перезапекания пропадёт и их запечённая тень.");
+            Add("ui.sh.keepBaked.tip", "Objects with Contribute GI lit from lightmaps keep Cast Shadows: without it their baked shadow goes too after a rebake. With Contribute GI turned off as well they are baked no more and lose Cast Shadows too.",
+                "Объекты с Contribute GI и светом из lightmap оставляют Cast Shadows: без него после перезапекания пропадёт и их запечённая тень. Если снимается и Contribute GI, объект больше не запекается и Cast Shadows снимается тоже.");
             Add("ui.sh.offAll", "Turn Off Beyond {0} m ({1})", "Выключить дальше {0} м ({1})");
             Add("ui.sh.offAll.tip", "The ticked settings off on every found object beyond the radius, through the confirmation window. Ctrl+Z brings them back.",
                 "Снять отмеченное у всех найденных объектов дальше радиуса — через окно подтверждения. Ctrl+Z возвращает.");
