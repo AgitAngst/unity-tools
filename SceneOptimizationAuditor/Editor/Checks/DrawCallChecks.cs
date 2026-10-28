@@ -13,7 +13,8 @@ namespace UnityTools.SceneOptimization
         {
             var b = ctx.budgets;
 
-            // Upper estimate: every material slot is one call, plus shadow passes, no batching or culling.
+            // The whole scene: every material slot is one call, plus shadow passes, no batching or culling. It is shown for
+            // reference; the budget per frame is checked at the viewpoints (FrameBudget).
             long baseCalls = 0;
             long casterSlots = 0;
             int casters = 0;
@@ -33,7 +34,6 @@ namespace UnityTools.SceneOptimization
             long estimate = baseCalls + casterSlots * shadowPasses;
             if (ctx.xr.DoublesDrawCalls) estimate *= 2;
             ctx.drawCallEstimate = estimate;
-            Budget(ctx, "DC_BUDGET", Category.DrawCalls, estimate, b.drawCallsWarning, b.drawCallsCritical);
             // Without shadow passes (shadows off, no shadowed realtime light) the casters cost nothing.
             if (casters > 0 && shadowPasses > 0) ctx.Report("DC_SHADOW_CASTERS", Category.DrawCalls, Severity.Info, null, casters, shadowPasses);
 

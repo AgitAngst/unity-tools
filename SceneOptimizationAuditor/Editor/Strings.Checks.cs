@@ -8,6 +8,7 @@ namespace UnityTools.SceneOptimization
             var titles = new[]
             {
                 "DC_BUDGET", "Draw call budget exceeded", "Превышен бюджет draw calls",
+                "FRAME_NO_VIEWPOINTS", "Frame budget not estimated", "Бюджет кадра не оценён",
                 "DC_SHADOW_CASTERS", "Shadow casters", "Объекты с тенями",
                 "DC_MANY_MATERIALS", "Too many materials on a renderer", "Слишком много материалов на рендерере",
                 "DC_MULTI_MATERIAL", "Several materials on a renderer", "Несколько материалов на рендерере",
@@ -135,9 +136,13 @@ namespace UnityTools.SceneOptimization
 
         static void AddDrawCalls()
         {
-            Add("DC_BUDGET", "Estimated draw calls per frame: {0} (budget {1}).", "Оценка draw calls за кадр: {0} (бюджет {1}).");
-            Add("DC_BUDGET.fix", "Upper estimate without batching and culling. Merge materials, use static batching and GPU Instancing, cut shadow casters.",
-                "Верхняя оценка без батчинга и отсечения. Объедините материалы, включите static batching и GPU Instancing, сократите тени.");
+            Add("DC_BUDGET", "Up to {0} draw calls per frame — viewpoint \"{2}\" (budget {1}).", "До {0} draw calls в кадре — точка обзора «{2}» (бюджет {1}).");
+            Add("DC_BUDGET.fix", "Estimate at the viewpoint: headset field of view, LOD, shadow passes, without batching. See what is heavy there on Viewpoints; merge materials, use static batching and GPU Instancing, cut shadow casters.",
+                "Оценка в точке обзора: поле зрения шлема, LOD, проходы теней, без батчинга. Что там тяжёлое — на «Точках обзора»; объедините материалы, включите static batching и GPU Instancing, сократите тени.");
+            Add("FRAME_NO_VIEWPOINTS", "No viewpoints: triangles and draw calls per frame are not estimated. Whole scene without culling or batching: {0} triangles, {1} draw calls.",
+                "Нет точек обзора: треугольники и draw calls в кадре не оценены. Вся сцена без отсечения и батчинга: {0} треугольников, {1} draw calls.");
+            Add("FRAME_NO_VIEWPOINTS.fix", "Place viewpoints on the Viewpoints tab: every run then estimates them and compares the worst one with the budgets per frame.",
+                "Расставьте точки на вкладке «Точки обзора»: каждый прогон оценит их и сравнит худшую с бюджетом кадра.");
             Add("DC_SHADOW_CASTERS", "{0} renderers cast shadows; each is drawn again in {1} shadow passes.", "{0} рендереров отбрасывают тени; каждый рисуется ещё в {1} проходах теней.");
             Add("DC_SHADOW_CASTERS.fix", "Turn Cast Shadows off on small and distant objects.", "Выключите Cast Shadows у мелких и дальних объектов.");
             Add("DC_MANY_MATERIALS", "{0} materials on one renderer: each is a separate draw call.", "{0} материалов на одном рендерере: каждый — отдельный draw call.");
@@ -159,9 +164,9 @@ namespace UnityTools.SceneOptimization
 
         static void AddMeshes()
         {
-            Add("MESH_SCENE_TRIS", "Scene triangles (LOD0): {0} (budget {1}).", "Треугольников в сцене (LOD0): {0} (бюджет {1}).");
-            Add("MESH_SCENE_TRIS.fix", "Upper estimate without culling. Add LODs, simplify meshes, bake details into normal maps.",
-                "Верхняя оценка без отсечения. Добавьте LOD, упростите меши, перенесите детали в карты нормалей.");
+            Add("MESH_SCENE_TRIS", "Up to {0} triangles per frame — viewpoint \"{2}\" (budget {1}).", "До {0} треугольников в кадре — точка обзора «{2}» (бюджет {1}).");
+            Add("MESH_SCENE_TRIS.fix", "Estimate at the viewpoint: headset field of view and LOD. See what is heavy there on Viewpoints; add LODs, simplify meshes, bake details into normal maps.",
+                "Оценка в точке обзора: поле зрения шлема и LOD. Что там тяжёлое — на «Точках обзора»; добавьте LOD, упростите меши, перенесите детали в карты нормалей.");
             Add("MESH_NO_LOD", "{0} triangles without a LODGroup (limit {1}).", "{0} треугольников без LODGroup (порог {1}).");
             Add("MESH_NO_LOD.fix", "Add a LODGroup with simplified levels or reduce the mesh.", "Добавьте LODGroup с упрощёнными уровнями или упростите меш.");
             Add("MESH_READ_WRITE", "Read/Write is enabled: the mesh is kept twice in memory.", "Включён Read/Write: меш хранится в памяти дважды.");

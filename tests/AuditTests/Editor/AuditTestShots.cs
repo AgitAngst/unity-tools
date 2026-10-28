@@ -17,7 +17,7 @@ namespace AuditTestsEditor
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     //     [-shotLight atlases|objects|lights|probes|reflections|shadows] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
-    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped]
+    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped] [-shotPoint]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -65,6 +65,15 @@ namespace AuditTestsEditor
             if (HasArg("-shotBars"))
                 SetField("budgets", new VRBudgets { sceneTrisWarning = 20000, sceneTrisCritical = 60000, drawCallsWarning = 30, drawCallsCritical = 60,
                     textureMemoryWarningMB = 5, textureMemoryCriticalMB = 8 });
+            // One viewpoint in the middle of the scenes of the shot: the frame bars have a worst viewpoint (2.8.0).
+            if (HasArg("-shotPoint"))
+            {
+                var set = ViewpointSet.Load(ViewpointSet.LoadedScenePaths());
+                set.points.Clear();
+                set.AddManual(new Vector3(0f, 1.7f, 0f), 0f).hasYaw = false;
+                set.Save();
+                UnityEngine.Object.DestroyImmediate(set);
+            }
             if (!HasArg("-shotEmpty")) Invoke("Run");
             if (HasArg("-shotCopies")) Invoke("CopiesForShot", "ANIM_ALWAYS_ANIMATE");
             if (HasArg("-shotHeavy"))

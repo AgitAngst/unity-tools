@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityTools.SceneOptimization;
 using A = AuditTestsEditor.AuditTestAssets;
 using Object = UnityEngine.Object;
 
@@ -50,6 +51,13 @@ namespace AuditTestsEditor
             EditorSceneManager.OpenScene(SeedPath, OpenSceneMode.Single);
             EditorSceneManager.OpenScene(SeedBPath, OpenSceneMode.Additive);
             SceneManager.SetActiveScene(SceneManager.GetSceneByPath(SeedPath));
+
+            // One viewpoint in the middle looking every way, so that every run estimates the frame budget (2.8.0).
+            var set = ViewpointSet.Load(ViewpointSet.LoadedScenePaths());
+            set.points.Clear();
+            set.AddManual(new Vector3(0f, 1.7f, 0f), 0f).hasYaw = false;
+            set.Save();
+            Object.DestroyImmediate(set);
         }
 
         static void BuildMain(string variant)

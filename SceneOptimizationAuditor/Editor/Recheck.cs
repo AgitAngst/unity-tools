@@ -32,7 +32,7 @@ namespace UnityTools.SceneOptimization
         // project settings reported only when the scene has something (Mixed lights, skinned meshes, particles).
         public static readonly HashSet<string> SceneChecks = new HashSet<string>
         {
-            "DC_BUDGET", "DC_SHADOW_CASTERS", "DC_INSTANCING_UNKNOWN", "DC_INSTANCING_OFF",
+            "DC_BUDGET", "FRAME_NO_VIEWPOINTS", "DC_SHADOW_CASTERS", "DC_INSTANCING_UNKNOWN", "DC_INSTANCING_OFF",
             "MESH_SCENE_TRIS", "MESH_DUPLICATE",
             "TEX_MEMORY", "TEX_DUPLICATE", "TEX_NOT_TRILINEAR",
             "MAT_DUPLICATE", "MAT_SIMPLE_STANDARD",

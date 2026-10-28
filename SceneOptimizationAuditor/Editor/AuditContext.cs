@@ -51,6 +51,8 @@ namespace UnityTools.SceneOptimization
         public long drawCallEstimate;
         public double textureMemoryMB;
         public LightReport lighting;
+        // Triangles and draw calls per frame at the worst viewpoints; null without viewpoints.
+        public FrameEstimate frame;
 
         // Scenes to check (null: every loaded scene) and assets to check besides what the scenes use.
         readonly IList<Scene> only;

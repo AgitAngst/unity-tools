@@ -29,8 +29,8 @@ namespace UnityTools.SceneOptimization
                 else if (tris > b.objectTrisWarning)
                     ctx.Report("MESH_NO_LOD", Category.Meshes, Severity.Warning, renderer, tris, b.objectTrisWarning).Gain(0, 0, lodGain, true);
             }
+            // The whole scene, for reference: the triangle budget is per frame, checked at the viewpoints (FrameBudget).
             ctx.sceneTris = total;
-            Budget(ctx, "MESH_SCENE_TRIS", Category.Meshes, total, b.sceneTrisWarning, b.sceneTrisCritical);
 
             AuditModelImporters(ctx);
             AuditMeshAssets(ctx);

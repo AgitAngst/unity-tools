@@ -2,10 +2,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 
 namespace UnityTools.SceneOptimization
 {
+    // Triangles and draw calls per frame at the worst viewpoints of the checked scenes (2.8.0): the viewpoints are estimated
+    // in memory by every run, as "Estimate" on the Viewpoints tab does; the viewpoint file is not changed.
+    public sealed class FrameEstimate
+    {
+        public int points;
+        public long tris;
+        public string trisPoint = "";
+        public int drawCalls;
+        public string drawCallsPoint = "";
+        public double seconds;
+    }
+
     public sealed class AuditResult
     {
         public List<AuditIssue> issues = new List<AuditIssue>();
@@ -19,6 +32,8 @@ namespace UnityTools.SceneOptimization
         public long sceneTris;
         public long drawCallEstimate;
         public double textureMemoryMB;
+        // Null when the scenes have no viewpoints: the frame budget is not estimated.
+        public FrameEstimate frame;
         // Lightmaps, the objects in them, the lights and the probes, as the lighting checks saw them.
         public LightReport lighting;
         // Sources of the active renderers (Heaviest tab), for the report.
@@ -117,12 +132,16 @@ namespace UnityTools.SceneOptimization
                 for (int i = 0; i < steps.Length; i++)
                 {
                     var info = Strings.Format("ui.progress.category", new object[] { Strings.CategoryName(steps[i].Key) });
-                    if (Progress(showProgress, info, (i + 1f) / (steps.Length + 1f))) return null;
+                    if (Progress(showProgress, info, (i + 1f) / (steps.Length + 2f))) return null;
                     var stepStart = watch.Elapsed.TotalSeconds;
                     steps[i].Value(ctx);
                     var took = watch.Elapsed.TotalSeconds - stepStart;
                     if (took > 0.5) slow.Add(steps[i].Key + " " + took.ToString("F1") + " s");
                 }
+                if (Progress(showProgress, Strings.Get("ui.progress.frame"), (steps.Length + 1f) / (steps.Length + 2f))) return null;
+                var frameStart = watch.Elapsed.TotalSeconds;
+                FrameBudget(ctx);
+                if (watch.Elapsed.TotalSeconds - frameStart > 0.5) slow.Add("viewpoints " + (watch.Elapsed.TotalSeconds - frameStart).ToString("F1") + " s");
                 var result = ToResult(ctx);
                 UnityEngine.Debug.Log("[SceneAudit] Audit " + ToolVersion.Full + ": " + result.issues.Count + " issues in " +
                     result.sceneNames.Length + " scene(s), " + watch.Elapsed.TotalSeconds.ToString("F1") + " s" +
@@ -155,12 +174,69 @@ namespace UnityTools.SceneOptimization
                 sceneTris = ctx.sceneTris,
                 drawCallEstimate = ctx.drawCallEstimate,
                 textureMemoryMB = ctx.textureMemoryMB,
+                frame = ctx.frame,
                 lighting = ctx.lighting,
                 heavy = HeavyReport.Build(ctx.roots, ctx.budgets.objectTrisWarning)
             };
             if (ctx.scenes.Count == 1) AcceptedList.KeepScene(result.issues, ctx.scenes[0].path);
             AcceptedList.Load().Apply(result.issues);
             return result;
+        }
+
+        // Triangles and draw calls per frame from the viewpoints of the checked scenes, against the budgets per frame
+        // (owner, 28.10.2026: "so it shows everything in the scene, and the limit of 1000 is per frame?"). Without
+        // viewpoints an Info row gives the whole scene, which is no frame. A preview scene (a folder check) has none.
+        static void FrameBudget(AuditContext ctx)
+        {
+            if (ctx.scenes.Count == 0 || ctx.scenes.Any(EditorSceneManager.IsPreviewScene)) return;
+            var b = ctx.budgets;
+            var paths = ctx.scenes.Select(s => s.path).ToArray();
+            ViewpointSet set = null;
+            try
+            {
+                if (paths.All(p => !string.IsNullOrEmpty(p)))
+                {
+                    set = ViewpointSet.Load(paths);
+                    if (set.points.Count > 0)
+                    {
+                        var watch = System.Diagnostics.Stopwatch.StartNew();
+                        ViewpointEstimator.Estimate(set, set.points, set.estimateWalls, null, b);
+                        var estimated = set.points.Where(p => p.Estimated).ToList();
+                        if (estimated.Count > 0)
+                        {
+                            var byCalls = estimated.OrderByDescending(p => p.Worst.drawCalls).ThenByDescending(p => p.Worst.tris).First();
+                            var byTris = estimated.OrderByDescending(p => p.directions.Max(d => d.tris)).First();
+                            ctx.frame = new FrameEstimate
+                            {
+                                points = estimated.Count,
+                                drawCalls = byCalls.Worst.drawCalls,
+                                drawCallsPoint = byCalls.Name,
+                                tris = byTris.directions.Max(d => d.tris),
+                                trisPoint = byTris.Name,
+                                seconds = watch.Elapsed.TotalSeconds
+                            };
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (set != null) UnityEngine.Object.DestroyImmediate(set);
+            }
+            var f = ctx.frame;
+            if (f == null)
+            {
+                ctx.Report("FRAME_NO_VIEWPOINTS", Category.DrawCalls, Severity.Info, null, ctx.sceneTris, ctx.drawCallEstimate);
+                return;
+            }
+            FrameReport(ctx, "MESH_SCENE_TRIS", Category.Meshes, f.tris, b.sceneTrisWarning, b.sceneTrisCritical, f.trisPoint);
+            FrameReport(ctx, "DC_BUDGET", Category.DrawCalls, f.drawCalls, b.drawCallsWarning, b.drawCallsCritical, f.drawCallsPoint);
+        }
+
+        static void FrameReport(AuditContext ctx, string checkId, Category category, long value, double warning, double critical, string point)
+        {
+            if (value > critical) ctx.Report(checkId, category, Severity.Critical, null, value, critical, point);
+            else if (value > warning) ctx.Report(checkId, category, Severity.Warning, null, value, warning, point);
         }
 
         // Shared helper: Warning or Critical issue for a value over a budget.

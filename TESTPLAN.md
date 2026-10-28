@@ -4,7 +4,11 @@
 
 Unity 2019.4.41f2, `scripts\run-audit-tests.ps1` в тестовом сервере (`scripts\audit-server.ps1`: один batch-редактор,
 запущенный один раз, все шаги — командами в нём; шаги `cli-*` — через `ReportExporter.RunWithArgs`, без выхода из
-редактора): **54 шага из 54 зелёные**, версия 2.7.1. С 2.7.1 — шаг `shadow-nested` (владелец 28.10.2026: «отключение теней и всего что с ними связано не работает на вложенных объектах»:
+редактора): **55 шагов из 55 зелёные**, версия 2.8.0. С 2.8.0 — шаг `frame-budget` (кольцо из 48 кубов: без точек
+обзора — сведения `FRAME_NO_VIEWPOINTS` с итогом сцены и нет `DC_BUDGET`, хотя вся сцена далеко за порогом; с точкой в
+центре — кадр 15 из 48 draw calls, файл точек тот же, `DC_BUDGET` называет точку; порог между кадром и сценой — без
+проверки; `frame` в JSON); у тестовой сцены AuditSeed — точка обзора в центре, бюджеты `budgets-low` считаются от кадра,
+Multi Pass удваивает и кадр. С 2.7.1 — шаг `shadow-nested` (владелец 28.10.2026: «отключение теней и всего что с ними связано не работает на вложенных объектах»:
 запечённые меши в группе, в копии префаба и во вложенном префабе; одно нажатие с «Запекаемым оставить Cast Shadows» и
 Contribute GI снимает Cast, Receive и GI, после него менять нечего; так же после сохранения и открытия сцены; без
 исправления шаг падает тремя проверками). С 2.7.0 — шаг `recheck` (тестовая сцена AuditSeed: каждая
@@ -230,11 +234,11 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
 
 | Вариант | Настройки | Ожидание |
 |---|---|---|
-| `legacy-multipass` | legacy VR, OpenVR, Multi Pass | `VR_STEREO_MODE` W (MultiPass); шапка «Legacy VR (OpenVR)»; оценка draw calls ×2 к варианту `legacy-spi` |
+| `legacy-multipass` | legacy VR, OpenVR, Multi Pass | `VR_STEREO_MODE` W (MultiPass); шапка «Legacy VR (OpenVR)»; draw calls всей сцены и кадра ×2 к варианту `legacy-spi` |
 | `legacy-spi` | то же, Single Pass Instanced | нет `VR_STEREO_MODE`, `VR_NOT_ENABLED` |
 | `legacy-no-openvr` | legacy VR, SDK `None` / `Mock HMD` | `VR_NO_OPENVR` W |
 | `xr-openvr-spi` | XR Management, загрузчик OpenVR (заглушка), SPI | шапка «XR Plug-in Management (OpenVRLoader)», режим SPI из `OpenVRSettings`, нет `VR_NOT_ENABLED`, `VR_STEREO_MODE` |
-| `xr-openvr-multipass` | то же, Multi Pass | `VR_STEREO_MODE` W, `DC_BUDGET` W (оценка ×2) |
+| `xr-openvr-multipass` | то же, Multi Pass | `VR_STEREO_MODE` W, `DC_BUDGET` (кадр точки обзора ×2, на сиде — C) |
 | `xr-mock` | XR Management, загрузчик не OpenVR | `VR_NO_OPENVR` W, режим stereo «неизвестно» |
 | `xr-both` | legacy OpenVR и XR Management вместе | `VR_BOTH_SYSTEMS` W |
 | `quality` | Standalone по умолчанию — уровень, отличный от текущего; на нём: AA выключен, Pixel Lights 4, Shadow Resolution Very High, Shadow Distance 150, Anisotropic Disable, Skin Weights Unlimited, Soft Particles и Realtime Reflection Probes включены, VSync Every V Blank | `VR_MSAA`, `LIGHT_PIXEL_LIGHTS`, `LIGHT_SHADOW_RESOLUTION` W, `LIGHT_SHADOW_DISTANCE`, `TEX_ANISO_DISABLED`, `MESH_QUALITY_SKIN_WEIGHTS`, `REFL_QUALITY_REALTIME`, `VR_VSYNC`; без `VR_MSAA_HIGH` и `PART_SOFT_PARTICLES` (частиц в сцене нет); текущий уровень после прогона прежний |
@@ -448,3 +452,10 @@ skinned-меши `.asset` (`Mesh.SetBoneWeights` с нужным числом к
       правки; EN на ширине 560 и светлый скин нижней полосы.
 - [ ] 2.7.1: свой уровень, «Тени» с Contribute GI на запечённых вложенных объектах — одно «Выключить дальше» снимает всё,
       счётчик после него — 0.
+
+## 6р. Бюджет кадра по точкам обзора (этап 28, 2.8.0) — вручную, владелец
+
+- [ ] Доски «Бюджет кадра» — слово владельца (задача 1.1 `update-frame-budget`).
+- [ ] Свой уровень с точками обзора: полосы «в кадре» против Stats → Batches в Play Mode в той же точке; строка
+      худших точек и всей сцены; время прогона с оценкой точек.
+- [ ] Уровень без точек: пустые полосы, «Расставить точки…» открывает «Точки обзора», сведения «Бюджет кадра не оценён».

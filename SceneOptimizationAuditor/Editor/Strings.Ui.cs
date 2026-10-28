@@ -175,14 +175,25 @@ namespace UnityTools.SceneOptimization
             Add("ui.quality.default", "Quality level: {0} (Standalone default)", "Уровень качества: {0} (по умолчанию для Standalone)");
             Add("ui.quality.current", "Quality level: {0} (current; Standalone default not found)", "Уровень качества: {0} (текущий; уровень Standalone не найден)");
             Add("ui.budgetOverview", "Scene Budget Overview", "Бюджеты сцены");
-            Add("ui.budget.tris", "Triangles (LOD0)", "Треугольники (LOD0)");
-            Add("ui.budget.drawCalls", "Draw calls", "Draw calls");
+            Add("ui.budget.tris", "Triangles, whole scene (LOD0)", "Треугольники, вся сцена (LOD0)");
+            Add("ui.budget.drawCalls", "Draw calls, whole scene", "Draw calls, вся сцена");
+            Add("ui.budget.frameTris", "Triangles per frame", "Треугольники в кадре");
+            Add("ui.budget.frameDrawCalls", "Draw calls per frame", "Draw calls в кадре");
+            Add("ui.budget.noPoints", "no viewpoints", "нет точек обзора");
+            Add("ui.budget.frame.line", "Worst viewpoints: draw calls — \"{0}\", triangles — \"{1}\" · viewpoints estimated: {2} · whole scene without culling or batching: {3} triangles, {4} draw calls",
+                "Худшие точки обзора: draw calls — «{0}», треугольники — «{1}» · оценено точек: {2} · вся сцена без отсечения и батчинга: {3} треугольников, {4} draw calls");
+            Add("ui.budget.frame.none", "The frame budget is estimated from viewpoints — these scenes have none. Whole scene without culling or batching: {0} triangles, {1} draw calls.",
+                "Бюджет кадра считается по точкам обзора — в этих сценах их нет. Вся сцена без отсечения и батчинга: {0} треугольников, {1} draw calls.");
+            Add("ui.budget.place", "Place Viewpoints…", "Расставить точки…");
+            Add("ui.budget.place.tip", "Opens the Viewpoints tab: place viewpoints, and every run compares the worst one with the budgets per frame.",
+                "Открывает вкладку «Точки обзора»: расставьте точки, и каждый прогон сравнит худшую с бюджетом кадра.");
+            Add("ui.progress.frame", "Estimating the viewpoints…", "Оценка точек обзора…");
             Add("ui.budget.texMem", "Texture memory", "Память текстур");
             Add("ui.budget.value", "{0} of {1}", "{0} из {1}");
             Add("ui.budget.tip", "Estimate against the Warning threshold; the bar ends at the Critical threshold.",
                 "Оценка против порога предупреждения; полоса заканчивается на критичном пороге.");
-            Add("ui.budget.note", "Estimates, not measurements: triangles count LOD0 without culling; draw calls count material slots and shadow passes without batching, doubled unless Single Pass Instanced; texture memory comes from format, size and mip levels.",
-                "Это оценки, а не замеры: треугольники — LOD0 без отсечения; draw calls — слоты материалов и проходы теней без батчинга, ×2, если не Single Pass Instanced; память текстур — по формату, размеру и mip-уровням.");
+            Add("ui.budget.note", "Estimates, not measurements: triangles and draw calls per frame come from the worst viewpoint (headset field of view, LOD, shadow passes; without batching); the whole scene under the bars counts LOD0 and every material slot without culling; texture memory comes from format, size and mip levels.",
+                "Это оценки, а не замеры: треугольники и draw calls в кадре — у худшей точки обзора (поле зрения шлема, LOD, проходы теней; без батчинга); вся сцена под полосами — LOD0 и каждый слот материала без отсечения; память текстур — по формату, размеру и mip-уровням.");
             Add("ui.search", "Search", "Поиск");
             Add("ui.showMore", "Show {0} more", "Показать ещё {0}");
             Add("ui.noIssues", "No issues.", "Проблем нет.");
@@ -202,7 +213,7 @@ namespace UnityTools.SceneOptimization
             Add("ui.budgets.warning", "Warning", "Предупреждение");
             Add("ui.budgets.critical", "Critical", "Критично");
             Add("ui.b.drawCalls", "Draw calls per frame", "Draw calls за кадр");
-            Add("ui.b.sceneTris", "Scene and frame triangles", "Треугольники сцены и кадра");
+            Add("ui.b.sceneTris", "Triangles per frame", "Треугольники в кадре");
             Add("ui.b.objectTris", "Object triangles without LOD", "Треугольники объекта без LOD");
             Add("ui.b.texMem", "Texture memory, MB", "Память текстур, МБ");
             Add("ui.b.texSize", "Texture side, px", "Сторона текстуры, px");

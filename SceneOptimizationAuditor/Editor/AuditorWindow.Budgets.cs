@@ -12,11 +12,25 @@ namespace UnityTools.SceneOptimization
         {
             if (result == null) return;
             var b = result.budgets;
+            var f = result.frame;
+            // A folder is checked in a hidden scene: no frame and no scene totals, texture memory only.
+            bool folder = result.scope == ScopeKind.Folder;
             EditorGUILayout.BeginVertical();
-            BudgetBar(Strings.Get("ui.budget.tris"), result.sceneTris, b.sceneTrisWarning, b.sceneTrisCritical, "");
-            BudgetBar(Strings.Get("ui.budget.drawCalls"), result.drawCallEstimate, b.drawCallsWarning, b.drawCallsCritical, "");
+            // Triangles and draw calls per frame at the worst viewpoints, against the budgets per frame (2.8.0); the whole
+            // scene, which is no frame, only in the line under the bars.
+            if (!folder && f != null)
+            {
+                BudgetBar(Strings.Get("ui.budget.frameTris"), f.tris, b.sceneTrisWarning, b.sceneTrisCritical, "");
+                BudgetBar(Strings.Get("ui.budget.frameDrawCalls"), f.drawCalls, b.drawCallsWarning, b.drawCallsCritical, "");
+            }
+            else if (!folder)
+            {
+                EmptyBar(Strings.Get("ui.budget.frameTris"));
+                EmptyBar(Strings.Get("ui.budget.frameDrawCalls"));
+            }
             BudgetBar(Strings.Get("ui.budget.texMem"), result.textureMemoryMB, b.textureMemoryWarningMB, b.textureMemoryCriticalMB, Strings.Get("ui.mb"));
             EditorGUILayout.EndVertical();
+            if (!folder) DrawFrameLine();
             if (!full) return;
             GUILayout.Space(4f);
             EditorGUILayout.BeginHorizontal();
@@ -51,6 +65,40 @@ namespace UnityTools.SceneOptimization
             GUI.Label(new Rect(-filled, 0f, bar.width, bar.height), text, centeredMini);
             GUI.EndClip();
             GUI.Label(bar, new GUIContent("", Strings.Get("ui.budget.tip")), GUIStyle.none);
+        }
+
+        // A frame bar without viewpoints: the track only, "no viewpoints" in the middle.
+        void EmptyBar(string label)
+        {
+            var rect = Padded(EditorGUILayout.GetControlRect(false, 18f));
+            float labelWidth = Mathf.Min(LabelColumn, rect.width * 0.35f);
+            var bar = new Rect(rect.x + labelWidth, rect.y + 2f, rect.width - labelWidth, rect.height - 4f);
+            GUI.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label);
+            if (Event.current.type == EventType.Repaint)
+                EditorGUI.DrawRect(bar, EditorGUIUtility.isProSkin ? new Color(0.18f, 0.18f, 0.18f) : new Color(0.78f, 0.78f, 0.78f));
+            GUI.Label(bar, new GUIContent(Strings.Get("ui.budget.noPoints"), Strings.Get("ui.budget.place.tip")), centeredMini);
+        }
+
+        // Which viewpoints are the worst and the whole scene for reference; without viewpoints a way to place them.
+        void DrawFrameLine()
+        {
+            var f = result.frame;
+            var text = f != null
+                ? Strings.Format("ui.budget.frame.line", f.drawCallsPoint, f.trisPoint, f.points, FormatNumber(result.sceneTris), FormatNumber(result.drawCallEstimate))
+                : Strings.Format("ui.budget.frame.none", FormatNumber(result.sceneTris), FormatNumber(result.drawCallEstimate));
+            GUILayout.Space(2f);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(8f);
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            GUILayout.Label(text, wrapMini);
+            if (f == null && GUILayout.Button(new GUIContent(Strings.Get("ui.budget.place"), Strings.Get("ui.budget.place.tip")), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+            {
+                tab = TabViewpoints;
+                OnTabChanged();
+            }
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(8f);
+            EditorGUILayout.EndHorizontal();
         }
 
         void DrawBudgetsTab()

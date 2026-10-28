@@ -166,8 +166,8 @@ namespace UnityTools.SceneOptimization
                     : new[] { FormatNumber(s.critical), FormatNumber(s.warning), FormatNumber(s.info), tris, dc, s.textureMB < 0 ? "—" : FormatNumber(Math.Round(s.textureMB)) };
                 for (int c = 0; c < values.Length; c++)
                 {
-                    bool overTris = (narrow ? c == 2 : c == 3) && s.tris > result.budgets.sceneTrisWarning;
-                    RightCell(cells[c + 2], values[c], c == 0 && s.critical > 0 ? TextCritical : overTris ? TextWarning : (Color?)null);
+                    // Triangles and draw calls of the whole scene are no frame: no threshold colour (2.8.0).
+                    RightCell(cells[c + 2], values[c], c == 0 && s.critical > 0 ? TextCritical : (Color?)null);
                 }
                 var last = cells[cells.Length - 1];
                 if (s.Loaded) GUI.Label(new Rect(last.x, last.y + 3f, last.width, 16f), Strings.Get("ui.scope.isOpen"), centeredMini);

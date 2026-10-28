@@ -53,6 +53,7 @@ $steps = @(
     @("accept-any", "AuditTestsEditor.AuditTestViewpoints.RunAcceptAny", @()),
     @("shadow-zone", "AuditTestsEditor.AuditTestViewpoints.RunShadowZone", @()),
     @("shadow-nested", "AuditTestsEditor.AuditTestViewpoints.RunShadowNested", @()),
+    @("frame-budget", "AuditTestsEditor.AuditTestViewpoints.RunFrameBudget", @()),
     @("keep-result", "AuditTestsEditor.AuditTestViewpoints.RunKeepResult", @()),
     @("recheck", "AuditTestsEditor.AuditTestViewpoints.RunRecheck", @()),
     @("viewpoints", "AuditTestsEditor.AuditTestViewpoints.RunViewpoints", @()),

@@ -33,6 +33,17 @@ namespace UnityTools.SceneOptimization
             public long gainTris;
         }
 
+        // Triangles and draw calls per frame at the worst viewpoints (2.8.0).
+        [Serializable]
+        public sealed class FrameDto
+        {
+            public int viewpoints;
+            public long tris;
+            public string trisViewpoint = "";
+            public int drawCalls;
+            public string drawCallsViewpoint = "";
+        }
+
         [Serializable]
         public sealed class BudgetsDto
         {
@@ -190,6 +201,8 @@ namespace UnityTools.SceneOptimization
             public string qualityLevel;
             public SummaryDto summary;
             public BudgetsDto sceneBudgets;
+            public bool hasFrame;
+            public FrameDto frame;
             public bool hasProfilerSnapshot;
             public ProfilerSnapshot profilerSnapshot;
             public bool hasViewpoints;
@@ -268,6 +281,11 @@ namespace UnityTools.SceneOptimization
                     textureMemoryLimitMB = result.budgets.textureMemoryWarningMB
                 },
                 // JsonUtility cannot write null for a nested class, hence the flag.
+                hasFrame = result.frame != null,
+                frame = result.frame != null
+                    ? new FrameDto { viewpoints = result.frame.points, tris = result.frame.tris, trisViewpoint = result.frame.trisPoint,
+                                     drawCalls = result.frame.drawCalls, drawCallsViewpoint = result.frame.drawCallsPoint }
+                    : new FrameDto(),
                 hasProfilerSnapshot = snapshot != null,
                 profilerSnapshot = snapshot ?? new ProfilerSnapshot(),
                 hasViewpoints = viewpoints != null && viewpoints.HasEstimate,

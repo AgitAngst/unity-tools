@@ -137,9 +137,10 @@ namespace UnityTools.SceneOptimization
             Trend("ui.h.critical", points.Select(p => (double)p.critical).ToList(), CriticalColor, null, last.critical, last.critical - first.critical, false);
             Trend("ui.h.warning", points.Select(p => (double)p.warning).ToList(), WarningColor, null, last.warning, last.warning - first.warning, false);
             Trend("ui.h.info", points.Select(p => (double)p.info).ToList(), InfoColor, null, last.info, last.info - first.info, false);
-            Trend("ui.budget.tris", points.Select(p => (double)p.sceneTris).ToList(), StateColor(last.sceneTris, last.trisLimit), last.trisLimit,
+            // The whole scene is no frame: no threshold line or colour (2.8.0); the frame is in the viewpoint lines below.
+            Trend("ui.budget.tris", points.Select(p => (double)p.sceneTris).ToList(), InfoColor, null,
                 last.sceneTris, last.sceneTris - first.sceneTris, false);
-            Trend("ui.budget.drawCalls", points.Select(p => (double)p.drawCalls).ToList(), StateColor(last.drawCalls, last.drawCallLimit), last.drawCallLimit,
+            Trend("ui.budget.drawCalls", points.Select(p => (double)p.drawCalls).ToList(), InfoColor, null,
                 last.drawCalls, last.drawCalls - first.drawCalls, false);
             Trend("ui.budget.texMem", points.Select(p => p.textureMemoryMB).ToList(), StateColor(last.textureMemoryMB, last.textureMemoryLimitMB),
                 last.textureMemoryLimitMB, last.textureMemoryMB, last.textureMemoryMB - first.textureMemoryMB, false);

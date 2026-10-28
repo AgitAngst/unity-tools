@@ -62,8 +62,8 @@ namespace UnityTools.SceneOptimization
                 "Вдали объект занимает несколько пикселей, но видеокарта всё равно обрабатывает все его треугольники. Более лёгкий уровень LOD берёт на себя дальний план и избавляет от них.",
                 "Add a LODGroup (Add Component > Rendering > LOD Group), keep the original renderer in LOD 0 and put renderers with a simplified mesh into LOD 1 and further; the last level can be Culled. Or make the mesh lighter in the 3D editor. There is no Fix button: LOD levels are made by hand.",
                 "Добавьте LODGroup (Add Component > Rendering > LOD Group), оставьте исходный рендерер в LOD 0, а рендереры с упрощённым мешем поставьте в LOD 1 и дальше; последний уровень может быть Culled. Или облегчите меш в 3D-редакторе. Кнопки «Исправить» нет: уровни LOD делаются вручную.",
-                "≈ half of the mesh triangles: LOD 1 is assumed twice as light. It is saved far from the object, so the Triangles (LOD0) bar does not change.",
-                "≈ половина треугольников меша: LOD 1 считается вдвое легче. Выигрыш — вдали от объекта, поэтому полоса «Треугольники (LOD0)» не меняется.",
+                "≈ half of the mesh triangles: LOD 1 is assumed twice as light. It is saved far from the object: the Triangles per frame bar drops at viewpoints that see it from afar; the whole scene (LOD0) does not change.",
+                "≈ половина треугольников меша: LOD 1 считается вдвое легче. Выигрыш — вдали от объекта: полоса «Треугольники в кадре» падает у точек, откуда он далеко; вся сцена (LOD0) не меняется.",
                 "Objects that are never seen from afar: what the player holds, a cockpit, an item at arm's length on a table.",
                 "Объекты, которые никогда не видны издали: то, что игрок держит в руках, кабина, предмет на столе на расстоянии вытянутой руки.");
 

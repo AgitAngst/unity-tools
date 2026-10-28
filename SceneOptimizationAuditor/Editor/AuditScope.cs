@@ -381,6 +381,30 @@ namespace UnityTools.SceneOptimization
             return string.Join("|", issue.args.Select(a => Convert.ToString(a, System.Globalization.CultureInfo.InvariantCulture)).ToArray());
         }
 
+        // The worst frame of the scenes, each figure with its scene; null when no scene has viewpoints. Scenes without
+        // viewpoints keep their own Info rows.
+        static FrameEstimate WorstFrame(List<AuditResult> parts)
+        {
+            var withPoints = parts.Where(p => p.frame != null).ToList();
+            if (withPoints.Count == 0) return null;
+            var byCalls = withPoints.OrderByDescending(p => p.frame.drawCalls).First();
+            var byTris = withPoints.OrderByDescending(p => p.frame.tris).First();
+            return new FrameEstimate
+            {
+                points = withPoints.Sum(p => p.frame.points),
+                drawCalls = byCalls.frame.drawCalls,
+                drawCallsPoint = SceneLabel(byCalls) + byCalls.frame.drawCallsPoint,
+                tris = byTris.frame.tris,
+                trisPoint = SceneLabel(byTris) + byTris.frame.trisPoint,
+                seconds = withPoints.Sum(p => p.frame.seconds)
+            };
+        }
+
+        static string SceneLabel(AuditResult part)
+        {
+            return part.sceneNames.Length > 0 ? string.Join(", ", part.sceneNames) + ": " : "";
+        }
+
         // One result of several runs: object and scene rows as they are; the same project setting once; the same asset
         // problem once with the users added up. Budgets — the worst scene.
         public static AuditResult Merge(List<AuditResult> parts, ScopeKind kind)
@@ -397,6 +421,7 @@ namespace UnityTools.SceneOptimization
                 time = DateTime.Now,
                 sceneTris = parts.Max(p => p.sceneTris),
                 drawCallEstimate = parts.Max(p => p.drawCallEstimate),
+                frame = WorstFrame(parts),
                 textureMemoryMB = parts.Max(p => p.textureMemoryMB),
                 sceneNames = parts.SelectMany(p => p.sceneNames).Distinct().ToArray(),
                 scenePaths = parts.SelectMany(p => p.scenePaths).Distinct().ToArray()

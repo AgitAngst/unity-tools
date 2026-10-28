@@ -203,6 +203,8 @@ namespace AuditTestsEditor
                 var spi = SceneAuditor.RunFullAudit(new VRBudgets(), false);
                 Check(spi.xr.stereoMode == StereoMode.SinglePassInstanced, "XR: instanced detected after switch");
                 Check(multi == spi.drawCallEstimate * 2, "draw calls multi-pass " + multi + " = 2 x instanced " + spi.drawCallEstimate);
+                Check(result.frame != null && spi.frame != null && result.frame.drawCalls == spi.frame.drawCalls * 2,
+                    "draw calls per frame multi-pass = 2 x instanced (" + (result.frame != null ? result.frame.drawCalls : -1) + ", " + (spi.frame != null ? spi.frame.drawCalls : -1) + ")");
             }
             if (variant == "base")
             {
@@ -233,10 +235,13 @@ namespace AuditTestsEditor
 
         static void BudgetsLow(AuditResult baseline)
         {
+            // Triangles and draw calls are budgets per frame, judged at the viewpoint of the seed (2.8.0).
+            Check(baseline.frame != null && baseline.frame.points == 1, "the seed viewpoint is estimated by the run");
+            var frame = baseline.frame ?? new FrameEstimate();
             var warnOnly = new VRBudgets
             {
-                drawCallsWarning = (int)(baseline.drawCallEstimate / 2), drawCallsCritical = (int)(baseline.drawCallEstimate * 2),
-                sceneTrisWarning = (int)(baseline.sceneTris / 2), sceneTrisCritical = (int)(baseline.sceneTris * 2),
+                drawCallsWarning = frame.drawCalls / 2, drawCallsCritical = frame.drawCalls * 2,
+                sceneTrisWarning = (int)(frame.tris / 2), sceneTrisCritical = (int)(frame.tris * 2),
                 textureMemoryWarningMB = Math.Max(0, (int)(baseline.textureMemoryMB / 2)), textureMemoryCriticalMB = (int)(baseline.textureMemoryMB * 2) + 1
             };
             var r1 = SceneAuditor.RunFullAudit(warnOnly, false);
@@ -249,8 +254,8 @@ namespace AuditTestsEditor
 
             var critical = new VRBudgets
             {
-                drawCallsWarning = (int)(baseline.drawCallEstimate / 4), drawCallsCritical = (int)(baseline.drawCallEstimate / 2),
-                sceneTrisWarning = (int)(baseline.sceneTris / 4), sceneTrisCritical = (int)(baseline.sceneTris / 2),
+                drawCallsWarning = frame.drawCalls / 4, drawCallsCritical = frame.drawCalls / 2,
+                sceneTrisWarning = (int)(frame.tris / 4), sceneTrisCritical = (int)(frame.tris / 2),
                 textureMemoryWarningMB = 0, textureMemoryCriticalMB = Math.Max(0, (int)(baseline.textureMemoryMB / 2) - 1),
                 textureSizeWarning = 256, textureSizeCritical = 512
             };
@@ -550,15 +555,21 @@ namespace AuditTestsEditor
                 Has("AUDIO_SOURCE_COUNT", Severity.Warning);
                 Has("VR_NO_OCCLUSION", Severity.Info);
             }
-            // Base scene estimates about 940 draw calls: doubled by multi-pass or with the extra objects of "counts" it passes 1000.
-            if (variant == "legacy-multipass" || variant == "xr-openvr-multipass" || variant == "counts")
+            // Triangles and draw calls: the budgets per frame against the seed viewpoint, never the whole scene (2.8.0).
+            if (variant != "budgets-low")
             {
-                // The severity depends on how many objects the seed scene has, so only the presence is checked.
-                Has("DC_BUDGET");
-                Not("MESH_SCENE_TRIS|TEX_MEMORY");
+                Check(result.frame != null, "the seed viewpoint gives the frame budget");
+                Not("FRAME_NO_VIEWPOINTS");
+                if (result.frame != null)
+                {
+                    var b = new VRBudgets();
+                    if (result.frame.drawCalls > b.drawCallsWarning) Has("DC_BUDGET");
+                    else Not("DC_BUDGET");
+                    if (result.frame.tris > b.sceneTrisWarning) Has("MESH_SCENE_TRIS");
+                    else Not("MESH_SCENE_TRIS");
+                }
+                Not("TEX_MEMORY");
             }
-            // The draw call estimate of the seed scene is close to the budget, so only budgets-low checks DC_BUDGET exactly.
-            else if (variant != "budgets-low") Not("MESH_SCENE_TRIS|TEX_MEMORY");
         }
 
         static void Has(string ids, Severity? severity = null, string path = "", string contains = null, int? users = null,
