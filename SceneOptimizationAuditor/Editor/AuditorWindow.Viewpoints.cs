@@ -24,6 +24,9 @@ namespace UnityTools.SceneOptimization
         [SerializeField] string vpSelectedId = "";
         // Direction picked in the details; -1 for the worst one.
         [SerializeField] int vpDirection = -1;
+        // Editing the player zone in the Scene view and the rectangle picked there (3.0.0).
+        [SerializeField] bool vpZoneEdit;
+        [SerializeField] int vpZoneSelected = -1;
         ViewpointSet vpSet;
         string vpSetFile = "";
         readonly HashSet<string> vpPicked = new HashSet<string>();
@@ -135,9 +138,10 @@ namespace UnityTools.SceneOptimization
             var csv = new GUIContent(Strings.Get("ui.lm.csv"));
             var walls = new GUIContent(Strings.Get("ui.vp.walls"), Strings.Get("ui.vp.walls.tip"));
             var onlyOver = new GUIContent(Strings.Get("ui.vp.onlyOver"));
+            var zone = new GUIContent(Strings.Get("ui.vp.zone"), Strings.Get("ui.vp.zone.tip"));
             var button = EditorStyles.toolbarButton;
             var dropDown = EditorStyles.toolbarDropDown;
-            float width = button.CalcSize(estimate).x + dropDown.CalcSize(place).x + dropDown.CalcSize(measure).x + button.CalcSize(addHere).x +
+            float width = button.CalcSize(estimate).x + dropDown.CalcSize(place).x + dropDown.CalcSize(measure).x + button.CalcSize(zone).x + button.CalcSize(addHere).x +
                           button.CalcSize(csv).x + button.CalcSize(walls).x + button.CalcSize(onlyOver).x + 24f;
             bool twoRows = width > position.width;
 
@@ -148,7 +152,7 @@ namespace UnityTools.SceneOptimization
             EditorGUI.EndDisabledGroup();
             EditorGUI.BeginDisabledGroup(touring);
             if (GUILayout.Button(place, dropDown, GUILayout.ExpandWidth(false)))
-                PopupWindow.Show(vpPlaceButton, new ViewpointPlacePanel(this, set.placement));
+                PopupWindow.Show(vpPlaceButton, new ViewpointPlacePanel(this, set.placement, set.zone));
             EditorGUI.EndDisabledGroup();
             if (Event.current.type == EventType.Repaint) vpPlaceButton = GUILayoutUtility.GetLastRect();
             if (touring)
@@ -166,6 +170,8 @@ namespace UnityTools.SceneOptimization
                 EditorGUI.EndDisabledGroup();
                 if (Event.current.type == EventType.Repaint) vpTourButton = GUILayoutUtility.GetLastRect();
             }
+            bool editing = GUILayout.Toggle(vpZoneEdit, zone, button, GUILayout.ExpandWidth(false));
+            if (editing != vpZoneEdit) EditZone(editing);
             if (twoRows)
             {
                 GUILayout.FlexibleSpace();
@@ -200,7 +206,7 @@ namespace UnityTools.SceneOptimization
             GUILayout.FlexibleSpace();
             var button = GUILayoutUtility.GetRect(240f, 36f, GUILayout.Width(240f), GUILayout.Height(36f));
             if (GUI.Button(button, Strings.Get("ui.vp.empty.button")))
-                PopupWindow.Show(button, new ViewpointPlacePanel(this, Viewpoints().placement));
+                PopupWindow.Show(button, new ViewpointPlacePanel(this, Viewpoints().placement, Viewpoints().zone));
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
             GUILayout.Space(8f);
@@ -237,6 +243,8 @@ namespace UnityTools.SceneOptimization
                 int n = set.points.Count(p => p.kind == kind.Key);
                 if (n > 0) parts.Add(Strings.Format(kind.Value, n));
             }
+            if (set.ActiveZone != null)
+                parts.Add(Strings.Format("ui.vp.sources.zone", Strings.Count("ui.vp.zone.rects", set.zone.Count), FormatNumber(Math.Round(set.ZoneArea))));
             if (set.estimatedAt.Length > 0)
             {
                 DateTime at;
@@ -361,8 +369,17 @@ namespace UnityTools.SceneOptimization
             bool now = GUI.Toggle(new Rect(cells[0].x, cells[0].y + 3f, 16f, 16f), on, new GUIContent("", Strings.Get("ui.sel.pick.tip")));
             if (now && !on) vpPicked.Add(p.id);
             else if (!now && on) vpPicked.Remove(p.id);
-            var name = new GUIContent(Fit(p.Name, linkClipped, cells[1].width), p.Name + "\n" + Strings.Get("ui.vp.col.point.tip"));
-            if (GUI.Button(new Rect(cells[1].x, cells[1].y + 3f, cells[1].width, 16f), name, linkClipped)) SelectViewpoint(p, true);
+            // Outside the player zone: a tag after the name (3.0.0).
+            float nameWidth = cells[1].width;
+            if (vpSet.OutsideZone(p))
+            {
+                var tag = Strings.Get("ui.vp.outside");
+                float tagWidth = EditorStyles.miniLabel.CalcSize(new GUIContent(tag)).x + 10f;
+                nameWidth = Mathf.Max(20f, nameWidth - tagWidth - 6f);
+                Chip(cells[1].x + Mathf.Min(linkClipped.CalcSize(new GUIContent(p.Name)).x, nameWidth) + 6f, cells[1].y + 3f, tag, Strings.Get("ui.vp.outside.tip"));
+            }
+            var name = new GUIContent(Fit(p.Name, linkClipped, nameWidth), p.Name + "\n" + Strings.Get("ui.vp.col.point.tip"));
+            if (GUI.Button(new Rect(cells[1].x, cells[1].y + 3f, nameWidth, 16f), name, linkClipped)) SelectViewpoint(p, true);
             EditorGUIUtility.AddCursorRect(cells[1], MouseCursor.Link);
             GUI.Label(new Rect(cells[2].x, cells[2].y + 3f, cells[2].width, 16f), Strings.Get("ui.vp.kind." + p.kind), EditorStyles.miniLabel);
             var w = p.Worst;
@@ -616,7 +633,7 @@ namespace UnityTools.SceneOptimization
         {
             var set = Viewpoints();
             float step;
-            var auto = ViewpointPlacer.Place(settings, out step);
+            var auto = ViewpointPlacer.Place(settings, settings.onlyZone ? set.zone : null, out step);
             Undo.RecordObject(set, "Place Viewpoints");
             set.placement = settings;
             set.ReplaceAuto(auto, step);
@@ -701,7 +718,34 @@ namespace UnityTools.SceneOptimization
             float step;
             var settings = new PlacementSettings { navMesh = true, teleports = true, cameras = true, rays = true, step = 6f };
             set.placement = settings;
+            set.zone.Clear();
             set.ReplaceAuto(ViewpointPlacer.Place(settings, out step), step);
+            ViewpointEstimator.Estimate(set, set.points, false, null, budgets);
+            set.Save();
+            var worst = SortedViewpoints(set).FirstOrDefault();
+            if (worst != null) SelectViewpoint(worst, false);
+        }
+
+        // Used by the screenshot test after ViewpointsForShot: a zone over the middle of the placed viewpoints, viewpoints
+        // placed in it and one manual viewpoint outside, estimated.
+        void ZoneForShot()
+        {
+            var set = Viewpoints();
+            var auto = set.points.Where(p => p.IsAuto).ToList();
+            if (auto.Count == 0) return;
+            var b = new Bounds(auto[0].position, Vector3.zero);
+            foreach (var p in auto) b.Encapsulate(p.position);
+            set.zone.Clear();
+            set.zone.Add(new ZoneRect
+            {
+                center = new Vector3(b.center.x, b.min.y - set.placement.eyeHeight - 0.5f, b.center.z),
+                size = new Vector2(Mathf.Max(ZoneRect.MinSize, b.size.x * 0.5f), Mathf.Max(ZoneRect.MinSize, b.size.z * 0.5f)),
+                height = b.size.y + set.placement.eyeHeight + 1f
+            });
+            set.placement.onlyZone = true;
+            float step;
+            set.ReplaceAuto(ViewpointPlacer.Place(set.placement, set.ActiveZone, out step), step);
+            set.AddManual(new Vector3(b.max.x + 5f, b.center.y, b.max.z + 5f), 0f);
             ViewpointEstimator.Estimate(set, set.points, false, null, budgets);
             set.Save();
             var worst = SortedViewpoints(set).FirstOrDefault();
@@ -714,16 +758,25 @@ namespace UnityTools.SceneOptimization
         {
             if (tab != TabViewpoints || vpSet == null) return;
             var set = vpSet;
+            DrawZoneInScene(view, set);
+            var facing = view.camera != null ? Quaternion.LookRotation(view.camera.transform.forward) : Quaternion.identity;
             foreach (var p in set.points)
             {
                 var level = p.Estimated ? ViewpointEstimator.LevelOf(p.Worst, budgets) : null;
                 Handles.color = !p.Estimated ? InfoColor : level.HasValue ? SeverityColor(level.Value) : OkColor;
                 float size = HandleUtility.GetHandleSize(p.position) * 0.16f;
                 if (Handles.Button(p.position, Quaternion.identity, size, size, Handles.SphereHandleCap)) SelectViewpoint(p, false);
+                // Outside the player zone: a white ring.
+                if (Event.current.type == EventType.Repaint && set.OutsideZone(p))
+                {
+                    Handles.color = Color.white;
+                    Handles.CircleHandleCap(0, p.position, facing, size * 0.9f, EventType.Repaint);
+                }
             }
 
+            // While the zone is edited its handles are the only ones.
             var selected = set.Find(vpSelectedId);
-            if (selected != null) DrawSelectedInScene(set, selected);
+            if (selected != null && !vpZoneEdit) DrawSelectedInScene(set, selected);
 
             if (vpDirty && GUIUtility.hotControl == 0)
             {
@@ -732,7 +785,8 @@ namespace UnityTools.SceneOptimization
                 vpHeavy = null;
                 Repaint();
             }
-            DrawViewpointsLegend();
+            DrawViewpointsLegend(view, set);
+            DrawZonePanel(view, set);
         }
 
         void DrawSelectedInScene(ViewpointSet set, Viewpoint p)
@@ -786,7 +840,8 @@ namespace UnityTools.SceneOptimization
             }
         }
 
-        void DrawViewpointsLegend()
+        // Top left; while the player zone is edited its panel takes that corner and the legend moves to the right.
+        void DrawViewpointsLegend(SceneView view, ViewpointSet set)
         {
             Handles.BeginGUI();
             var rows = new[]
@@ -796,7 +851,16 @@ namespace UnityTools.SceneOptimization
                 new KeyValuePair<Color, string>(CriticalColor, "ui.vp.legend.critical"),
                 new KeyValuePair<Color, string>(InfoColor, "ui.vp.legend.none")
             };
-            var area = new Rect(10f, 10f, 240f, 132f);
+            bool zone = set.zone.Count > 0;
+            bool outside = set.ActiveZone != null;
+            const float width = 240f;
+            var area = new Rect(10f, 10f, width, 132f + (zone ? 16f : 0f) + (outside ? 16f : 0f));
+            if (vpZoneEdit)
+            {
+                // Right of the zone panel; when there is no room, under it.
+                if (view.position.width >= ZonePanelWidth + width + 30f) area.x = view.position.width - width - 10f;
+                else area.y = 10f + ZonePanelHeight(set) + 8f;
+            }
             GUILayout.BeginArea(area, EditorStyles.helpBox);
             GUILayout.Label(Strings.Get("ui.vp.legend"), EditorStyles.boldLabel);
             foreach (var row in rows)
@@ -805,6 +869,8 @@ namespace UnityTools.SceneOptimization
                 if (Event.current.type == EventType.Repaint) EditorGUI.DrawRect(new Rect(rect.x + 2f, rect.y + 4f, 9f, 9f), row.Key);
                 GUI.Label(new Rect(rect.x + 18f, rect.y, rect.width - 18f, rect.height), Strings.Get(row.Value), EditorStyles.miniLabel);
             }
+            if (zone) LegendRow(ZoneColor, "ui.vp.legend.zone", false);
+            if (outside) LegendRow(Color.white, "ui.vp.legend.outside", true);
             GUILayout.Label(Strings.Get("ui.vp.legend.note"), wrapMini);
             GUILayout.EndArea();
             Handles.EndGUI();

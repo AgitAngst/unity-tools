@@ -39,6 +39,10 @@ $shots = @(
     @("viewpoints-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints")),
     @("viewpoints-en-dark", "en", "dark", @("-shotTab", "1", "-shotViewpoints")),
     @("viewpoints-narrow-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotWidth", "560")),
+    # The player zone (3.0.0): viewpoints placed in it, a manual one outside.
+    @("zone-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotZone")),
+    @("zone-en-dark", "en", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotZone")),
+    @("zone-narrow-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotZone", "-shotWidth", "560")),
     # The tour on made-up numbers: with and without the headset, wide and narrow.
     @("tour-ru-dark", "ru", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotTour", "headset")),
     @("tour-en-dark", "en", "dark", @("-shotTab", "1", "-shotViewpoints", "-shotTour", "headset")),

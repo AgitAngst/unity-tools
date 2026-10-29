@@ -542,8 +542,8 @@ namespace UnityTools.SceneOptimization
             return code;
         }
 
-        // -auditViewpoints: estimates the saved viewpoints of the scenes; without a viewpoint file they are placed
-        // from the NavMesh and teleports first (rays down when there are neither).
+        // -auditViewpoints: estimates the saved viewpoints of the scenes; without viewpoints they are placed from the NavMesh
+        // and teleports first (rays down when there are neither), inside the player zone when the file has one (3.0.0).
         static void EstimateViewpoints(string[] scenePaths)
         {
             var set = ViewpointSet.Load(scenePaths);
@@ -552,9 +552,9 @@ namespace UnityTools.SceneOptimization
                 if (set.points.Count == 0)
                 {
                     float step;
-                    var settings = new PlacementSettings { navMesh = true, teleports = true, rays = true };
+                    var settings = new PlacementSettings { navMesh = true, teleports = true, rays = true, onlyZone = set.placement.onlyZone };
                     set.placement = settings;
-                    set.ReplaceAuto(ViewpointPlacer.Place(settings, out step), step);
+                    set.ReplaceAuto(ViewpointPlacer.Place(settings, set.ActiveZone, out step), step);
                 }
                 if (set.points.Count == 0)
                 {

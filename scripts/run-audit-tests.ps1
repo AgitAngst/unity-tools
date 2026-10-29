@@ -57,6 +57,7 @@ $steps = @(
     @("keep-result", "AuditTestsEditor.AuditTestViewpoints.RunKeepResult", @()),
     @("recheck", "AuditTestsEditor.AuditTestViewpoints.RunRecheck", @()),
     @("viewpoints", "AuditTestsEditor.AuditTestViewpoints.RunViewpoints", @()),
+    @("player-zone", "AuditTestsEditor.AuditTestViewpoints.RunPlayerZone", @()),
     @("viewpoints-tour", "AuditTestsEditor.AuditTestViewpoints.RunTour", @()),
     # Starts a short tour in Play Mode; the next command waits for Play Mode to end and checks what it measured.
     @("viewpoints-tour-start", "AuditTestsEditor.AuditTestViewpoints.RunTourStart", @()),

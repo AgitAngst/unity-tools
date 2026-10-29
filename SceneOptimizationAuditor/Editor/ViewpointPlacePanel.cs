@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,24 +9,26 @@ namespace UnityTools.SceneOptimization
     // (a click in a menu closes it). "Place (≈ N)" applies, "Cancel" or a click outside closes it.
     sealed class ViewpointPlacePanel : PopupWindowContent
     {
-        const float Width = 380f;
+        const float Width = 420f;
         const float LabelWidth = 150f;
 
         readonly AuditorWindow window;
         readonly PlacementSettings settings;
+        readonly List<ZoneRect> zone;
         ViewpointPlacer.Survey survey;
         int preview = -1;
         GUIStyle note;
 
-        public ViewpointPlacePanel(AuditorWindow window, PlacementSettings current)
+        public ViewpointPlacePanel(AuditorWindow window, PlacementSettings current, List<ZoneRect> zone)
         {
             this.window = window;
+            this.zone = zone;
             settings = JsonUtility.FromJson<PlacementSettings>(JsonUtility.ToJson(current));
         }
 
         public override Vector2 GetWindowSize()
         {
-            return new Vector2(Width, 262f);
+            return new Vector2(Width, 330f);
         }
 
         public override void OnOpen()
@@ -36,7 +40,7 @@ namespace UnityTools.SceneOptimization
         void Count()
         {
             float step;
-            preview = ViewpointPlacer.Place(settings, out step).Count;
+            preview = ViewpointPlacer.Place(settings, settings.onlyZone ? zone : null, out step).Count;
         }
 
         public override void OnGUI(Rect rect)
@@ -51,6 +55,8 @@ namespace UnityTools.SceneOptimization
                 : Strings.Get("ui.vp.panel.missing"), true);
             settings.cameras = Source("ui.vp.panel.cameras", settings.cameras, Strings.Format("ui.vp.panel.cameras.found", survey.cameras), true);
             settings.rays = Source("ui.vp.panel.rays", settings.rays, Strings.Get("ui.vp.panel.rays.info"), !survey.navMesh && !survey.HasTeleports);
+            GUILayout.Space(4f);
+            ZoneBlock();
             GUILayout.Space(4f);
             EditorGUIUtility.labelWidth = LabelWidth;
             settings.step = EditorGUILayout.Slider(Strings.Get("ui.vp.panel.step"), settings.step, VRBudgets.GridStepMin, VRBudgets.GridStepMax);
@@ -74,6 +80,30 @@ namespace UnityTools.SceneOptimization
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndHorizontal();
             GUILayout.EndArea();
+        }
+
+        // "Only in the player zone" (3.0.0): the zone found and a button that opens its editing in the Scene view.
+        void ZoneBlock()
+        {
+            bool has = zone != null && zone.Count > 0;
+            var info = has ? Strings.Format("ui.vp.panel.zone.info", Strings.Count("ui.vp.zone.rects", zone.Count), AuditorWindow.FormatNumber(System.Math.Round(zone.Sum(r => r.Area))))
+                           : Strings.Get("ui.vp.panel.zone.none");
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginDisabledGroup(!has);
+            bool now = EditorGUILayout.ToggleLeft(Strings.Get("ui.vp.panel.zone"), settings.onlyZone && has, EditorStyles.boldLabel, GUILayout.Width(LabelWidth + 10f));
+            EditorGUI.EndDisabledGroup();
+            if (has) settings.onlyZone = now;
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(info, EditorStyles.miniLabel);
+            if (GUILayout.Button(Strings.Get(has ? "ui.vp.panel.zone.edit" : "ui.vp.panel.zone.set"), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+            {
+                var target = window;
+                var chosen = settings;
+                editorWindow.Close();
+                EditorApplication.delayCall += () => { if (target != null) target.EditZone(true, chosen); };
+            }
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Label(Strings.Get(has ? "ui.vp.panel.zone.hint" : "ui.vp.panel.zone.hintNone"), note);
         }
 
         // A source: checkbox, name, and what was found on the right.

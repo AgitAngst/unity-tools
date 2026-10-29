@@ -17,7 +17,7 @@ namespace AuditTestsEditor
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     //     [-shotLight atlases|objects|lights|probes|reflections|shadows] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
-    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped] [-shotPoint] [-shotAdvice [shader]]
+    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped] [-shotPoint] [-shotAdvice [shader]] [-shotZone]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -107,6 +107,7 @@ namespace AuditTestsEditor
                 if (File.Exists(file)) File.Delete(file);
             }
             if (HasArg("-shotViewpoints")) Invoke("ViewpointsForShot");
+            if (HasArg("-shotZone")) Invoke("ZoneForShot");
             if (HasArg("-shotTour")) Invoke("TourForShot", Arg("-shotTour") != "noheadset");
             if (HasArg("-shotLight"))
             {

@@ -72,6 +72,56 @@ namespace UnityTools.SceneOptimization
         public bool rays;
         public float step = VRBudgets.GridStep;
         public float eyeHeight = VRBudgets.EyeHeight;
+        // Only inside the player zone, when the set has one (3.0.0).
+        public bool onlyZone = true;
+    }
+
+    // A rectangle of the player zone (3.0.0, owner, 29.10.2026: "the zone of the play field for the player, from which the
+    // script measures and where it puts the viewpoints"): the middle of its floor, width (X) and length (Z), the turn around
+    // the vertical and the height of the box above the floor, which says what floors belong to it.
+    [Serializable]
+    public sealed class ZoneRect
+    {
+        public const float DefaultSize = 10f;
+        public const float DefaultHeight = 3f;
+        public const float MinSize = 0.5f;
+
+        public Vector3 center;
+        public Vector2 size = new Vector2(DefaultSize, DefaultSize);
+        public float yaw;
+        public float height = DefaultHeight;
+
+        public Quaternion Rotation { get { return Quaternion.Euler(0f, yaw, 0f); } }
+
+        public float Area { get { return size.x * size.y; } }
+
+        // A viewpoint (the eye) inside the box: within the rectangle seen from above and between the floor and the top.
+        public bool Contains(Vector3 point)
+        {
+            var local = Quaternion.Euler(0f, -yaw, 0f) * (point - center);
+            return Mathf.Abs(local.x) <= size.x * 0.5f + 1e-3f && Mathf.Abs(local.z) <= size.y * 0.5f + 1e-3f &&
+                   local.y >= -1e-3f && local.y <= height + 1e-3f;
+        }
+
+        // Corners of the floor, around the rectangle.
+        public Vector3[] Corners(float up)
+        {
+            var r = Rotation;
+            float x = size.x * 0.5f, z = size.y * 0.5f;
+            var c = center + Vector3.up * up;
+            return new[] { c + r * new Vector3(-x, 0f, -z), c + r * new Vector3(-x, 0f, z), c + r * new Vector3(x, 0f, z), c + r * new Vector3(x, 0f, -z) };
+        }
+
+        public Bounds Bounds
+        {
+            get
+            {
+                var b = new Bounds(center, Vector3.zero);
+                foreach (var corner in Corners(0f)) b.Encapsulate(corner);
+                b.Encapsulate(center + Vector3.up * height);
+                return b;
+            }
+        }
     }
 
     // Viewpoints of one scene set in SceneAuditPoints/<scene>-<hash>.json next to Assets/, named like the audit history:
@@ -95,6 +145,8 @@ namespace UnityTools.SceneOptimization
         public TourMeasure tour = new TourMeasure();
         // The point and the radius of "Shadows" on the Lighting tab (2.6.0).
         public ShadowZone shadows = new ShadowZone();
+        // Where the player can be (3.0.0); empty — the whole level.
+        public List<ZoneRect> zone = new List<ZoneRect>();
 
         [NonSerialized] public string filePath = "";
 
@@ -202,6 +254,18 @@ namespace UnityTools.SceneOptimization
         {
             return points.FirstOrDefault(p => p.id == id);
         }
+
+        // The zone placing uses: the rectangles when the placement keeps to them, otherwise none.
+        public List<ZoneRect> ActiveZone { get { return placement.onlyZone && zone.Count > 0 ? zone : null; } }
+
+        public float ZoneArea { get { return zone.Sum(r => r.Area); } }
+
+        // A viewpoint outside the active zone: a manual one, or an automatic one placed before the zone was drawn.
+        public bool OutsideZone(Viewpoint point)
+        {
+            var active = ActiveZone;
+            return active != null && !ViewpointPlacer.InZone(point.position, active);
+        }
     }
 
     // CSV of the viewpoints tab: one row per viewpoint with its worst direction (UTF-8 with BOM, RFC 4180).
@@ -265,12 +329,19 @@ namespace UnityTools.SceneOptimization
             };
         }
 
-        // Places automatic viewpoints; the grid step grows until there are at most MaxViewpoints of them.
         public static List<Viewpoint> Place(PlacementSettings settings, out float step)
+        {
+            return Place(settings, null, out step);
+        }
+
+        // Places automatic viewpoints; the grid step grows until there are at most MaxViewpoints of them. With a zone (3.0.0)
+        // every source keeps only the viewpoints inside it and the rays cover the zone instead of the whole level.
+        public static List<Viewpoint> Place(PlacementSettings settings, List<ZoneRect> zone, out float step)
         {
             step = Mathf.Clamp(settings.step, VRBudgets.GridStepMin, VRBudgets.GridStepMax);
             Physics.SyncTransforms();
             var survey = Look();
+            if (zone != null && zone.Count == 0) zone = null;
             var fixedPoints = new List<Viewpoint>();
             if (settings.teleports)
                 foreach (var c in Components(TeleportPointType))
@@ -283,6 +354,7 @@ namespace UnityTools.SceneOptimization
                     p.yaw = camera.transform.eulerAngles.y;
                     fixedPoints.Add(p);
                 }
+            if (zone != null) fixedPoints.RemoveAll(p => !InZone(p.position, zone));
             bool rays = settings.rays && !survey.navMesh && !survey.HasTeleports;
 
             List<Viewpoint> grid;
@@ -293,7 +365,10 @@ namespace UnityTools.SceneOptimization
                 if (settings.teleports)
                     foreach (var c in Components(TeleportAreaType))
                         grid.AddRange(AreaGrid(c, step, settings.eyeHeight));
-                if (rays) grid.AddRange(RayGrid(step, settings.eyeHeight));
+                if (rays && zone != null)
+                    foreach (var r in zone) grid.AddRange(ZoneRayGrid(r, step, settings.eyeHeight));
+                else if (rays) grid.AddRange(RayGrid(step, settings.eyeHeight));
+                if (zone != null) grid.RemoveAll(p => !InZone(p.position, zone));
                 if (grid.Count + fixedPoints.Count <= VRBudgets.MaxViewpoints || step >= VRBudgets.GridStepMax * 10f) break;
                 step *= VRBudgets.GridStepGrowth;
             }
@@ -383,6 +458,29 @@ namespace UnityTools.SceneOptimization
                     RaycastHit hit;
                     var origin = new Vector3(gx * step, b.max.y + 1f, gz * step);
                     if (!Physics.Raycast(origin, Vector3.down, out hit, b.size.y + 2f, ~0, QueryTriggerInteraction.Ignore)) continue;
+                    if (hit.normal.y < minUp) continue;
+                    yield return Auto(ViewpointKind.Ray, hit.point + Vector3.up * eye, "");
+                }
+        }
+
+        public static bool InZone(Vector3 point, List<ZoneRect> zone)
+        {
+            foreach (var r in zone) if (r.Contains(point)) return true;
+            return false;
+        }
+
+        // Rays down over one rectangle of the zone, from the top of its box: the first floor they meet below it.
+        static IEnumerable<Viewpoint> ZoneRayGrid(ZoneRect zone, float step, float eye)
+        {
+            var b = zone.Bounds;
+            float minUp = Mathf.Cos(VRBudgets.RayMaxSlope * Mathf.Deg2Rad);
+            float top = zone.center.y + zone.height;
+            for (int gx = Mathf.CeilToInt(b.min.x / step); gx <= Mathf.FloorToInt(b.max.x / step); gx++)
+                for (int gz = Mathf.CeilToInt(b.min.z / step); gz <= Mathf.FloorToInt(b.max.z / step); gz++)
+                {
+                    RaycastHit hit;
+                    var origin = new Vector3(gx * step, top, gz * step);
+                    if (!Physics.Raycast(origin, Vector3.down, out hit, zone.height + eye, ~0, QueryTriggerInteraction.Ignore)) continue;
                     if (hit.normal.y < minUp) continue;
                     yield return Auto(ViewpointKind.Ray, hit.point + Vector3.up * eye, "");
                 }

@@ -55,6 +55,8 @@ namespace AuditTestsEditor
             // One viewpoint in the middle looking every way, so that every run estimates the frame budget (2.8.0).
             var set = ViewpointSet.Load(ViewpointSet.LoadedScenePaths());
             set.points.Clear();
+            // A zone left by the zone shots (3.0.0) is not the seed's.
+            set.zone.Clear();
             set.AddManual(new Vector3(0f, 1.7f, 0f), 0f).hasYaw = false;
             set.Save();
             Object.DestroyImmediate(set);

@@ -96,6 +96,7 @@ namespace UnityTools.SceneOptimization
             AddTerrain();
             AddShadows();
             AddRecheck();
+            AddZone();
         }
 
         // A number with its noun: "{0} row|{0} rows" in English, three forms in Russian (1 · 2–4 · 5–20).
