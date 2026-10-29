@@ -19,9 +19,9 @@
   (`ShaderSource.KeywordLines`); нужно не больше 512 — `SHADER_VARIANTS_FEW` «можно не трогать». `MAT_SIMPLE_STANDARD` —
   запись на материал из `Assets/` с подходящим шейдером (Mobile/Diffuse, Legacy Diffuse при цвете, Legacy Cutout Diffuse)
   и исправлением с просмотром; внутри модели — `MAT_SIMPLE_STANDARD_MODEL` без кнопки. `TEX_NOT_TRILINEAR` — запись на
-  текстуру с безопасным исправлением. Обе ушли из `Recheck.SceneChecks`. Шаг `specific-advice`, снимки `advice-*`.
-  Изменение `update-specific-advice`, не архивировано; доски «Конкретика» владелец принял 29.10.2026 («Подходят»);
-  вживую не смотрено (TESTPLAN 6с).
+  текстуру (у Bilinear исправление безопасное, у Point — с просмотром). Обе ушли из `Recheck.SceneChecks`. Шаг
+  `specific-advice`, снимки `advice-*`. Изменение `update-specific-advice`, архивировано 29.10.2026; доски «Конкретика»
+  владелец принял 29.10.2026 («Подходят»); вживую не смотрено (TESTPLAN 6с).
 - 2.8.0: бюджет кадра по точкам обзора (владелец 28.10.2026: «Т.е. он показывает все на сцену, а лимит в 1000 стоит на
   кадр?», затем «Да, сделай»). Полосы «Треугольники в кадре» и «Draw calls в кадре» и проверки `MESH_SCENE_TRIS`,
   `DC_BUDGET` — по худшей точке обзора: прогон оценивает точки в памяти (`SceneAuditor.FrameBudget`), файл точек не
@@ -143,9 +143,10 @@
 
 ## Осталось
 
-- Активное изменение — `update-specific-advice` (2.9.0): код готов, доски «Конкретика» приняты 29.10.2026; архив — по
-  слову владельца. Пометки «допустимо» старых общих записей `MAT_SIMPLE_STANDARD` и `TEX_NOT_TRILINEAR` к записям
-  по ассетам не переходят.
+- Активных изменений OpenSpec нет. `update-specific-advice` (2.9.0) архивировано 29.10.2026 по слову владельца
+  («Архивируй»): «Material checks» и «Shader checks» изменены, «Trilinear filtering per texture» добавлено в
+  `openspec/specs/scene-audit`; живая проверка — TESTPLAN 6с. Пометки «допустимо» старых общих записей
+  `MAT_SIMPLE_STANDARD` и `TEX_NOT_TRILINEAR` к записям по ассетам не переходят.
 - `update-frame-budget` (2.8.0) архивировано 28.10.2026 по слову владельца («Архивируй»):
   «Scene budgets» и «History tab» изменены в `openspec/specs/scene-audit`, «Frame budget in the JSON report» добавлено в
   `scene-audit-export`; живая проверка — TESTPLAN 6р. `add-quick-recheck` (2.7.0) архивировано 27.10.2026 по слову владельца («архив»):
