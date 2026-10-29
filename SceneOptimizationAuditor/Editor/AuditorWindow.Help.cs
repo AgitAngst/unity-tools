@@ -262,7 +262,11 @@ namespace UnityTools.SceneOptimization
         // The advice of an open group and, for a check with help, the link to its card.
         void DrawAdvice(IssueGroup g, List<AuditIssue> visible)
         {
-            var advice = visible[0].Suggestion;
+            // Rows of one check may advise differently (SHADER_VARIANTS_FEW, MAT_SIMPLE_STANDARD_MODEL): then the check's own.
+            var first = visible[0];
+            var own = g.checkId + ".fix";
+            var advice = visible.All(i => i.messageKey == first.messageKey) ? first.Suggestion :
+                Strings.Has(own) ? Strings.Format(own, first.args) : "";
             bool hasHelp = CheckHelp.Has(g.checkId);
             if (advice.Length == 0 && !hasHelp) return;
             bool cardOpen = hasHelp && helpOpen.Contains(g.key);

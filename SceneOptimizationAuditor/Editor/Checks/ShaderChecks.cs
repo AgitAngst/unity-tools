@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -76,9 +77,16 @@ namespace UnityTools.SceneOptimization
                     // Every extra pass draws every object once more.
                     if (passes > 1) ShaderIssue(ctx, "SHADER_MULTIPASS", Severity.Warning, shader, users, passes).Gain(0, (long)(passes - 1) * users, 0, false);
                     if (instanced && source.VertexWithoutStereo) ShaderIssue(ctx, "SHADER_NO_STEREO", Severity.Critical, shader, users);
-                    ulong variants;
-                    if (VariantCount(shader, out variants) && variants > VRBudgets.ShaderVariantsInfo)
-                        ShaderIssue(ctx, "SHADER_VARIANTS", Severity.Info, shader, users, (long)variants, VRBudgets.ShaderVariantsInfo);
+                    ulong variants, needed;
+                    if (VariantCount(shader, false, out variants) && variants > VRBudgets.ShaderVariantsInfo)
+                    {
+                        // Without the shader_feature variants no material uses and the fog and instancing variants the
+                        // Graphics stripping drops for the scene (the test sees both): close to what the build gets.
+                        if (!VariantCount(shader, true, out needed)) needed = variants;
+                        var issue = ShaderIssue(ctx, "SHADER_VARIANTS", Severity.Info, shader, users, (long)variants, VRBudgets.ShaderVariantsInfo,
+                            (long)needed, Multipliers(source));
+                        if (needed <= VRBudgets.ShaderVariantsInfo) issue.messageKey = "SHADER_VARIANTS_FEW";
+                    }
                 }
                 // Built-in shaders do not use alpha to coverage.
                 if (msaa && use.cutout.Count > 0 && (source == null || !source.alphaToMask))
@@ -101,8 +109,20 @@ namespace UnityTools.SceneOptimization
         static MethodInfo variantCountMethod;
         static bool variantCountLookedUp;
 
-        // ShaderUtil.GetVariantCount is internal in 2019.4; false when it cannot be called.
-        static bool VariantCount(Shader shader, out ulong count)
+        const int MultipliersShown = 4;
+
+        // The keyword lines that multiply the variants most, "—" when the source has none.
+        static string Multipliers(ShaderSource source)
+        {
+            var lines = source.KeywordLines;
+            if (lines.Count == 0) return "—";
+            var text = string.Join(" · ", lines.Take(MultipliersShown).Select(l => l.Short).ToArray());
+            return lines.Count > MultipliersShown ? text + " · +" + (lines.Count - MultipliersShown) : text;
+        }
+
+        // ShaderUtil.GetVariantCount is internal in 2019.4; false when it cannot be called. used: what the scene needs, without
+        // the shader_feature variants no material uses (the "Skip unused shader_features" count of the shader Inspector).
+        static bool VariantCount(Shader shader, bool used, out ulong count)
         {
             count = 0;
             if (!variantCountLookedUp)
@@ -113,7 +133,7 @@ namespace UnityTools.SceneOptimization
             if (variantCountMethod == null) return false;
             try
             {
-                count = Convert.ToUInt64(variantCountMethod.Invoke(null, new object[] { shader, false }));
+                count = Convert.ToUInt64(variantCountMethod.Invoke(null, new object[] { shader, used }));
                 return true;
             }
             catch (Exception)

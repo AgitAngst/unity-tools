@@ -51,6 +51,12 @@ $shots = @(
     @("recheck-ru-dark", "ru", "dark", @("-shotExpand", "critical", "-shotRecheck")),
     @("recheck-en-dark", "en", "dark", @("-shotExpand", "critical", "-shotRecheck")),
     @("dropped-ru-dark", "ru", "dark", @("-shotEmpty", "-shotDropped")),
+    # Specific rows with fixes (2.9.0): shader variants, simple Standard materials, trilinear filtering.
+    @("advice-ru-dark", "ru", "dark", @("-shotAdvice")),
+    @("advice-en-dark", "en", "dark", @("-shotAdvice")),
+    @("advice-narrow-ru-dark", "ru", "dark", @("-shotAdvice", "-shotWidth", "560")),
+    @("advice-shader-ru-dark", "ru", "dark", @("-shotAdvice", "shader")),
+    @("advice-shader-en-dark", "en", "dark", @("-shotAdvice", "shader")),
     @("lightmap-picked-ru-dark", "ru", "dark", @("-shotTab", "2", "-shotScan", "-shotPick")),
     # The Lighting tab on made-up lightmaps: every segment, narrow, and before the first check.
     @("light-empty-ru-dark", "ru", "dark", @("-shotTab", "3")),

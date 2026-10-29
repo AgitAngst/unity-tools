@@ -208,8 +208,11 @@ namespace UnityTools.SceneOptimization
             Add("TEX_ANISO_DISABLED", "Anisotropic filtering is disabled for the quality level.", "Анизотропная фильтрация выключена на уровне качества.");
             Add("TEX_ANISO_DISABLED.fix", "Floors and walls shimmer at grazing angles in VR; use Per Texture or Forced On.",
                 "Полы и стены мерцают под углом в VR; поставьте Per Texture или Forced On.");
-            Add("TEX_NOT_TRILINEAR", "{0} textures with mipmaps use Point or Bilinear filtering.", "{0} текстур с mipmaps используют фильтрацию Point или Bilinear.");
-            Add("TEX_NOT_TRILINEAR.fix", "Trilinear blends mip levels smoothly and reduces shimmering in VR.", "Trilinear плавно смешивает уровни mip и снижает мерцание в VR.");
+            Add("TEX_NOT_TRILINEAR", "Texture with mipmaps filtered {0}: the mip levels show as bands and shimmer in VR.",
+                "Текстура с mipmaps и фильтрацией {0}: границы уровней mip видны полосами и мерцают в VR.");
+            Add("TEX_NOT_TRILINEAR.fix", "Trilinear blends mip levels smoothly and reduces shimmering in VR. Keep Point where sharp pixels are meant: it is not in the safe fixes.",
+                "Trilinear плавно смешивает уровни mip и снижает мерцание в VR. Point оставьте, если резкие пиксели задуманы: его нет среди безопасных исправлений.");
+            Add("TEX_NOT_TRILINEAR.do", "Set Filter Mode to Trilinear", "Поставить Filter Mode: Trilinear");
         }
 
         static void AddLighting()
@@ -462,8 +465,17 @@ namespace UnityTools.SceneOptimization
             Add("MAT_KEYWORD_NO_TEXTURE", "Keyword {0} is on without its texture.", "Ключевое слово {0} включено без своей текстуры.");
             Add("MAT_KEYWORD_NO_TEXTURE.fix", "The shader runs the more expensive variant for nothing; turn the keyword off.", "Шейдер зря работает в более дорогом варианте; выключите ключевое слово.");
             Add("MAT_KEYWORD_NO_TEXTURE.do", "Turn the keyword off", "Выключить ключевое слово");
-            Add("MAT_SIMPLE_STANDARD", "{0} Standard materials use only an albedo map.", "{0} материалов Standard используют только альбедо.");
-            Add("MAT_SIMPLE_STANDARD.fix", "If full PBR is not needed, Mobile/Diffuse or Legacy Diffuse is cheaper; check the look first.", "Если полный PBR не нужен, Mobile/Diffuse или Legacy Diffuse дешевле; сначала проверьте вид.");
+            Add("MAT_SIMPLE_STANDARD", "Standard with no maps besides albedo: {0} fits; Metallic {1}, Smoothness {2} — gloss and reflections go.",
+                "Standard без карт, кроме альбедо: подойдёт {0}; Metallic {1}, Smoothness {2} — блеск и отражения пропадут.");
+            Add("MAT_SIMPLE_STANDARD.fix",
+                "The full PBR of Standard is not needed here: the shader named in the row costs less per pixel and keeps the texture, tiling and color. Mobile/Diffuse lights only the main directional light per pixel; check the look after the change.",
+                "Полный PBR Standard тут не нужен: шейдер из записи дешевле на каждый пиксель, текстура, тайлинг и цвет остаются. Mobile/Diffuse попиксельно освещает только главный направленный свет; после замены проверьте вид.");
+            Add("MAT_SIMPLE_STANDARD.do", "Switch the shader to {0}", "Сменить шейдер на {0}");
+            Add("MAT_SIMPLE_STANDARD_MODEL", "Material {3} inside a model is Standard with no maps besides albedo: {0} fits; Metallic {1}, Smoothness {2}.",
+                "Материал {3} внутри модели — Standard без карт, кроме альбедо: подойдёт {0}; Metallic {1}, Smoothness {2}.");
+            Add("MAT_SIMPLE_STANDARD_MODEL.fix",
+                "A material inside a model cannot be changed: extract it (model → Materials → Extract Materials) and run the check again to switch the shader.",
+                "Материал внутри модели менять нельзя: извлеките его (модель → Materials → Extract Materials) и проверьте снова — появится замена шейдера.");
             Add("MAT_DEFAULT", "Object renders with the built-in Default-Material.", "Объект рисуется встроенным Default-Material.");
             Add("MAT_DEFAULT.fix", "Assign a project material: the built-in one cannot be edited or batched with yours.", "Назначьте материал проекта: встроенный нельзя править и батчить с вашими.");
         }

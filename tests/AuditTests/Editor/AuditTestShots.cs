@@ -17,7 +17,7 @@ namespace AuditTestsEditor
     //     -shotOut E:/.../window.png [-shotLang ru|en] [-shotTab <tab index>] [-shotEmpty] [-shotSkin light|dark] [-shotExpand critical|all]
     //     [-shotWidth <px>] [-shotViewpoints [-shotTour headset|noheadset] | -shotViewpointsEmpty]
     //     [-shotLight atlases|objects|lights|probes|reflections|shadows] [-shotScope build|folder|selection] [-shotGain on|off] [-shotCopies] [-shotHeavy tris|dc|tex]
-    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped] [-shotPoint]
+    //     [-shotHelp <checkId>] [-shotStart] [-shotBars] [-shotRecheck] [-shotDropped] [-shotPoint] [-shotAdvice [shader]]
     public static class AuditTestShots
     {
         static AuditorWindow window;
@@ -74,7 +74,27 @@ namespace AuditTestsEditor
                 set.Save();
                 UnityEngine.Object.DestroyImmediate(set);
             }
+            // Specific rows (2.9.0): simple Standard materials, textures without trilinear filtering and a shader of many
+            // variants; only the Info rows are shown.
+            if (HasArg("-shotAdvice"))
+            {
+                AuditTestViewpoints.BuildAdviceScene();
+                var show = (bool[])typeof(AuditorWindow).GetField("show", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(window);
+                show[(int)Severity.Critical] = false;
+                show[(int)Severity.Warning] = false;
+                show[(int)Severity.Info] = true;
+            }
             if (!HasArg("-shotEmpty")) Invoke("Run");
+            if (HasArg("-shotAdvice"))
+            {
+                // Only the groups of the specific rows are open; "-shotAdvice shader" opens the shader one alone, last in the list.
+                bool shader = Arg("-shotAdvice") == "shader";
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                var open = (System.Collections.Generic.Dictionary<string, bool>)typeof(AuditorWindow).GetField("expanded", flags).GetValue(window);
+                var groups = (System.Collections.Generic.List<IssueGroup>)typeof(AuditorWindow).GetField("groups", flags).GetValue(window);
+                foreach (var g in groups)
+                    open[g.key] = g.checkId == "SHADER_VARIANTS" || !shader && (g.checkId == "MAT_SIMPLE_STANDARD" || g.checkId == "TEX_NOT_TRILINEAR");
+            }
             if (HasArg("-shotCopies")) Invoke("CopiesForShot", "ANIM_ALWAYS_ANIMATE");
             if (HasArg("-shotHeavy"))
             {

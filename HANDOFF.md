@@ -1,6 +1,6 @@
 # HANDOFF — unity-tools
 
-Версия 2.8.0 (28.10.2026), номер сборки — в окне утилиты (`v2.8.0.57`). Начинать с [docs/README.md](docs/README.md); план — [SPEC.md](SPEC.md), тесты —
+Версия 2.9.0 (29.10.2026), номер сборки — в окне утилиты (`v2.9.0.60`). Начинать с [docs/README.md](docs/README.md); план — [SPEC.md](SPEC.md), тесты —
 [TESTPLAN.md](TESTPLAN.md).
 
 ## Сделано
@@ -8,10 +8,20 @@
 - **SceneOptimizationAuditor** — этапы 1–4 из `SPEC.md`: окно аудита VR-сцены (вкладки, вывод, карточки,
   сгруппированный список), 85 проверок в 9 категориях, бюджеты, экспорт JSON/CSV и командная строка,
   исправления с подтверждением и Undo, снимок профайлера.
-- Автотесты в Unity 2019.4.41f2: `scripts\run-audit-tests.ps1`, 55 шагов из 55 зелёные (в т. ч. XR Plug-in
+- Автотесты в Unity 2019.4.41f2: `scripts\run-audit-tests.ps1`, 56 шагов из 56 зелёные (в т. ч. XR Plug-in
   Management на заглушках OpenVR). Снимки окна — `scripts\shoot-audit-window.ps1`. Оба идут через тестовый сервер
   `scripts\audit-server.ps1`: Unity открывается один раз и остаётся (тесты — batch-редактор, снимки — видимый);
   владелец 24.10.2026: «Один раз открой и тестируй там постоянно».
+- 2.9.0: конкретика и исправления (владелец 29.10.2026: «что делать с Many shader variants? у меня шейдер с 75444
+  вариантами» и «Да, сделай»; «Потом ещё добавь возможность менять шейдер на мобильный…»; «Для трилинейной фильтрации
+  тоже»). `SHADER_VARIANTS` называет, сколько вариантов нужно сцене (`GetVariantCount(shader, true)`: без неиспользуемых
+  `shader_feature` и лишних тумана и instancing — видно в тесте), и строки `#pragma`, которые множат больше всего
+  (`ShaderSource.KeywordLines`); нужно не больше 512 — `SHADER_VARIANTS_FEW` «можно не трогать». `MAT_SIMPLE_STANDARD` —
+  запись на материал из `Assets/` с подходящим шейдером (Mobile/Diffuse, Legacy Diffuse при цвете, Legacy Cutout Diffuse)
+  и исправлением с просмотром; внутри модели — `MAT_SIMPLE_STANDARD_MODEL` без кнопки. `TEX_NOT_TRILINEAR` — запись на
+  текстуру с безопасным исправлением. Обе ушли из `Recheck.SceneChecks`. Шаг `specific-advice`, снимки `advice-*`.
+  Изменение `update-specific-advice`, не архивировано; доски «Конкретика» ждут слова владельца; вживую не смотрено
+  (TESTPLAN 6с).
 - 2.8.0: бюджет кадра по точкам обзора (владелец 28.10.2026: «Т.е. он показывает все на сцену, а лимит в 1000 стоит на
   кадр?», затем «Да, сделай»). Полосы «Треугольники в кадре» и «Draw calls в кадре» и проверки `MESH_SCENE_TRIS`,
   `DC_BUDGET` — по худшей точке обзора: прогон оценивает точки в памяти (`SceneAuditor.FrameBudget`), файл точек не
@@ -133,7 +143,10 @@
 
 ## Осталось
 
-- Активных изменений OpenSpec нет. `update-frame-budget` (2.8.0) архивировано 28.10.2026 по слову владельца («Архивируй»):
+- Активное изменение — `update-specific-advice` (2.9.0): код готов, доски «Конкретика» ждут слова владельца (задача 1.1);
+  архив — по его слову. Пометки «допустимо» старых общих записей `MAT_SIMPLE_STANDARD` и `TEX_NOT_TRILINEAR` к записям
+  по ассетам не переходят.
+- `update-frame-budget` (2.8.0) архивировано 28.10.2026 по слову владельца («Архивируй»):
   «Scene budgets» и «History tab» изменены в `openspec/specs/scene-audit`, «Frame budget in the JSON report» добавлено в
   `scene-audit-export`; живая проверка — TESTPLAN 6р. `add-quick-recheck` (2.7.0) архивировано 27.10.2026 по слову владельца («архив»):
   требования «Run bar at the bottom», «Kept result», «Quick re-check» добавлены, «Readable window…» и «Audit scope»

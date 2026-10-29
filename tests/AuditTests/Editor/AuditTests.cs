@@ -359,7 +359,7 @@ namespace AuditTestsEditor
             Not("MAT_TRANSPARENT", "M_Plain.mat");
             Has("MAT_KEYWORD_NO_TEXTURE", Severity.Info, "M_KeyNormal.mat", fixable: true, contains: "_NORMALMAP");
             Not("MAT_KEYWORD_NO_TEXTURE", "M_Metal.mat");
-            Has("MAT_SIMPLE_STANDARD", Severity.Info);
+            Has("MAT_SIMPLE_STANDARD", Severity.Info, fixable: true);
             Has("MAT_DEFAULT", Severity.Warning, "InstBuiltin/A");
             Not("MAT_DEFAULT", "DC/Candidate");
 
@@ -374,7 +374,8 @@ namespace AuditTestsEditor
             Has("TEX_UNCOMPRESSED", Severity.Warning, "T_Raw.png", contains: "Uncompressed");
             Has("TEX_UNCOMPRESSED", Severity.Warning, "T_Rgba32.png", contains: "BC7");
             Has("TEX_READ_WRITE", Severity.Warning, "T_Readable.png", fixable: true);
-            Count("TEX_NOT_TRILINEAR", 1);
+            // A row per texture since 2.9.0: the seed textures are Bilinear by default.
+            Has("TEX_NOT_TRILINEAR", Severity.Info, fixable: true);
 
             // Lighting
             Has("LIGHT_REALTIME", Severity.Warning, "Light/PointRealtime");
@@ -662,7 +663,8 @@ namespace AuditTestsEditor
             var safe = before.issues.Where(i => i.fixKind == FixKind.Safe && i.AutoFixable).ToList();
             log.AppendLine("info: safe fixes = " + string.Join(", ", safe.Select(Brief).ToArray()));
             Check(safe.Any(i => i.checkId == "TEX_NO_MIPMAPS"), "safe list has TEX_NO_MIPMAPS");
-            Check(safe.All(i => i.checkId == "TEX_NO_MIPMAPS" || i.checkId == "DC_INSTANCING_OFF"), "safe list has only mipmaps and instancing");
+            Check(safe.All(i => i.checkId == "TEX_NO_MIPMAPS" || i.checkId == "DC_INSTANCING_OFF" || i.checkId == "TEX_NOT_TRILINEAR"),
+                "safe list has only mipmaps, instancing and trilinear filtering");
             Check(AutoFixer.Apply(safe) == safe.Count, "all safe fixes applied");
             var afterSafe = SceneAuditor.RunFullAudit(new VRBudgets(), false);
             ExpectNow(afterSafe, "after safe fixes", () =>

@@ -373,7 +373,19 @@ namespace UnityTools.SceneOptimization
 
         static string AssetKey(AuditIssue issue)
         {
+            // The variants a scene needs differ by scene (2.9.0): one row per shader, with the most a scene needs.
+            if (issue.checkId == "SHADER_VARIANTS") return issue.checkId + "|" + issue.assetPath;
             return issue.checkId + "|" + issue.messageKey + "|" + issue.assetPath + "|" + ArgsKey(issue);
+        }
+
+        // SHADER_VARIANTS args: name, all variants, threshold, needed by the scene, keyword lines.
+        static void MostNeeded(AuditIssue row, AuditIssue issue)
+        {
+            if (row.args.Length < 4 || issue.args.Length < 4 || Convert.ToInt64(issue.args[3]) <= Convert.ToInt64(row.args[3])) return;
+            // The row is a copy: the part keeps its own args.
+            row.args = (object[])row.args.Clone();
+            row.args[3] = issue.args[3];
+            row.messageKey = issue.messageKey;
         }
 
         static string ArgsKey(AuditIssue issue)
@@ -454,6 +466,7 @@ namespace UnityTools.SceneOptimization
                         {
                             row.users += issue.users;
                             row.inScenes++;
+                            if (issue.checkId == "SHADER_VARIANTS") MostNeeded(row, issue);
                             continue;
                         }
                         // A copy: the users of the parts stay their own for the next merge.

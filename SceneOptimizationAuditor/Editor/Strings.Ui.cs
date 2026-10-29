@@ -162,7 +162,8 @@ namespace UnityTools.SceneOptimization
             Add("ui.howToFix", "How to fix: {0}", "Как исправить: {0}");
             Add("ui.select.tip", "Select and highlight it.", "Выделить и подсветить.");
             Add("ui.settings.tip", "Open the Project Settings page.", "Открыть страницу Project Settings.");
-            Add("ui.autoFix.tip", "Enables mipmaps and GPU Instancing where it is safe; shows the list first.", "Включит mipmaps и GPU Instancing там, где это безопасно; сначала покажет список.");
+            Add("ui.autoFix.tip", "Enables mipmaps, trilinear filtering and GPU Instancing where it is safe; shows the list first.",
+                "Включит mipmaps, трилинейную фильтрацию и GPU Instancing там, где это безопасно; сначала покажет список.");
             Add("ui.budgets.rerun", "Thresholds apply on the next run.", "Пороги применяются при следующем запуске аудита.");
             Add("ui.prof.intro", "Plays the scene for a few seconds and measures frame time, draw calls and memory.", "Запускает сцену на несколько секунд и меряет время кадра, draw calls и память.");
             Add("ui.xr", "XR: {0}", "XR: {0}");

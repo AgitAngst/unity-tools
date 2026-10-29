@@ -183,7 +183,7 @@
   ассетов — по всем открытым сценам), а проверки видят только эти объекты и объекты, которые используют их ассеты
   (`AuditContext.Focus`). Записи этих объектов, ассетов и настроек заменяются: исправленные уходят, изменённые
   обновляются, новые появляются; вывод, карточки и число на вкладке пересчитываются. Значок неактивен (подсказка —
-  почему) у записей проверок по всей сцене — бюджетов, итогов, счёта и дубликатов (`Recheck.SceneChecks`: `DC_BUDGET`, `FRAME_NO_VIEWPOINTS`, `DC_SHADOW_CASTERS`, `DC_INSTANCING_UNKNOWN`, `DC_INSTANCING_OFF`, `MESH_SCENE_TRIS`, `MESH_DUPLICATE`, `TEX_MEMORY`, `TEX_DUPLICATE`, `TEX_NOT_TRILINEAR`, `MAT_DUPLICATE`, `MAT_SIMPLE_STANDARD`, `LIGHT_SHADOWED`, `LIGHT_REALTIME_GI`, `LIGHT_LIGHTMAP_MEMORY`, `LIGHT_NO_PROBES`, `LIGHT_OUTSIDE_PROBES`, `LIGHT_WIDE_REALTIME`, `LIGHT_IMPORTANT`, `LIGHT_NOT_BAKED`, `LIGHT_DISTANCE_SHADOWMASK`, `PART_TOTAL`, `PART_MAX_PARTICLES`, `PART_LARGE_TRANSPARENT`, `PART_SOFT_PARTICLES`, `SHADER_ALPHA_TEST_MSAA`, `LIGHT_LIGHTMAP_UNCOMPRESSED`, `LIGHT_LIGHTMAP_DIRECTIONAL`, `LIGHT_SHADOW_CASCADES`, `MESH_QUALITY_SKIN_WEIGHTS`, `MESH_GPU_SKINNING_OFF`, `ANIM_COUNT`, `AUDIO_SOURCE_COUNT`, `AUDIO_PRIORITY_ZERO`, `AUDIO_LISTENERS_MANY`, `AUDIO_NO_LISTENER`, `REFL_MEMORY`, `REFL_OUTSIDE`, `REFL_DUPLICATE`, `VR_NO_CAMERA`, `VR_NO_OCCLUSION`, `VR_STEAMVR_MISSING`, `VR_STEAMVR_NOT_IN_SCENE`, и
+  почему) у записей проверок по всей сцене — бюджетов, итогов, счёта и дубликатов (`Recheck.SceneChecks`: `DC_BUDGET`, `FRAME_NO_VIEWPOINTS`, `DC_SHADOW_CASTERS`, `DC_INSTANCING_UNKNOWN`, `DC_INSTANCING_OFF`, `MESH_SCENE_TRIS`, `MESH_DUPLICATE`, `TEX_MEMORY`, `TEX_DUPLICATE`, `MAT_DUPLICATE`, `LIGHT_SHADOWED`, `LIGHT_REALTIME_GI`, `LIGHT_LIGHTMAP_MEMORY`, `LIGHT_NO_PROBES`, `LIGHT_OUTSIDE_PROBES`, `LIGHT_WIDE_REALTIME`, `LIGHT_IMPORTANT`, `LIGHT_NOT_BAKED`, `LIGHT_DISTANCE_SHADOWMASK`, `PART_TOTAL`, `PART_MAX_PARTICLES`, `PART_LARGE_TRANSPARENT`, `PART_SOFT_PARTICLES`, `SHADER_ALPHA_TEST_MSAA`, `LIGHT_LIGHTMAP_UNCOMPRESSED`, `LIGHT_LIGHTMAP_DIRECTIONAL`, `LIGHT_SHADOW_CASCADES`, `MESH_QUALITY_SKIN_WEIGHTS`, `MESH_GPU_SKINNING_OFF`, `ANIM_COUNT`, `AUDIO_SOURCE_COUNT`, `AUDIO_PRIORITY_ZERO`, `AUDIO_LISTENERS_MANY`, `AUDIO_NO_LISTENER`, `REFL_MEMORY`, `REFL_OUTSIDE`, `REFL_DUPLICATE`, `VR_NO_CAMERA`, `VR_NO_OCCLUSION`, `VR_STEAMVR_MISSING`, `VR_STEAMVR_NOT_IN_SCENE`, и
   записи без объекта, ассета и настройки), у записей закрытых сцен и у проверки папки. Полосы бюджета и итоги сцены
   остаются с полного прогона, точка истории не пишется. Итог — уведомление окна «Перепроверено: 3 объекта за 0,4 с —
   ушло: 2 записи, осталось: 1 запись» (и «, новых: …»; «элемента» вместо «объекта», если среди них ассет или настройка);
@@ -464,7 +464,7 @@ Critical / Warning / Info / допустимых, треугольники и dr
   Standalone и его загрузчики; режим stereo OpenVR — из ассета `OpenVRSettings` (только читается).
 - Шейдеры: материалы включённых рендереров (с частицами), запись — на шейдер с числом объектов. Исходник читается у
   `.shader` в `Assets/` — без комментариев, первый SubShader (и внутри `Category`), проходы и их LightMode, UsePass,
-  GrabPass, AlphaToMask, `#pragma vertex` и `#include` из `Assets/` (до 8 уровней, путь — от папки включающего
+  GrabPass, AlphaToMask, `#pragma vertex`, строки `#pragma multi_compile*` и `shader_feature*` (2.9.0) и `#include` из `Assets/` (до 8 уровней, путь — от папки включающего
   файла или от `Assets/`); встроенные `.cginc` не читаются. Встроенные и пакетные шейдеры — только ошибки и alpha-test.
 - Террейны (2.4.0): включённые Terrain со своими данными; карты деталей читаются полосами по 256 строк (на всю карту
   4096² ушло бы 64 МБ на слой). Деревья террейна не проверяются.
@@ -635,7 +635,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `TEX_READ_WRITE` | W | Read/Write у текстуры | R |
 | `TEX_MEMORY` | W / C | оценка памяти выше порога | — |
 | `TEX_ANISO_DISABLED` | I | анизотропная фильтрация выключена на уровне | — |
-| `TEX_NOT_TRILINEAR` | I | число 3D-текстур с mipmaps на Point/Bilinear (одна запись) | — |
+| `TEX_NOT_TRILINEAR` | I | текстура проекта (`Assets/`) с mipmaps в 3D (не только в запекании) с фильтрацией Point или Bilinear; запись на текстуру с её фильтрацией (с 2.9.0; раньше — одна запись с числом), исправление — Filter Mode = Trilinear в импортёре: у Bilinear — безопасное, у Point — с просмотром (резкие пиксели бывают задуманы) | S / R |
 | `TEX_NPOT` | I | размер не степень двойки при Non-Power of 2 = None (исправление — To Nearest) | R |
 | `TEX_DUPLICATE` | I | одинаковые файлы текстур под разными именами (по хэшу файла); одна запись на группу | — |
 | `TEX_DENSITY_HIGH` | I | сторона от 1024 px и больше 4 096 px на метр самого маленького объекта | — |
@@ -648,7 +648,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `MAT_DUPLICATE` | I | материалы с одним шейдером, очередью, instancing, ключевыми словами и значениями; одна запись на группу (исправление — всем рендерерам копий в сцене поставить первый по пути, откатывается Undo) | R |
 | `MAT_TRANSPARENT` | W / I | очередь отрисовки от 2501 (прозрачный); W — если объект больше 2 м | — |
 | `MAT_KEYWORD_NO_TEXTURE` | I | ключевое слово `_NORMALMAP`, `_METALLICGLOSSMAP`, `_SPECGLOSSMAP`, `_PARALLAXMAP`, `_DETAIL_MULX2` без своей текстуры (исправление — выключить) | R |
-| `MAT_SIMPLE_STANDARD` | I | число материалов Standard только с альбедо (одна запись) | — |
+| `MAT_SIMPLE_STANDARD` | I | непрозрачный или Cutout материал Standard из `Assets/` (встроенные вроде Default-Material, пакетные и созданные в коде не проверяются) без карт, кроме альбедо (без карт `_BumpMap`, `_MetallicGlossMap`, `_SpecGlossMap`, `_OcclusionMap`, `_EmissionMap`, `_ParallaxMap`, детальных и без `_EMISSION`); запись на материал (с 2.9.0; раньше — одна запись с числом): какой шейдер подойдёт, Metallic и Smoothness. Шейдер: Cutout (`_Mode` 1 или `_ALPHATEST_ON`) — Legacy Shaders/Transparent/Cutout/Diffuse, `_Color` не белый (любой канал меньше 0,995) — Legacy Shaders/Diffuse, иначе — Mobile/Diffuse. Исправление (ассет материала в `Assets/`) — сменить шейдер и снять ключевые слова; текстура, тайлинг, цвет и порог остаются. Материал внутри модели — без исправления, текст называет материал, совет — извлечь (`MAT_SIMPLE_STANDARD_MODEL`). В группе с записями разного вида подсказка «Как исправить» — общая для проверки | R |
 | `MAT_DEFAULT` | W | объект рисуется встроенным Default-Material | — |
 | **Shaders** | | | |
 | `SHADER_ERROR` | C | шейдер материала с ошибками, которые Unity уже знает (`ShaderUtil.ShaderHasError`), или не поддерживается (`isSupported`); у шейдера без имени (не разобран) — имя файла | — |
@@ -656,7 +656,7 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 | `SHADER_GRABPASS` | W / I | в первом SubShader исходника GrabPass без имени текстуры (W: копия экрана на каждый объект) или с именем (I: раз за кадр) | — |
 | `SHADER_MULTIPASS` | W | в первом SubShader больше одного прохода рисования: без LightMode или Always, ForwardBase (нет их — больший из Vertex / VertexLM / VertexLMRGBM), UsePass (кроме имён на SHADOW и META, DEFERRED, PREPASSBASE, PREPASSFINAL, FORWARD_DELTA, FORWARDADD, MOTIONVECTORS) и один за surface-шейдер | — |
 | `SHADER_NO_STEREO` | C | stereo-режим Single Pass Instanced, функция `#pragma vertex` определена в исходнике или его `#include` из `Assets/`, а в нём нет вызова `UNITY_SETUP_INSTANCE_ID(…)` или `UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(…)` (поля могут прийти со встроенной структурой, например `v2f_img`) | — |
-| `SHADER_VARIANTS` | I | у шейдера из `Assets/` больше 512 вариантов (`ShaderUtil.GetVariantCount` через reflection; нет метода — молчит) | — |
+| `SHADER_VARIANTS` | I | у шейдера из `Assets/` больше 512 вариантов (`ShaderUtil.GetVariantCount(shader, false)` через reflection; нет метода — молчит). С 2.9.0 запись называет, сколько вариантов нужно сцене (`GetVariantCount(shader, true)` — счёт окна шейдера «Skip unused shader_features»: без `shader_feature`, не включённых ни у одного материала, и, как видно в тесте, без вариантов тумана и instancing, которые сцене не нужны по Graphics → Shader Stripping), и до четырёх строк `#pragma`, на которые смотреть первыми: свои `multi_compile` и `multi_compile_local` исходника и его `#include` из `Assets/` с числом значений (`×N`; с одним словом не показываются) — они идут в сборку целиком; затем `shader_feature*` (`shader_feature A` — ×2); затем встроенные наборы (`multi_compile_fog` ×4, `multi_compile_instancing` и `multi_compile_particles` ×2, прочие `multi_compile_*` и `#pragma surface` — без числа, последними), сборка отбрасывает их значения, не нужные сценам; внутри каждой части больше значений — выше, при равном — по порядку в исходнике; остальное — `+N`; одинаковая строка в нескольких проходах — один раз. Если второй вызов `GetVariantCount` не удался, «нужно сцене» = всего. У нескольких сцен — одна запись на шейдер с наибольшим числом, которое нужно сцене. Нужно сцене не больше 512 — совет «шейдер можно не трогать» (`SHADER_VARIANTS_FEW`) | — |
 | `SHADER_ALPHA_TEST_MSAA` | I | MSAA в Quality больше 1x, у материала RenderType = TransparentCutout, в шейдере (SubShader или Category) нет `AlphaToMask On` (или `AlphaToMask [свойство]`); у встроенных и пакетных шейдеров — считается, что нет; число — объектов с такими материалами | — |
 | **Lighting** | | | |
 | `LIGHT_REALTIME` | W | Point/Spot в Realtime | — |
@@ -803,7 +803,8 @@ iterations больше 6, far clip больше 1000, near clip меньше 0.
 ## Исправления
 
 - **«Исправить безопасное (N)»** — пакетом только безопасные: GPU Instancing у материала (только
-  материалы-ассеты в `Assets/`, не вложенные в модели) и mipmaps у текстуры.
+  материалы-ассеты в `Assets/`, не вложенные в модели), mipmaps и (с 2.9.0) Trilinear у текстуры с Bilinear (Point — только
+  с просмотром).
 - **«Исправить все (N)» у группы** — все доступные исправления группы (у группы из одной записи —
   «Исправить»; группа, где остаётся одно исправление, — тоже «Исправить»); **«Исправить» у объекта** внутри группы —
   только эта запись. При «Копии вместе» строка копий, которой можно «в префабе», — одно исправление, и N — число

@@ -140,6 +140,21 @@ namespace AuditTestsEditor
             Check(metallic.DrawPasses == 2, "UsePass METALLIC_OUTLINE draws; SHADOWCASTER and META do not (" + metallic.DrawPasses + ")");
             var onCategory = ShaderSource.Parse("Shader \"A\" { Category { AlphaToMask On SubShader { Pass { } } } }", null);
             Check(onCategory.alphaToMask, "AlphaToMask on a Category");
+
+            // Keyword lines (2.9.0): each once; own multi_compile, shader_feature, built-in sets, sets of unknown size last.
+            var keywords = ShaderSource.Parse("Shader \"A\" { SubShader { Pass { CGPROGRAM\n#pragma shader_feature _ E F G\n#pragma multi_compile _ A B C\n" +
+                "#pragma multi_compile_fwdbase\n#pragma multi_compile_fog\n#pragma shader_feature D\n#pragma multi_compile ALWAYS\n#pragma multi_compile_local _ K\nENDCG }" +
+                " Pass { CGPROGRAM\n#pragma multi_compile _ A B C\n#pragma multi_compile _ L1 L2 L3 L4 L5\nENDCG } } }", null);
+            var lines = keywords.KeywordLines.Select(l => l.Short).ToArray();
+            log.AppendLine("keyword lines: " + string.Join(" | ", lines));
+            Check(lines.SequenceEqual(new[]
+                {
+                    "multi_compile _ L1 L2 L3 … ×6", "multi_compile _ A B C ×4", "multi_compile_local _ K ×2", "shader_feature _ E F G ×4",
+                    "shader_feature D ×2", "multi_compile_fog ×4", "multi_compile_fwdbase"
+                }),
+                "own multi_compile lines first, then shader_feature, then built-in sets; the repeated one once, a single multi_compile keyword left out");
+            var surfaceLines = ShaderSource.Parse("Shader \"A\" { SubShader { CGPROGRAM\n#pragma surface surf Lambert\n#pragma multi_compile _ S\nENDCG } }", null).KeywordLines;
+            Check(surfaceLines.Count == 2 && surfaceLines[1].Short == "#pragma surface", "a surface shader adds the sets of its passes last");
         }
 
         static void ShaderIssues()
@@ -166,6 +181,8 @@ namespace AuditTestsEditor
                 { "CutoutNoMask", WriteShader("CutoutNoMask", ShaderText("CutoutNoMask", "Tags { \"RenderType\" = \"TransparentCutout\" \"Queue\" = \"AlphaTest\" }", StereoPass(""))) },
                 { "Variants", WriteShader("Variants", ShaderText("Variants", "", StereoPass("", "",
                     string.Join("\n            ", Enumerable.Range(0, 10).Select(i => "#pragma multi_compile _ AUDIT_KW_" + i).ToArray())))) },
+                { "VariantsFew", WriteShader("VariantsFew", ShaderText("VariantsFew", "", StereoPass("", "",
+                    string.Join("\n            ", Enumerable.Range(0, 10).Select(i => "#pragma shader_feature AUDIT_SF_" + i).ToArray())))) },
                 { "Broken", WriteShader("Broken", "Shader \"AuditTest/Broken\" { SubShader { Pass { Blend Wrong Wrong } } }\n") },
             };
             foreach (var pair in shaders)
@@ -232,6 +249,19 @@ namespace AuditTestsEditor
             var variants = of("SHADER_VARIANTS", "Variants");
             Check(variants.Count == 1 && (long)variants[0].args[1] >= 1024, "10 multi_compile: 1024 variants or more (" +
                 (variants.Count > 0 ? variants[0].args[1] : "—") + ")");
+            if (variants.Count == 1)
+            {
+                var v = variants[0];
+                log.AppendLine("variants: " + v.Message);
+                Check(v.messageKey == "SHADER_VARIANTS" && (long)v.args[3] == (long)v.args[1] &&
+                      ((string)v.args[4]).StartsWith("multi_compile _ AUDIT_KW_0 ×2 · multi_compile _ AUDIT_KW_1 ×2", System.StringComparison.Ordinal) &&
+                      ((string)v.args[4]).EndsWith(" · +6", System.StringComparison.Ordinal),
+                    "multi_compile only: the materials need every variant, four lines named and +6");
+            }
+            var few = issues.Where(i => (i.checkId == "SHADER_VARIANTS") && i.args.Length > 0 && (string)i.args[0] == "AuditTest/VariantsFew").ToList();
+            Check(few.Count == 1 && few[0].messageKey == "SHADER_VARIANTS_FEW" && (long)few[0].args[1] >= 1024 && (long)few[0].args[3] <= 512,
+                "10 shader_feature none of the materials uses: the materials need few, the advice says it can stay (" +
+                (few.Count > 0 ? few[0].args[1] + " / " + few[0].args[3] : "—") + ")");
             var broken = issues.Where(i => i.checkId == "SHADER_ERROR" || i.checkId == "SHADER_MISSING").ToList();
             var parse = broken.FirstOrDefault(i => i.target == shaders["Broken"]);
             Check(parse != null && broken.All(i => i.severity == Severity.Critical) && ((string)parse.args[0]).Length > 0,
@@ -255,8 +285,8 @@ namespace AuditTestsEditor
             foreach (var language in new[] { Lang.En, Lang.Ru })
             {
                 Strings.Current = language;
-                foreach (var id in ShaderChecks.Concat(new[] { "SHADER_GRABPASS_NAMED" }))
-                    foreach (var key in id.Contains("NAMED") ? new[] { id, id + ".fix" } : new[] { id, id + ".title", id + ".fix" })
+                foreach (var id in ShaderChecks.Concat(new[] { "SHADER_GRABPASS_NAMED", "SHADER_VARIANTS_FEW" }))
+                    foreach (var key in id.Contains("NAMED") || id.Contains("FEW") ? new[] { id, id + ".fix" } : new[] { id, id + ".title", id + ".fix" })
                         if (!Strings.Has(key) || Strings.Get(key).Length == 0) missing.Add(language + " " + key);
             }
             Strings.Current = lang;

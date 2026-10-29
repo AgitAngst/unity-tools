@@ -65,6 +65,7 @@ $steps = @(
     @("heavy", "AuditTestsEditor.AuditTestViewpoints.RunHeavy", @()),
     @("particles", "AuditTestsEditor.AuditTestViewpoints.RunParticles", @()),
     @("shaders", "AuditTestsEditor.AuditTestViewpoints.RunShaders", @()),
+    @("specific-advice", "AuditTestsEditor.AuditTestViewpoints.RunSpecificAdvice", @()),
     @("reflections", "AuditTestsEditor.AuditTestViewpoints.RunReflections", @()),
     @("scope", "AuditTestsEditor.AuditTestViewpoints.RunScope", @()),
     @("gain", "AuditTestsEditor.AuditTestViewpoints.RunGain", @()),

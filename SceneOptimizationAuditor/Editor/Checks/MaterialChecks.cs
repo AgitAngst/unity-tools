@@ -48,7 +48,6 @@ namespace UnityTools.SceneOptimization
             }
 
             var signatures = new Dictionary<string, List<Material>>();
-            int simpleStandard = 0;
             foreach (var pair in users)
             {
                 var material = pair.Key;
@@ -83,7 +82,7 @@ namespace UnityTools.SceneOptimization
                 if (material.shader != null && material.shader.name == "Standard" && material.renderQueue < VRBudgets.TransparentQueue &&
                     !ExtraStandardMaps.Any(p => material.HasProperty(p) && material.GetTexture(p) != null) &&
                     !material.IsKeywordEnabled("_EMISSION"))
-                    simpleStandard++;
+                    SimpleStandard(ctx, material, list.Count, editable);
 
                 if (!editable) continue;
                 var signature = Signature(material);
@@ -123,8 +122,40 @@ namespace UnityTools.SceneOptimization
                 });
             }
 
-            if (simpleStandard > 0)
-                ctx.Report("MAT_SIMPLE_STANDARD", Category.Materials, Severity.Info, null, simpleStandard);
+        }
+
+        // 2.9.0 (owner, 29.10.2026: "add the ability to change the shader to a mobile one ... it shows nothing specific"):
+        // one row per material with the shader that fits it, and a fix for material assets of the project.
+        // Built-in and package materials (Default-Material is one) and materials made in code are left out: nothing to change.
+        static void SimpleStandard(AuditContext ctx, Material material, int users, bool editable)
+        {
+            var path = AssetDatabase.GetAssetPath(material);
+            if (!AuditContext.IsProjectAssetPath(path)) return;
+            var cheaper = CheaperShader(material);
+            var issue = ctx.Report("MAT_SIMPLE_STANDARD", Category.Materials, Severity.Info, material, cheaper,
+                Math.Round(material.GetFloat("_Metallic"), 2), Math.Round(material.GetFloat("_Glossiness"), 2), material.name);
+            issue.users = users;
+            // Embedded in a model: it has to be extracted first.
+            if (!editable) issue.messageKey = "MAT_SIMPLE_STANDARD_MODEL";
+            var shader = Shader.Find(cheaper);
+            if (!editable || shader == null) return;
+            var target = material;
+            issue.SetFix(FixKind.Review, target, true, () =>
+            {
+                // Texture, tiling, color and cutoff have the same names in the legacy shaders; the Standard keywords go.
+                target.shader = shader;
+                target.shaderKeywords = new string[0];
+            });
+        }
+
+        // Cutout keeps its alpha test, a tint needs _Color, which Mobile/Diffuse does not have.
+        static string CheaperShader(Material material)
+        {
+            bool cutout = material.IsKeywordEnabled("_ALPHATEST_ON") || Mathf.Approximately(material.GetFloat("_Mode"), 1f);
+            if (cutout) return "Legacy Shaders/Transparent/Cutout/Diffuse";
+            var color = material.GetColor("_Color");
+            bool white = color.r >= 0.995f && color.g >= 0.995f && color.b >= 0.995f;
+            return white ? "Mobile/Diffuse" : "Legacy Shaders/Diffuse";
         }
 
         // Shader, render queue, instancing, keywords and every property value.

@@ -17,7 +17,6 @@ namespace UnityTools.SceneOptimization
         {
             var b = ctx.budgets;
             double totalBytes = 0;
-            int notTrilinear = 0;
 
             foreach (var pair in ctx.textures)
             {
@@ -91,7 +90,18 @@ namespace UnityTools.SceneOptimization
                         });
                     }
 
-                    if (use.in3D && importer.mipmapEnabled && importer.filterMode != FilterMode.Trilinear) notTrilinear++;
+                    // 2.9.0 (owner, 29.10.2026: "it says 371 textures need it, but there is no way to turn it on"): a row per texture.
+                    if (use.in3D && importer.mipmapEnabled && importer.filterMode != FilterMode.Trilinear)
+                    {
+                        var issue = ctx.Report("TEX_NOT_TRILINEAR", Category.Textures, Severity.Info, texture, importer.filterMode.ToString());
+                        issue.users = use.users;
+                        // Point may be meant (sharp pixels): it is changed one row at a time, not with the safe ones.
+                        issue.SetFix(importer.filterMode == FilterMode.Point ? FixKind.Review : FixKind.Safe, importer, true, () =>
+                        {
+                            importer.filterMode = FilterMode.Trilinear;
+                            importer.SaveAndReimport();
+                        });
+                    }
                 }
 
                 if (importer.isReadable)
@@ -113,8 +123,6 @@ namespace UnityTools.SceneOptimization
 
             if (ctx.quality.anisotropicFiltering == AnisotropicFiltering.Disable)
                 ctx.ReportSetting("TEX_ANISO_DISABLED", Category.Textures, Severity.Info, "Project/Quality");
-            if (notTrilinear > 0)
-                ctx.Report("TEX_NOT_TRILINEAR", Category.Textures, Severity.Info, null, notTrilinear);
 
             AuditTextureAssets(ctx);
         }

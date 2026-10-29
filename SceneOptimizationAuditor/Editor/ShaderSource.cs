@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -17,6 +18,40 @@ namespace UnityTools.SceneOptimization
             public string lightMode = "";
             // UsePass "Shader/NAME": the path; "" for a pass of its own.
             public string usePath = "";
+        }
+
+        // A #pragma multi_compile or shader_feature line: how many values it multiplies the variants by.
+        public sealed class KeywordLine
+        {
+            public string directive = "";
+            public string[] keywords = new string[0];
+            // 0 for a built-in set whose size is not known here.
+            public int values;
+            // multi_compile_fog, multi_compile_fwdbase, #pragma surface and the like: Unity's own sets.
+            public bool builtIn;
+
+            // Own multi_compile lines go into the build with every value; shader_feature only with the values materials
+            // use; the build drops the values of built-in sets the scenes do not use (fog modes, instancing, lightmaps).
+            public int Rank
+            {
+                get
+                {
+                    if (builtIn) return values > 0 ? 2 : 3;
+                    return directive.StartsWith("shader_feature", StringComparison.Ordinal) ? 1 : 0;
+                }
+            }
+
+            // The directive and up to four keywords, with the number of values.
+            public string Short
+            {
+                get
+                {
+                    var text = directive;
+                    for (int i = 0; i < keywords.Length && i < 4; i++) text += " " + keywords[i];
+                    if (keywords.Length > 4) text += " …";
+                    return values > 0 ? text + " ×" + values : text;
+                }
+            }
         }
 
         public readonly List<Pass> passes = new List<Pass>();
@@ -41,6 +76,12 @@ namespace UnityTools.SceneOptimization
         static readonly Regex SurfacePragma = new Regex(@"#pragma\s+surface\b");
         static readonly Regex LightModeTag = new Regex("\"LightMode\"\\s*=\\s*\"([^\"]*)\"", RegexOptions.IgnoreCase);
         static readonly Regex AlphaToMaskOn = new Regex(@"\bAlphaToMask\s+(On\b|\[)", RegexOptions.IgnoreCase);
+        static readonly Regex KeywordPragma = new Regex(@"#pragma[ \t]+(multi_compile\w*|shader_feature\w*)([^\r\n]*)");
+        // Built-in sets of a known size: fog off and three fog modes, instancing and soft particles on or off.
+        static readonly Dictionary<string, int> KnownSets = new Dictionary<string, int>
+        {
+            { "multi_compile_fog", 4 }, { "multi_compile_instancing", 2 }, { "multi_compile_particles", 2 }
+        };
         const char Mark = '\u0001';
         const int MaxIncludeDepth = 8;
 
@@ -126,6 +167,37 @@ namespace UnityTools.SceneOptimization
                     if (Regex.IsMatch(code, @"\w\s+" + Regex.Escape(name) + @"\s*\(")) own = true;
                 if (!own) return false;
                 return !Regex.IsMatch(code, @"\bUNITY_SETUP_INSTANCE_ID\s*\(") || !Regex.IsMatch(code, @"\bUNITY_INITIALIZE_VERTEX_OUTPUT_STEREO\s*\(");
+            }
+        }
+
+        // The keyword lines of the programs and includes, each once, that multiply the variants, in the order to look at
+        // them (judge of 2.9.0: the sets the build drops anyway hid the real offenders): own multi_compile lines, then
+        // shader_feature, then built-in sets, the ones of an unknown size last; more values first within each. A surface
+        // shader adds the sets of its generated passes, shown as "#pragma surface".
+        public List<KeywordLine> KeywordLines
+        {
+            get
+            {
+                var lines = new List<KeywordLine>();
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                foreach (Match m in KeywordPragma.Matches(code))
+                {
+                    var directive = m.Groups[1].Value;
+                    var keywords = m.Groups[2].Value.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (!seen.Add(directive + " " + string.Join(" ", keywords))) continue;
+                    bool feature = directive.StartsWith("shader_feature", StringComparison.Ordinal);
+                    bool own = feature || directive == "multi_compile" || directive == "multi_compile_local";
+                    int values;
+                    // shader_feature A is short for shader_feature _ A.
+                    if (feature) values = keywords.Length == 1 ? 2 : keywords.Length;
+                    else if (own) values = keywords.Length;
+                    else if (!KnownSets.TryGetValue(directive, out values)) values = 0;
+                    // One value multiplies by one: the keyword is always on.
+                    if (own && values <= 1) continue;
+                    lines.Add(new KeywordLine { directive = directive, keywords = keywords, values = values, builtIn = !own });
+                }
+                if (surface) lines.Add(new KeywordLine { directive = "#pragma surface", builtIn = true });
+                return lines.OrderBy(l => l.Rank).ThenByDescending(l => l.values).ToList();
             }
         }
 
