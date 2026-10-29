@@ -5,7 +5,7 @@ namespace UnityTools.SceneOptimization
     public static class ToolVersion
     {
         public const string Version = "3.0.0";
-        public const int Build = 63;
+        public const int Build = 64;
 
         public static string Full { get { return Version + "." + Build; } }
     }
